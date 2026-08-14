@@ -1,0 +1,2 @@
+"""Local inference provider boundary."""
+
