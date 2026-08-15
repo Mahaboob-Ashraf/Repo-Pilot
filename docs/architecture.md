@@ -1,6 +1,27 @@
 # RepoPilot Architecture
 
-## Planned system boundary
+## Implemented M0 boundary
+
+```text
+Browser
+    -> React prompt screen
+        -> frontend inference API client
+            -> FastAPI POST /api/inference (restricted local CORS)
+                -> InferenceProvider protocol
+                    -> OllamaProvider (async local HTTP)
+                        -> Ollama / gemma4:e4b-it-qat
+```
+
+The browser never calls Ollama directly. `VITE_API_BASE_URL` selects the
+FastAPI development origin, while the backend allows only the expected local
+Vite origins. The UI handles blank input, loading, generated response, returned
+model identifier, and readable API/network errors.
+
+The code path and automated frontend/backend tests are implemented. A real
+browser smoke test remains unverified because no browser surface was available
+to the Task 003 automation session.
+
+## Planned later system boundary
 
 ```text
 React Studio
@@ -14,7 +35,8 @@ React Studio
         -> SQLite state, approvals, events, patches, tests, benchmarks
 ```
 
-No component above is implemented yet.
+These later agent, retrieval, persistence, Git-editing, and sandbox components
+are not implemented.
 
 ## End-to-end flow
 

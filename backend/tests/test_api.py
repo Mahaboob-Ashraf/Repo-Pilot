@@ -40,6 +40,40 @@ def test_health(client: TestClient) -> None:
     }
 
 
+@pytest.mark.parametrize(
+    "origin",
+    ["http://localhost:5173", "http://127.0.0.1:5173"],
+)
+def test_inference_cors_allows_only_expected_local_origins(
+    client: TestClient, origin: str
+) -> None:
+    response = client.options(
+        "/api/inference",
+        headers={
+            "Origin": origin,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == origin
+    assert response.headers["access-control-allow-methods"] == "GET, POST"
+
+
+def test_inference_cors_rejects_unlisted_origin(client: TestClient) -> None:
+    response = client.options(
+        "/api/inference",
+        headers={
+            "Origin": "http://example.test",
+            "Access-Control-Request-Method": "POST",
+        },
+    )
+
+    assert response.status_code == 400
+    assert "access-control-allow-origin" not in response.headers
+
+
 def test_inference_returns_only_generated_response(client: TestClient) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.url == "http://ollama.test/api/generate"
@@ -93,4 +127,3 @@ def test_inference_rejects_blank_prompt(
     response = client.post("/api/inference", json={"prompt": prompt})
 
     assert response.status_code == 422
-

@@ -44,6 +44,20 @@ cannot be reached, the endpoint returns `503 Service Unavailable` with a clear
 message containing the configured base URL. An invalid or unsuccessful Ollama
 response returns `502 Bad Gateway`.
 
+### Browser development boundary
+
+The React frontend calls only `POST /api/inference`. Its API client defaults to
+`http://127.0.0.1:8000` and supports the `VITE_API_BASE_URL` development
+override.
+
+FastAPI's CORS middleware allows exactly these local frontend origins:
+
+- `http://localhost:5173`
+- `http://127.0.0.1:5173`
+
+Allowed cross-origin methods are `GET` and `POST`; the allowed request header
+is `Content-Type`; credentials are disabled. No wildcard origin is configured.
+
 ## Observed Ollama response structure
 
 One real non-streaming `POST /api/generate` call to Ollama 0.32.9 with
@@ -68,7 +82,7 @@ separate `thinking` field if a model or Ollama version supplies one.
 
 ## Planned APIs (not implemented)
 
-The following remain planning targets and are outside M0 Task 002:
+The following remain planning targets and are outside M0 Tasks 002 and 003:
 
 | Method | Endpoint | Purpose |
 |---|---|---|
