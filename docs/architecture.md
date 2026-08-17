@@ -23,11 +23,28 @@ manually verified the real browser-to-Ollama path after Task 003.
 ## Implemented M1 parsing foundation
 
 ```text
-Supplied repository root + Python file path
-    -> resolved path-containment validation
-        -> Tree-sitter Python parser
-            -> semantic PythonConstruct records
+Supplied local repository root
+    -> root validation
+        -> deterministic source-file discovery
+            -> extension-based language inventory
+                -> parser-supported Python paths
+                    -> resolved path-containment validation
+                        -> Tree-sitter Python parser
+                            -> semantic PythonConstruct records
 ```
+
+`backend/app/ingestion/discovery.py` is a read-only local discovery layer. It
+returns provisional repository/file records with resolved repository root,
+POSIX-relative source paths, detected language, parser-support status, byte
+size, and language counts. Discovery is globally sorted by relative path.
+
+Language detection is a centralized extension mapping for Python, JavaScript,
+and TypeScript. Only Python is currently parser-supported. Unsupported or
+non-source extensions are not inferred from content.
+
+Discovery prunes `.git`, virtual environments, dependency/build outputs, and
+common tool caches. It does not implement `.gitignore`. Directory traversal
+does not follow symlinks, and symlinked files are omitted.
 
 `backend/app/chunking/python_parser.py` currently supports Python source only.
 It extracts top-level functions, classes, direct class methods, and pytest-style
@@ -36,7 +53,7 @@ repository-relative paths, 1-based inclusive line numbers, exact source bytes
 decoded as UTF-8, and parent-class context for methods.
 
 `PythonConstruct` is an extraction result for the parsing foundation, not the
-final production RAG chunk schema. Repository discovery/ingestion, persistent
+final production RAG chunk schema. Git/URL/archive ingestion, persistent
 indexing, dependency edges, retrieval, embeddings, and ranking remain
 unimplemented.
 
