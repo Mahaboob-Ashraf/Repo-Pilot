@@ -17,9 +17,28 @@ FastAPI development origin, while the backend allows only the expected local
 Vite origins. The UI handles blank input, loading, generated response, returned
 model identifier, and readable API/network errors.
 
-The code path and automated frontend/backend tests are implemented. A real
-browser smoke test remains unverified because no browser surface was available
-to the Task 003 automation session.
+The code path and automated frontend/backend tests are implemented. The user
+manually verified the real browser-to-Ollama path after Task 003.
+
+## Implemented M1 parsing foundation
+
+```text
+Supplied repository root + Python file path
+    -> resolved path-containment validation
+        -> Tree-sitter Python parser
+            -> semantic PythonConstruct records
+```
+
+`backend/app/chunking/python_parser.py` currently supports Python source only.
+It extracts top-level functions, classes, direct class methods, and pytest-style
+top-level functions whose names start with `test_`. Results use POSIX-style
+repository-relative paths, 1-based inclusive line numbers, exact source bytes
+decoded as UTF-8, and parent-class context for methods.
+
+`PythonConstruct` is an extraction result for the parsing foundation, not the
+final production RAG chunk schema. Repository discovery/ingestion, persistent
+indexing, dependency edges, retrieval, embeddings, and ranking remain
+unimplemented.
 
 ## Planned later system boundary
 
@@ -27,7 +46,7 @@ to the Task 003 automation session.
 React Studio
     -> FastAPI API and event stream
         -> persisted LangGraph run
-            -> tree-sitter indexer
+            -> tree-sitter parser and indexer (parser foundation implemented)
             -> SQLite FTS5 + Chroma + dependency graph
             -> Ollama (default) / vLLM adapter (optional)
             -> approved Git workspace edits
