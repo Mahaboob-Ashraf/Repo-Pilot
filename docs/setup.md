@@ -139,6 +139,31 @@ Verified on 2026-08-15 with Node.js 22.17.1 and npm 10.9.2:
 | Frontend build | `npm run build` | TypeScript check and Vite 7.3.6 production build succeeded |
 | Backend test | `uv run --locked --offline pytest -q` | 8 tests passed; one upstream `TestClient` deprecation warning |
 
-The required real browser-to-Ollama smoke test was not completed because no
-browser surface was available to the automation session. This is an explicit
-verification blocker, not a reported pass.
+After Task 003, the browser-to-FastAPI-to-Ollama path was manually verified
+successfully by the user. Task 004 did not repeat that real Gemma request.
+
+## Toy repository fixture
+
+`fixtures/toy-repo/` is a deterministic Python target for future parsing,
+retrieval, patching, and regression work. It deliberately contains one pricing
+bug and must not be treated as a passing application test suite.
+
+Run the fixture from its directory in an ephemeral environment containing only
+pytest:
+
+```powershell
+Set-Location fixtures/toy-repo
+uv run --no-project --isolated --with pytest==9.1.1 --offline pytest -q
+```
+
+The verified baseline on 2026-08-17 is:
+
+```text
+1 failed, 1 passed
+exit code 1
+```
+
+The failing test proves the intentional bug: a 20% discount on `100.0` returns
+`120.0` instead of `80.0`. The passing zero-percent test proves the fixture is
+not completely broken. This expected fixture failure is not a RepoPilot
+backend, frontend, or build failure.
