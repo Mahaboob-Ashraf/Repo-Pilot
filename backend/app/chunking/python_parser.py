@@ -47,6 +47,28 @@ class PathOutsideRepositoryError(ValueError):
     """Raised when a requested source path resolves outside its repository."""
 
 
+class PythonSyntaxError(ValueError):
+    """Raised when Tree-sitter reports malformed Python source."""
+
+    def __init__(
+        self,
+        *,
+        relative_path: str,
+        node_type: str,
+        start_line: int,
+        end_line: int,
+    ) -> None:
+        self.relative_path = relative_path
+        self.node_type = node_type
+        self.start_line = start_line
+        self.end_line = end_line
+        super().__init__(
+            "Tree-sitter reported invalid Python syntax in "
+            f"{relative_path} at lines {start_line}-{end_line} "
+            f"({node_type})"
+        )
+
+
 def extract_python_constructs(
     repository_root: str | Path,
     source_path: str | Path,
@@ -71,6 +93,7 @@ def parse_python_file(
         raise ValueError("Python source must be UTF-8 encoded") from exc
 
     tree = Parser(_PYTHON_LANGUAGE).parse(source_bytes)
+    _raise_for_syntax_errors(tree.root_node, relative_path)
     constructs: list[PythonConstruct] = []
 
     for child in tree.root_node.named_children:
@@ -268,3 +291,30 @@ def _extract_top_level_imports(
 
 def _node_text(node: Node, source_bytes: bytes) -> str:
     return source_bytes[node.start_byte : node.end_byte].decode("utf-8")
+
+
+def _raise_for_syntax_errors(root_node: Node, relative_path: str) -> None:
+    if not root_node.has_error:
+        return
+
+    error_node = _find_first_syntax_error(root_node) or root_node
+    node_type = "MISSING" if error_node.is_missing else error_node.type
+    raise PythonSyntaxError(
+        relative_path=relative_path,
+        node_type=node_type,
+        start_line=error_node.start_point.row + 1,
+        end_line=error_node.end_point.row + 1,
+    )
+
+
+def _find_first_syntax_error(node: Node) -> Node | None:
+    if node.type == "ERROR" or node.is_missing:
+        return node
+
+    for child in node.children:
+        if child.has_error or child.type == "ERROR" or child.is_missing:
+            error_node = _find_first_syntax_error(child)
+            if error_node is not None:
+                return error_node
+
+    return None

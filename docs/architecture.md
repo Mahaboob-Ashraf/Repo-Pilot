@@ -32,6 +32,7 @@ Supplied local repository root
                         -> Tree-sitter Python parser
                             -> PythonConstruct + module import metadata
                                 -> deterministic semantic CodeChunk records
+                                    -> RepositoryChunkingResult summary
 ```
 
 `backend/app/ingestion/discovery.py` is a read-only local discovery layer. It
@@ -77,6 +78,27 @@ M1. This preserves both class context and directly retrievable methods; later
 retrieval and context-packing evaluation will determine whether both should be
 returned together. The builder emits each parsed construct once and sorts
 chunks by path, source range, type, and qualified symbol.
+
+`backend/app/chunking/pipeline.py` is the single repository-level M1 entry
+point. `build_repository_chunks(root)` reuses discovery, the registered Python
+parser, and chunk conversion, returning a `RepositoryChunkingResult` with the
+resolved root for internal use, discovered file metadata and count, language
+counts, parser-supported relative paths and count, semantic chunks, and chunk
+count. An unchanged repository produces an equal result on repeated runs.
+The earlier `build_code_chunks(root)` helper remains as a compatibility wrapper
+that returns only the result's chunk tuple.
+
+A valid repository with no recognized files returns a successful empty result.
+A repository containing only recognized JavaScript/TypeScript files retains
+its discovery and language summary but returns no parser-supported paths or
+chunks. Invalid roots retain the discovery layer's explicit error behavior.
+
+Python parsing is fail-fast for malformed syntax. If Tree-sitter marks the
+syntax tree as erroneous, the parser locates the first `ERROR` or missing node
+and raises `PythonSyntaxError` with its repository-relative path and 1-based
+line range. The repository build aborts rather than returning a partial result
+that could appear complete. Partial recovery is deferred until it has explicit
+representation and evaluation requirements.
 
 Git/URL/archive ingestion, module-header/configuration chunks, persistent
 indexing, dependency edges, retrieval, embeddings, and ranking remain

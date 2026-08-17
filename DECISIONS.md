@@ -89,3 +89,31 @@ context-packing measurements justify deduplication.
 hashes; source-only changes must alter the hash; IDs must not expose absolute
 paths. Later indexing and retrieval evaluation must measure duplicate-result
 and token-budget effects from class/method overlap.
+
+## ADR-006 - Reject malformed Python during repository chunking
+
+**Status:** Accepted
+
+**Decision:** Python parsing rejects a file whenever Tree-sitter reports an
+erroneous tree. The parser raises a typed error containing the
+repository-relative file path, first relevant `ERROR` or missing node kind, and
+its 1-based source range. Repository chunking is fail-fast and returns no
+partial result when any supported Python file is malformed.
+
+**Why:** Silently extracting constructs from an uncertain syntax tree would
+make the repository summary and later index look complete when their provenance
+is not trustworthy. A single explicit failure is the smallest correct M1
+policy and keeps malformed input distinguishable from a valid repository that
+simply contains no supported constructs.
+
+**Alternatives considered:** Index all recoverable constructs silently; return
+partial chunks plus warnings; skip malformed files and continue.
+
+**Tradeoffs:** One malformed Python file prevents chunking otherwise valid
+files. Partial recovery could improve coverage for real repositories, but it
+requires result-level diagnostics and evaluation that are outside M1.
+
+**Testing/benchmark impact:** Parser and full-pipeline tests must prove malformed
+input raises the typed error with relative provenance. Future partial-indexing
+work must make incompleteness explicit and compare coverage against fail-fast
+behavior before superseding this decision.

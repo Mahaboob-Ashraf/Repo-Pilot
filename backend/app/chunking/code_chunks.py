@@ -2,17 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from hashlib import sha256
 from pathlib import Path
 
-from app.chunking.python_parser import (
-    ConstructType,
-    PythonConstruct,
-    parse_python_file,
-)
-from app.ingestion import discover_repository
+from app.chunking.python_parser import ConstructType, PythonConstruct
 
 
 class ChunkType(StrEnum):
@@ -51,25 +47,11 @@ _CHUNK_TYPE_BY_CONSTRUCT = {
 
 
 def build_code_chunks(repository_root: str | Path) -> tuple[CodeChunk, ...]:
-    """Discover, parse, and build semantic chunks for supported source files."""
+    """Compatibility helper returning only chunks from the repository result."""
 
-    inventory = discover_repository(repository_root)
-    chunks: list[CodeChunk] = []
+    from app.chunking.pipeline import build_repository_chunks
 
-    for source_file in inventory.parser_supported_files:
-        if source_file.language != "python":
-            continue
-
-        parse_result = parse_python_file(
-            inventory.repository_root,
-            source_file.relative_path,
-        )
-        chunks.extend(
-            build_python_chunk(construct, imports=parse_result.imports)
-            for construct in parse_result.constructs
-        )
-
-    return tuple(sorted(chunks, key=_chunk_order_key))
+    return build_repository_chunks(repository_root).chunks
 
 
 def build_python_chunk(
@@ -125,6 +107,12 @@ def _build_chunk_id(
 
 def _hash_source(source_text: str) -> str:
     return sha256(source_text.encode("utf-8")).hexdigest()
+
+
+def sort_code_chunks(chunks: Iterable[CodeChunk]) -> tuple[CodeChunk, ...]:
+    """Return chunks in the canonical deterministic repository order."""
+
+    return tuple(sorted(chunks, key=_chunk_order_key))
 
 
 def _chunk_order_key(chunk: CodeChunk) -> tuple[str, int, int, str, str]:

@@ -7,11 +7,17 @@ from app.chunking.code_chunks import (
     build_python_chunk,
 )
 
+from app.chunking.pipeline import (
+    RepositoryChunkingResult,
+    build_repository_chunks,
+)
+
 from app.chunking.python_parser import (
     ConstructType,
     PathOutsideRepositoryError,
     PythonConstruct,
     PythonParseResult,
+    PythonSyntaxError,
     extract_python_constructs,
     parse_python_file,
 )
@@ -23,7 +29,10 @@ __all__ = [
     "PathOutsideRepositoryError",
     "PythonConstruct",
     "PythonParseResult",
+    "PythonSyntaxError",
+    "RepositoryChunkingResult",
     "build_code_chunks",
+    "build_repository_chunks",
     "build_python_chunk",
     "extract_python_constructs",
     "parse_python_file",
