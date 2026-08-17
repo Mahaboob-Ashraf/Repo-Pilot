@@ -100,9 +100,52 @@ line range. The repository build aborts rather than returning a partial result
 that could appear complete. Partial recovery is deferred until it has explicit
 representation and evaluation requirements.
 
-Git/URL/archive ingestion, module-header/configuration chunks, persistent
-indexing, dependency edges, retrieval, embeddings, and ranking remain
+Git/URL/archive ingestion, module-header/configuration chunks, project-level
+persistence, dependency edges, vector retrieval, fusion, and reranking remain
 unimplemented.
+
+## Implemented M2 lexical retrieval foundation
+
+```text
+RepositoryChunkingResult.chunks
+    -> SQLiteLexicalIndex.rebuild
+        -> canonical lexical_chunks rows
+        -> searchable lexical_chunks_fts projection
+            -> safe tokenized MATCH query
+                -> FTS5 bm25()
+                    -> canonical CodeChunk + rank + raw BM25 score
+```
+
+`backend/app/retrieval/lexical.py` owns the bounded local lexical index. The
+normal `lexical_chunks` table stores enough canonical metadata to reconstruct
+each immutable `CodeChunk`. The separate FTS5 virtual table stores searchable
+copies of source text, symbol, qualified symbol, path, chunk type, and imports;
+`chunk_id` is unindexed and joins results back to canonical provenance.
+
+FTS5 uses its default `unicode61` tokenizer. User input is reduced to
+case-folded word tokens, each token is quoted, and tokens are joined with `OR`.
+Both the MATCH expression and top-k limit are SQL parameters, so callers cannot
+inject SQL or raw FTS operators. Blank queries and nonblank queries without a
+searchable token are rejected explicitly.
+
+The FTS projection applies fixed BM25 column weights of `1` for source, `6`
+for symbol, `6` for qualified symbol, `3` for path, `1` for chunk type, and `2`
+for imports. SQLite FTS5's raw `bm25()` convention is preserved: smaller, more
+negative values are better. SQL orders scores ascending and then orders equal
+scores by `chunk_id`; the returned rank is 1-based. Scores are retrieval
+metadata and never mutate `CodeChunk`.
+
+Rebuilds sort input by `chunk_id` and replace both tables in one transaction.
+Duplicate IDs in one input collection are rejected before mutation. The index
+can be in-memory or backed by one explicitly supplied local SQLite file; no
+global machine state or broader project database schema is introduced.
+
+Token overlap can outweigh apparent filename intent. In the toy repository,
+`pricing.py` matches the function path but also matches test paths and their
+`pricing` import metadata, so raw BM25 ranks the test chunks first for that
+query. Exact symbol and test-name queries rank their intended chunks first.
+This is retained as baseline behavior for later retrieval evaluation rather
+than hidden behind an unmeasured heuristic boost.
 
 ## Planned later system boundary
 
@@ -110,16 +153,16 @@ unimplemented.
 React Studio
     -> FastAPI API and event stream
         -> persisted LangGraph run
-            -> tree-sitter parser and indexer (parser foundation implemented)
-            -> SQLite FTS5 + Chroma + dependency graph
+            -> tree-sitter semantic chunks (implemented)
+            -> SQLite FTS5 (implemented) + Chroma + dependency graph
             -> Ollama (default) / vLLM adapter (optional)
             -> approved Git workspace edits
             -> Docker test sandbox
         -> SQLite state, approvals, events, patches, tests, benchmarks
 ```
 
-These later agent, retrieval, persistence, Git-editing, and sandbox components
-are not implemented.
+These later agent, vector/hybrid retrieval, persistence, Git-editing, and
+sandbox components are not implemented.
 
 ## End-to-end flow
 

@@ -25,6 +25,21 @@ Compare on the same issue set and relevance labels:
 
 Define relevance labels and token waste before running the benchmark.
 
+### SQLite FTS5 lexical baseline
+
+The implemented lexical baseline indexes semantic `CodeChunk` source, symbol,
+qualified symbol, path, chunk type, and imports with SQLite FTS5 `unicode61`.
+It uses safely quoted OR-token queries and fixed weighted `bm25()` ranking.
+Raw SQLite scores sort ascending because smaller, more negative values are
+better; `chunk_id` provides deterministic tie-breaking.
+
+The toy-repository searches used to verify Task 009 are functional tests, not a
+retrieval benchmark. No hit-rate, MRR, latency, or quality value has been
+measured. A future baseline run must freeze queries and relevance judgments,
+record the SQLite version, tokenizer, field weights, top-k, corpus/chunk count,
+hardware, run count, and timing method, and report filename/import ambiguity as
+an observed error category.
+
 ## Model/inference comparison
 
 Test only tiers supported by available hardware. A larger model is not presumed better under a fixed time budget.
