@@ -35,6 +35,14 @@ class PythonConstruct:
     parent_class: str | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class PythonParseResult:
+    """Constructs and deterministic module metadata from one Python parse."""
+
+    constructs: tuple[PythonConstruct, ...]
+    imports: tuple[str, ...]
+
+
 class PathOutsideRepositoryError(ValueError):
     """Raised when a requested source path resolves outside its repository."""
 
@@ -44,6 +52,15 @@ def extract_python_constructs(
     source_path: str | Path,
 ) -> list[PythonConstruct]:
     """Extract supported constructs from one UTF-8 Python file inside a root."""
+
+    return list(parse_python_file(repository_root, source_path).constructs)
+
+
+def parse_python_file(
+    repository_root: str | Path,
+    source_path: str | Path,
+) -> PythonParseResult:
+    """Parse one UTF-8 Python file into constructs and module imports."""
 
     source_file, relative_path = _resolve_source_path(repository_root, source_path)
 
@@ -91,7 +108,10 @@ def extract_python_constructs(
                 )
             )
 
-    return constructs
+    return PythonParseResult(
+        constructs=tuple(constructs),
+        imports=_extract_top_level_imports(tree.root_node, source_bytes),
+    )
 
 
 def _resolve_source_path(
@@ -218,3 +238,33 @@ def _node_name(definition: Node, source_bytes: bytes) -> str:
     if name is None:
         raise ValueError(f"Tree-sitter {definition.type} node has no name")
     return source_bytes[name.start_byte : name.end_byte].decode("utf-8")
+
+
+def _extract_top_level_imports(
+    root_node: Node,
+    source_bytes: bytes,
+) -> tuple[str, ...]:
+    imported_modules: set[str] = set()
+
+    for child in root_node.named_children:
+        if child.type == "import_statement":
+            for imported_name in child.named_children:
+                name_node = (
+                    imported_name.child_by_field_name("name")
+                    if imported_name.type == "aliased_import"
+                    else imported_name
+                )
+                if name_node is not None:
+                    imported_modules.add(_node_text(name_node, source_bytes))
+        elif child.type == "import_from_statement":
+            module_name = child.child_by_field_name("module_name")
+            if module_name is not None:
+                imported_modules.add(_node_text(module_name, source_bytes))
+        elif child.type == "future_import_statement":
+            imported_modules.add("__future__")
+
+    return tuple(sorted(imported_modules))
+
+
+def _node_text(node: Node, source_bytes: bytes) -> str:
+    return source_bytes[node.start_byte : node.end_byte].decode("utf-8")

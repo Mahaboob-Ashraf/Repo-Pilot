@@ -57,3 +57,35 @@ Decisions are recorded before implementation claims. Status may be Proposed, Acc
 **Tradeoffs:** Docker startup and dependency setup add latency and platform constraints, but materially reduce host risk.
 
 **Testing/benchmark impact:** Prove timeout, network isolation, resource controls, log capture, cleanup, and image identity.
+
+## ADR-005 - Separate semantic chunk identity from source-content identity
+
+**Status:** Accepted
+
+**Decision:** M1 code chunks use deterministic, human-readable IDs in the form
+`{repository-relative path}::{chunk type}::{qualified symbol}::{start
+line}-{end line}`. They separately store the lowercase SHA-256 digest of the
+exact UTF-8 source text. Class chunks and their method chunks are both retained,
+even though their source ranges overlap.
+
+**Why:** Paths, construct types, qualified symbols, and ranges provide stable,
+inspectable provenance for citations and later indexes. Absolute paths would
+make identity machine-specific, while random UUIDs would prevent reproducible
+rebuilds and complicate evaluation comparisons. A separate content digest
+detects implementation changes that preserve semantic location and therefore
+do not change the chunk ID.
+
+**Alternatives considered:** Random UUIDs; absolute-path IDs; content hashes as
+the sole chunk identity; suppressing method chunks when a class chunk already
+contains their text.
+
+**Tradeoffs:** Identical relative constructs in different repositories require
+a future stable repository namespace when persisted together. Line movement
+changes semantic IDs, and class/method overlap can consume retrieval context.
+Keeping both representations preserves useful context until retrieval and
+context-packing measurements justify deduplication.
+
+**Testing/benchmark impact:** Repeated builds must produce identical IDs and
+hashes; source-only changes must alter the hash; IDs must not expose absolute
+paths. Later indexing and retrieval evaluation must measure duplicate-result
+and token-budget effects from class/method overlap.

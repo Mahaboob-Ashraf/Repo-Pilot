@@ -30,7 +30,8 @@ Supplied local repository root
                 -> parser-supported Python paths
                     -> resolved path-containment validation
                         -> Tree-sitter Python parser
-                            -> semantic PythonConstruct records
+                            -> PythonConstruct + module import metadata
+                                -> deterministic semantic CodeChunk records
 ```
 
 `backend/app/ingestion/discovery.py` is a read-only local discovery layer. It
@@ -50,10 +51,34 @@ does not follow symlinks, and symlinked files are omitted.
 It extracts top-level functions, classes, direct class methods, and pytest-style
 top-level functions whose names start with `test_`. Results use POSIX-style
 repository-relative paths, 1-based inclusive line numbers, exact source bytes
-decoded as UTF-8, and parent-class context for methods.
+decoded as UTF-8, and parent-class context for methods. The same Tree-sitter
+parse also extracts a sorted, deduplicated tuple of top-level imported module
+names. Function-local imports and call relationships are intentionally absent.
 
-`PythonConstruct` is an extraction result for the parsing foundation, not the
-final production RAG chunk schema. Git/URL/archive ingestion, persistent
+`PythonConstruct` remains the parser-facing extraction result.
+`backend/app/chunking/code_chunks.py` maps those constructs into provisional
+immutable `CodeChunk` records for functions, classes, methods, and tests. Each
+chunk contains exact source, repository-relative provenance, semantic identity,
+module imports, and a lowercase SHA-256 hash of the exact UTF-8 source text.
+
+Chunk IDs use this machine-independent format:
+
+```text
+{path}::{chunk_type}::{qualified_symbol}::{start_line}-{end_line}
+```
+
+For example, `pricing.py::function::apply_discount::4-7`. A method uses its
+class-qualified symbol, such as `Greeter.greet`. The content hash is separate
+from this stable semantic/location identity, so a same-range implementation
+change can be detected without changing the chunk ID.
+
+Class chunks intentionally overlap their separately emitted method chunks in
+M1. This preserves both class context and directly retrievable methods; later
+retrieval and context-packing evaluation will determine whether both should be
+returned together. The builder emits each parsed construct once and sorts
+chunks by path, source range, type, and qualified symbol.
+
+Git/URL/archive ingestion, module-header/configuration chunks, persistent
 indexing, dependency edges, retrieval, embeddings, and ranking remain
 unimplemented.
 
