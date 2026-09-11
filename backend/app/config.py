@@ -9,6 +9,9 @@ import os
 DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 DEFAULT_OLLAMA_MODEL = "gemma4:e4b-it-qat"
 DEFAULT_OLLAMA_TIMEOUT_SECONDS = 120.0
+DEFAULT_OLLAMA_EMBEDDING_BASE_URL = "http://127.0.0.1:11434"
+DEFAULT_OLLAMA_EMBEDDING_MODEL = "embeddinggemma"
+DEFAULT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS = 60.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -40,3 +43,38 @@ class Settings:
             ollama_timeout_seconds=timeout,
         )
 
+
+@dataclass(frozen=True, slots=True)
+class OllamaEmbeddingSettings:
+    """Configuration for the separate local embedding provider."""
+
+    ollama_base_url: str = DEFAULT_OLLAMA_EMBEDDING_BASE_URL
+    ollama_embedding_model: str = DEFAULT_OLLAMA_EMBEDDING_MODEL
+    ollama_embedding_timeout_seconds: float = (
+        DEFAULT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS
+    )
+
+    @classmethod
+    def from_environment(cls) -> OllamaEmbeddingSettings:
+        timeout = float(
+            os.getenv(
+                "REPOPILOT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS",
+                str(DEFAULT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS),
+            )
+        )
+        if timeout <= 0:
+            raise ValueError(
+                "REPOPILOT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS must be positive"
+            )
+
+        return cls(
+            ollama_base_url=os.getenv(
+                "REPOPILOT_OLLAMA_EMBEDDING_BASE_URL",
+                DEFAULT_OLLAMA_EMBEDDING_BASE_URL,
+            ).rstrip("/"),
+            ollama_embedding_model=os.getenv(
+                "REPOPILOT_OLLAMA_EMBEDDING_MODEL",
+                DEFAULT_OLLAMA_EMBEDDING_MODEL,
+            ),
+            ollama_embedding_timeout_seconds=timeout,
+        )

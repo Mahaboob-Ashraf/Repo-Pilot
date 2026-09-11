@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "defaults": {
+    "generation": {
+      "provider": "ollama",
+      "model": "gemma4:e4b-it-qat"
+    },
+    "embedding": {
+      "provider": "ollama",
+      "model": "embeddinggemma"
+    }
+  }
+}

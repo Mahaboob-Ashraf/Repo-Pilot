@@ -117,3 +117,39 @@ requires result-level diagnostics and evaluation that are outside M1.
 input raises the typed error with relative provenance. Future partial-indexing
 work must make incompleteness explicit and compare coverage against fail-fast
 behavior before superseding this decision.
+
+## ADR-007 - Explicit local embedding boundary and precomputed Chroma vectors
+
+**Status:** Accepted
+
+**Decision:** Embeddings use a provider boundary separate from generation. The
+M2.2 baseline uses local Ollama `embeddinggemma`, embeds exact chunk source text
+in deterministic batches, and supplies precomputed document/query vectors to a
+Chroma collection with no Chroma embedding function. The collection uses
+cosine distance and records provider, model, document-format, and distance
+identity. Query results carry raw distance/rank separately from canonical
+`CodeChunk` data.
+
+**Why:** Generation and embedding models have different contracts and should
+not be interchangeable. Explicit vector generation prevents Chroma from
+silently loading a default model, preserves the zero-cost local path, and makes
+the same-model indexing/query invariant auditable. Exact source text is the
+smallest reproducible semantic document and avoids mixing repository data with
+instructions or machine-specific paths.
+
+**Alternatives considered:** Chroma's default embedding function;
+sentence-transformers; cloud embedding APIs; using the Gemma generation model
+for embeddings; embedding arbitrary metadata/prompts with source; treating
+cosine distance as mutable chunk state.
+
+**Tradeoffs:** Rebuilds recompute every vector, one model identity is bound to a
+collection, and source-only documents may omit useful symbol/path signals.
+Chroma adds a substantial transitive dependency set. These are acceptable for
+the bounded baseline; incremental indexing and alternate document formats need
+separate evaluation.
+
+**Testing/benchmark impact:** Mock Ollama responses validate the HTTP contract;
+deterministic fake embeddings validate Chroma behavior offline. Evaluation must
+record model/digest, dimension, document format, distance space, Chroma version,
+and corpus, and must compare ranks rather than directly mixing cosine distance
+with BM25 scores.

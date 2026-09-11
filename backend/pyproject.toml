@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "RepoPilot's local-first FastAPI backend"
 requires-python = ">=3.11"
 dependencies = [
+    "chromadb==1.5.9",
     "fastapi>=0.116,<1",
     "httpx>=0.28,<1",
     "tree-sitter>=0.26.0",

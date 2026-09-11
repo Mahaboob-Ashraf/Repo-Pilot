@@ -147,6 +147,57 @@ query. Exact symbol and test-name queries rank their intended chunks first.
 This is retained as baseline behavior for later retrieval evaluation rather
 than hidden behind an unmeasured heuristic boost.
 
+## Implemented M2.2 vector retrieval foundation
+
+```text
+RepositoryChunkingResult.chunks
+    -> exact source_text embedding documents
+        -> EmbeddingProvider.embed_batch
+            -> OllamaEmbeddingProvider POST /api/embed
+                -> RepoPilot-supplied vectors
+                    -> Chroma cosine collection
+                        -> query embedding from the same provider/model
+                            -> canonical CodeChunk + rank + cosine distance
+```
+
+Embedding is a separate provider responsibility from text generation.
+`EmbeddingProvider` exposes provider/model identity plus single and batch
+operations. `OllamaEmbeddingProvider` uses the local HTTP API and defaults to
+`embeddinggemma`, independently of the configured `gemma4:e4b-it-qat`
+generation model. Its batch response validation rejects unreachable/HTTP
+failures, invalid JSON or objects, missing vectors, cardinality mismatches,
+empty/non-finite vectors, and inconsistent dimensions without hardcoding a
+model dimension.
+
+The baseline embedding document is exactly `CodeChunk.source_text`. Paths,
+prompts, instructions, timestamps, and other metadata are not concatenated
+into model input. Repository code therefore remains data, while Chroma stores
+canonical metadata separately for provenance reconstruction.
+
+`ChromaVectorIndex` accepts an injected Chroma client for isolated tests or an
+explicit persistence directory for the local product path. It creates the
+collection with `embedding_function=None`, receives precomputed document and
+query vectors from RepoPilot, and configures only the HNSW `space` as `cosine`.
+No implicit Chroma model/download or custom ANN tuning is allowed.
+
+The collection ID is the canonical `chunk_id`. Documents store exact source;
+metadata stores relative path, language, chunk type, symbol, qualified symbol,
+optional parent class, 1-based range, content hash, and imports. Collection
+metadata binds the provider, embedding model, source-document format, and
+distance space. Opening/querying with a mismatched identity fails explicitly.
+
+Rebuild embeds chunks in sorted chunk-ID order, deletes only the bounded
+collection, recreates it, and inserts exactly the supplied set. Duplicate
+input IDs are rejected before embedding or mutation, and stale records cannot
+survive. Incremental updates are intentionally deferred.
+
+Vector results keep the canonical `CodeChunk` immutable and add a 1-based rank
+and raw Chroma cosine distance. Smaller distance means closer. Chroma may
+return a tiny negative epsilon for an exact match because of floating-point
+precision; the raw value is preserved rather than mislabeled as similarity.
+Equal returned distances are secondarily ordered by chunk ID where practical.
+No BM25/vector fusion or RRF exists yet.
+
 ## Planned later system boundary
 
 ```text
@@ -154,15 +205,15 @@ React Studio
     -> FastAPI API and event stream
         -> persisted LangGraph run
             -> tree-sitter semantic chunks (implemented)
-            -> SQLite FTS5 (implemented) + Chroma + dependency graph
+            -> SQLite FTS5 + Chroma (implemented separately) + dependency graph
             -> Ollama (default) / vLLM adapter (optional)
             -> approved Git workspace edits
             -> Docker test sandbox
         -> SQLite state, approvals, events, patches, tests, benchmarks
 ```
 
-These later agent, vector/hybrid retrieval, persistence, Git-editing, and
-sandbox components are not implemented.
+These later agent, hybrid fusion, dependency expansion, broader persistence,
+Git-editing, and sandbox components are not implemented.
 
 ## End-to-end flow
 
