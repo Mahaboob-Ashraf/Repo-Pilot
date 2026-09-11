@@ -1,101 +1,157 @@
 # RepoPilot Project Specification
 
-## Thesis and scope
+## Scoped V1 thesis
 
-RepoPilot is a local-first, human-in-the-loop coding-agent platform. Given a GitHub repository or uploaded archive and an issue, it will build an AST-aware code index, retrieve relevant code through lexical and vector signals, plan a repair, propose scoped edits, run tests in an isolated sandbox, critique failures, iterate within hard limits, and pause for human approval before exporting a patch.
+RepoPilot is a local-first, human-controlled coding agent for Python
+repositories. Its one bounded workflow is:
 
-It is an evaluated developer tool, not a document chatbot, paid-API wrapper, autonomous merge bot, or complete IDE.
+```text
+repository + issue
+    -> AST-aware repository evidence
+    -> BM25 + dense retrieval
+    -> Reciprocal Rank Fusion (RRF)
+    -> one-hop structural expansion
+    -> bounded context pack
+    -> evidence-grounded repair plan
+    -> human approval
+    -> scoped patch
+    -> Docker tests
+    -> optional critic-assisted one retry
+    -> final human approval
+    -> patch export
+```
 
-RepoPilot will provide repository ingestion; tree-sitter semantic chunks and dependency metadata; hybrid SQLite FTS5 BM25 and Chroma retrieval with Reciprocal Rank Fusion (RRF); a stateful planner/retriever/context-packer/patcher/test-runner/critic workflow; persisted human approvals; Docker-isolated tests; a React review studio; and retrieval, agent, inference, safety, system, and selected SWE-bench Lite evidence.
+RepoPilot is an evaluated developer tool, not a repository chatbot, paid-API
+wrapper, autonomous merge bot, multi-agent swarm, or complete IDE.
 
-## Exact stack
+## Locked V1 scope
+
+- Python repositories only.
+- Python 3.11+ and FastAPI/Uvicorn backend; React/Vite/TypeScript review UI.
+- Tree-sitter semantic code chunks with immutable source provenance.
+- SQLite FTS5/BM25 lexical retrieval and local-embedding Chroma dense retrieval.
+- Rank-only RRF followed by one-hop import, parent-child, and directly-related
+  test expansion.
+- Fixed token-budget context packing.
+- One fixed Ollama generation model for primary evaluation.
+- Two human checkpoints: plan/approved-file scope, then final patch export.
+- Approved-file-only patching and a maximum of two repair attempts total.
+- Docker test execution with network, time, process, CPU, and memory restrictions.
+- Structured run traces and patch export, never autonomous PR creation or merge.
+
+The default path is local, API-key-free, and zero-cost apart from the user's
+own hardware and electricity.
+
+## Exact V1 stack
 
 | Area | Choice |
 |---|---|
 | Backend | Python 3.11+, FastAPI, Uvicorn |
-| Agent orchestration | LangGraph with durable state and interrupts |
-| Default inference | Ollama, local and API-key-free |
-| Optional inference | vLLM for available GPU experiments |
-| Model family | Gemma 4 E2B/E4B locally; 12B/26B/31B optional benchmark tiers |
-| Embeddings | Local model through Ollama or sentence-transformers |
-| Lexical/vector retrieval | SQLite FTS5 BM25 and Chroma persistent client |
-| Parsing | tree-sitter Python bindings and language parsers |
-| Patch/workspace | Git through a narrow adapter |
-| Sandbox | Docker Engine and Docker Compose |
-| Evaluation | Selected SWE-bench Lite subset and custom harnesses |
-| Frontend | React, Vite, TypeScript, Monaco/diff viewer |
-| Observability | Structured traces, OpenTelemetry, Prometheus; Grafana optional |
-| CI | GitHub Actions for a public repository |
+| Workflow orchestration (M3+) | LangGraph state machine with persistence/interrupts where needed |
+| Selective LLM composition (M3+) | LangChain prompt/message/structured-output/Runnable utilities where useful |
+| Default inference | One fixed local Ollama generation model for primary evaluation |
+| Embeddings | Local model through the RepoPilot embedding-provider boundary |
+| Lexical/vector retrieval | SQLite FTS5 BM25 and Chroma with precomputed embeddings |
+| Parsing | tree-sitter Python parser and semantic chunks |
+| Patch workspace | Git through a narrow approved-path adapter |
+| Test sandbox | Docker with disabled-by-default networking and explicit limits |
+| Frontend | React, Vite, TypeScript, and a focused review workspace |
+| Evidence | Structured local run traces and frozen evaluation artifacts |
 
-Lock Python dependencies with `uv.lock`, frontend dependencies with `package-lock.json`, container images with explicit tags, and model configurations in `models.lock.json`.
+Lock Python dependencies with `uv.lock`, frontend dependencies with
+`package-lock.json`, container images with explicit tags, and model identities
+in `models.lock.json`.
 
-## Architecture and workflow
+## One bounded repair workflow
 
-1. React Studio submits projects/issues and displays run state.
-2. FastAPI owns project, index, run, approval, test, evaluation, and metrics APIs.
-3. Ingestion creates an isolated Git workspace and detects languages.
-4. tree-sitter creates function, class, method, module-header, test, and configuration chunks.
-5. SQLite stores metadata, state, approvals, traces, and BM25 data; Chroma stores embeddings.
-6. LangGraph plans, retrieves, packs context, proposes edits, applies approved diffs, runs tests, critiques failures, and stops at approval gates or limits.
-7. Ollama serves local Gemma 4; a provider boundary permits optional vLLM later.
-8. Docker runs repository tests with isolation and records command, output, exit status, duration, and image identity.
+LangGraph will be introduced in M3 as the orchestration and state-machine layer
+for this single workflow. It should own shared run state, stage transitions, the
+conditional test-failure branch, maximum-one-retry control, pause/resume at the
+two human checkpoints, and checkpoint persistence where needed. Planner,
+retriever, context packer, patcher, test runner, and critic are nodes/stages of
+one bounded graph; they must not be described as an autonomous multi-agent
+swarm.
 
-Required state includes run/project IDs, issue text, plan, retrieved chunk IDs, approvals, approved edit scope, patch diff, tests, iteration count, risk flags, and final status.
+LangChain will be used selectively inside LLM-backed nodes when prompt
+templates, message composition, structured output parsing/schemas, or Runnable
+composition provide concrete value. RepoPilot's custom `CodeChunk` pipeline,
+SQLite/BM25 retrieval, Chroma retrieval, RRF, structural expansion, and context
+packing remain first-party boundaries and will not be replaced merely to add a
+framework. Neither LangGraph nor LangChain is installed before M3.
 
-Initial policy targets: at most four patch-test-critic iterations; approval when more than three files are proposed; model-specific recorded context budgets; and a human-visible repository-specific sandbox timeout.
+Required future run state includes repository/run identity, issue text,
+retrieved chunk IDs and provenance, packed context, plan, approved file set,
+patch/diff hashes, test evidence, attempt count, checkpoint decisions, risk
+flags, degradation state, and final status.
 
 ## Retrieval algorithm
 
-- Index AST chunks with path, language, symbol, type, line range, imports/calls, hash, and provenance.
-- Query BM25 and vector search separately, fuse positions using RRF, then add one-hop callers/callees/import neighbors.
-- When packing a token budget, preserve tests, signatures, interfaces, and human-pinned chunks.
-- Plans and patches cite the chunk IDs and source ranges used.
-- Fixed-size chunks exist only as an evaluation baseline.
+1. Build Python tree-sitter function, class, method, and test chunks with path,
+   symbol, type, line range, imports, exact source hash, and provenance.
+2. Query SQLite FTS5 BM25 and Chroma dense retrieval independently.
+3. Fuse 1-based ranks with RRF; never add or normalize raw BM25 and cosine
+   values across their incompatible scales.
+4. Expand one hop through imports, parent-child relationships, and
+   directly-related tests.
+5. Pack evidence under a fixed token budget while preserving provenance and
+   prioritizing tests, signatures, interfaces, and human-pinned chunks.
 
-## APIs and data model
+If dense retrieval is unavailable, retrieval continues with BM25 and records an
+explicit degraded lexical-only state. Fixed-size chunks remain a later
+evaluation baseline, not the V1 code-RAG representation.
 
-Planned endpoints are listed in `docs/api.md`; none is implemented yet.
+## Evaluation
 
-Planned entities are `projects`, `chunks`, `fts_chunks`, a Chroma chunk collection, `runs`, `agent_events`, `approvals`, `patches`, `test_results`, and `benchmarks`. Approval records bind decisions to immutable payload or diff hashes.
+Retrieval evaluation uses frozen cases whose gold paths/symbols are scoring data
+only and never query input. Current pre-context metrics are relevant-file
+Hit@1/Hit@5, relevant-symbol Hit@5 where symbol labels exist, explicit file and
+symbol reciprocal rank, and per-case retrieval wall-clock latency. Context
+precision, context waste, and token counts begin only after M2C implements the
+context packer.
 
-## Security
+Later safety, repair, external, and system evaluation must freeze inputs and
+record environment, model, configuration, run count, method, failures, and
+limitations. Controlled toy cases prove harness behavior; they are not
+SWE-bench or public benchmark results.
 
-- Separate untrusted repository context from system instructions.
-- Normalize paths and reject traversal or edits outside the repository root and approved scope.
-- No arbitrary host shell; allowlisted test commands run only inside Docker.
-- Disable sandbox networking by default and enforce CPU, memory, process, token, iteration, and time limits.
-- Detect/redact likely secrets before prompts or trace persistence.
-- Dry-run patches and reject nonexistent or unapproved paths.
+## Security and human authority
 
-## Testing plan
+- Treat repository content, issue text, tool output, and model output as
+  untrusted data, not instructions.
+- Normalize paths and reject traversal or edits outside the repository root and
+  the first checkpoint's approved file set.
+- Allowlisted repository tests execute only in Docker, with networking disabled
+  by default and explicit time/resource/process limits.
+- A model proposes plans and patches but cannot approve, export, or merge them.
+- Bind checkpoint decisions to immutable reviewed payload/diff hashes.
+- Stop after the initial repair plus at most one critic-assisted retry.
+- Export a patch only after final human approval; never create or merge a PR.
+- Detect or redact likely secrets before prompts, traces, fixtures, or logs.
 
-- Unit: chunk extraction, path safety, RRF, context packing, patch parsing.
-- Integration: index a toy repo, retrieve an expected file/symbol, dry-run a patch.
-- Sandbox: known pass/fail, timeout, cleanup, resources, disabled network.
-- Approval: interrupt/resume persistence and immutable approved scope.
-- Regression/evaluation: known issues and SWE-bench artifact persistence.
-- Security: prompt injection, traversal, forbidden commands, redaction, hallucinated paths.
+## Canonical milestone sequence
 
-## Benchmark plan
+- M2A — Dense vector index + embedding pipeline — Complete
+- M2B — RRF + retrieval benchmark harness — Current
+- M2C — One-hop structure + context packer
+- M3 — Plan + approval state using LangGraph; selective LangChain
+- M4 — Scoped patch workspace
+- M5 — Docker test runner
+- M6 — Critic + one retry + final review
+- M7 — React review workspace
+- M8 — Retrieval + safety evaluation
+- M9 — External + system evaluation
+- M10 — Measured optimization + polish
 
-1. Compare fixed-size, AST, and AST-plus-graph retrieval using relevant-file hit@5, relevant-symbol hit@10, MRR, token use/waste, and graph-expansion gain.
-2. Compare feasible Gemma 4 tiers using patch success, tokens/sec, TTFT, p50/p95 latency, peak RAM/VRAM, average iterations, context tokens, and rollback/rejection rate.
-3. Develop on five SWE-bench Lite tasks, then target an explicit 20-50 task subset if feasible. Never imply full-leaderboard equivalence.
+## Explicit V1 non-goals
 
-Every result records hardware, dataset and size, model/quantization/backend/context, prompt version, software versions, run count, method, and limitations. All results remain `Not measured` until executed.
-
-## Proof artifacts
-
-- Reproducible README/setup path and architecture diagram.
-- Retrieval ablation and model benchmark reports.
-- Selected SWE-bench task list, results, logs, patches, and failures.
-- Trace archive containing state transitions, prompt hashes, chunk IDs, tool calls, approvals, diffs, and tests.
-- Demo from issue through approval, sandbox tests, and final diff.
-- Explicit limitations and failure analyses.
-
-## Non-goals
-
-- Perfect parsing for every language or generic document chat.
-- Paid-provider-only operation or arbitrary host execution.
-- Fully autonomous production merges or a full IDE.
-- Claims of commercial-tool or leaderboard parity without the same protocol.
+- Model-size benchmark matrix or vLLM.
+- Multi-language parsing.
+- A many-agent showcase or autonomous multi-agent swarm.
+- Five approval checkpoints.
+- Prometheus/Grafana/OpenTelemetry stack.
+- RAGAS.
+- Full IDE scope.
+- Autonomous PR creation or merge.
+- Rerankers, HyDE, or query rewriting without later benchmark evidence.
+- Cloud deployment as a completion requirement.
+- Unsupported full-leaderboard or commercial-tool comparison.

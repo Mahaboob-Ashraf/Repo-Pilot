@@ -1,0 +1,30 @@
+[
+  {
+    "case_id": "exact-apply-discount",
+    "query": "apply_discount",
+    "repository_ref": "fixtures/toy-repo",
+    "relevant_files": ["pricing.py"],
+    "relevant_symbols": ["apply_discount"]
+  },
+  {
+    "case_id": "semantic-price-reduction",
+    "query": "make the total cheaper by applying a percentage reduction",
+    "repository_ref": "fixtures/toy-repo",
+    "relevant_files": ["pricing.py"],
+    "relevant_symbols": ["apply_discount"]
+  },
+  {
+    "case_id": "lexical-zero-percent-test",
+    "query": "test_zero_percent_discount_keeps_price",
+    "repository_ref": "fixtures/toy-repo",
+    "relevant_files": ["tests/test_pricing.py"],
+    "relevant_symbols": ["test_zero_percent_discount_keeps_price"]
+  },
+  {
+    "case_id": "hybrid-twenty-percent-test",
+    "query": "test that checks twenty percent reduction",
+    "repository_ref": "fixtures/toy-repo",
+    "relevant_files": ["tests/test_pricing.py"],
+    "relevant_symbols": ["test_twenty_percent_discount_reduces_price"]
+  }
+]

@@ -1,6 +1,7 @@
 # RepoPilot
 
-**A local-first, human-in-the-loop coding agent built to understand repositories before changing them.**
+**A local-first, human-controlled coding agent for Python repositories, built
+to understand evidence before changing code.**
 
 RepoPilot is an experimental developer tool that takes a software repository and an issue, builds a structure-aware representation of the codebase, retrieves the most relevant code, and is being developed toward a bounded repair workflow with human approval before changes are exported.
 
@@ -12,13 +13,16 @@ The project is designed around a simple principle:
 
 RepoPilot is **actively under development**.
 
-The current implementation focuses on the foundation required before autonomous repair:
+The current implementation focuses on the retrieval/evaluation foundation
+required before the bounded repair workflow:
 
 * repository discovery and source-file ingestion;
 * Python structure-aware parsing;
-* function, class, method, module, test, and configuration code chunks;
+* function, class, method, and test code chunks;
 * source provenance including file paths and line ranges;
-* lexical code retrieval;
+* lexical BM25 and local-embedding Chroma retrieval;
+* deterministic Reciprocal Rank Fusion with explicit dense-failure degradation;
+* frozen-case BM25/dense/hybrid evaluation harness and pre-context metrics;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
@@ -56,13 +60,17 @@ Structure-Aware Parsing
 Semantic Code Chunks
     |
     v
-Lexical Retrieval
+BM25 + Dense Retrieval
+    |
+    v
+Reciprocal Rank Fusion
     |
     v
 Relevant Files / Symbols
 ```
 
-The current milestone concentrates on making this retrieval foundation reliable before adding broader agent autonomy.
+The current milestone concentrates on making this retrieval foundation
+measurable before adding one-hop evidence and the bounded repair workflow.
 
 ## Structure-Aware Code Indexing
 
@@ -73,9 +81,7 @@ The current Python parser extracts meaningful code structures such as:
 * functions;
 * classes;
 * methods;
-* module-level context;
 * tests;
-* configuration-related chunks.
 
 Chunks retain source metadata so retrieved evidence can be traced back to the repository location from which it originated.
 
@@ -83,27 +89,27 @@ This foundation is intended to make later planning and patch generation operate 
 
 ## Retrieval
 
-The implemented retrieval layer provides lexical search over indexed code.
+The implemented retrieval layer provides separate lexical and dense search over
+the same canonical chunks, followed by rank-only RRF.
 
-Repository chunks are searchable using BM25-style lexical relevance, allowing issue terms, identifiers, symbols, and implementation vocabulary to surface relevant portions of the codebase.
+Repository chunks are searchable using SQLite FTS5/BM25 for exact terms and
+identifiers and Chroma cosine retrieval with RepoPilot-supplied local
+embeddings for semantic evidence. RRF combines 1-based ranks without adding raw
+BM25 scores to cosine distances. If the embedding provider is unavailable,
+hybrid retrieval returns BM25 evidence with an explicit degraded status.
 
-The longer-term retrieval design will combine:
+The next retrieval milestone adds:
 
 ```text
-Lexical Retrieval
+Fused BM25 + Dense Ranking
         +
-Vector Retrieval
-        +
-Dependency Context
-        |
-        v
-Reciprocal Rank Fusion
+One-Hop Import / Parent-Child / Related-Test Evidence
         |
         v
 Bounded Context Pack
 ```
 
-Vector retrieval, fusion, and dependency expansion are part of the planned system and should not yet be considered complete.
+Structural expansion and context packing are not yet implemented.
 
 ## Local-First Inference
 
@@ -120,7 +126,8 @@ The repository currently includes automated coverage for:
 * Python parsing;
 * repository discovery;
 * repository-to-chunk pipeline behavior;
-* lexical retrieval.
+* lexical, dense, and hybrid retrieval;
+* frozen retrieval cases and pre-context evaluation metrics.
 
 As additional subsystems are implemented, the test surface will expand to cover agent state, approvals, patch safety, sandbox execution, and evaluation.
 
@@ -161,15 +168,14 @@ Human-Approved Patch Export
 
 Planned components include:
 
-* hybrid lexical + vector retrieval;
 * dependency-aware context expansion;
-* stateful agent orchestration;
+* one bounded LangGraph repair workflow with selective LangChain utilities;
 * bounded patch generation;
 * immutable human approval boundaries;
 * Docker-isolated repository testing;
 * structured execution traces;
 * retrieval benchmarks;
-* selected SWE-bench Lite evaluation;
+* feasible frozen external/system evaluation;
 * a React review interface.
 
 These are roadmap items rather than claims about the current implementation.
@@ -202,11 +208,11 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 | ------------------------ | ----------------- |
 | Backend                  | Python, FastAPI   |
 | Parsing                  | tree-sitter       |
-| Current retrieval        | Lexical / BM25    |
+| Current retrieval        | BM25 + Chroma + RRF |
 | Local inference          | Ollama            |
 | Dependency management    | uv                |
-| Planned vector retrieval | Chroma            |
-| Planned orchestration    | LangGraph         |
+| Evaluation harness       | Frozen BM25/dense/hybrid cases |
+| Planned orchestration    | LangGraph + selective LangChain |
 | Planned sandbox          | Docker            |
 | Planned frontend         | React, TypeScript |
 
@@ -220,27 +226,29 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Semantic code chunks with provenance
 * [x] Repository chunking pipeline
 * [x] Lexical code retrieval
+* [x] Local embedding and Chroma dense retrieval
+* [x] Reciprocal Rank Fusion and dense-failure fallback
+* [x] Frozen-case retrieval evaluation harness
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
 ### Next
 
-* [ ] Vector retrieval
-* [ ] Lexical + vector fusion
 * [ ] Dependency-aware context expansion
 * [ ] Context packing
-* [ ] Stateful repair planning
-* [ ] Human approval persistence
+* [ ] One bounded LangGraph repair workflow
+* [ ] Two-checkpoint human approval persistence
 * [ ] Scoped patch generation
 * [ ] Docker-isolated testing
-* [ ] Critic / bounded repair loop
-* [ ] Retrieval benchmark
-* [ ] Selected SWE-bench Lite evaluation
+* [ ] Optional critic / maximum-one-retry branch
+* [ ] Retrieval and safety evaluation
+* [ ] External and system evaluation
 * [ ] React review studio
 
 ## Project Direction
 
-RepoPilot is not intended to become another repository chatbot or an unrestricted autonomous coding bot.
+RepoPilot is not intended to become another repository chatbot, unrestricted
+autonomous coding bot, multi-agent swarm, or autonomous PR/merge service.
 
 The goal is a coding agent whose behavior can be inspected:
 

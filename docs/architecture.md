@@ -40,9 +40,10 @@ returns provisional repository/file records with resolved repository root,
 POSIX-relative source paths, detected language, parser-support status, byte
 size, and language counts. Discovery is globally sorted by relative path.
 
-Language detection is a centralized extension mapping for Python, JavaScript,
-and TypeScript. Only Python is currently parser-supported. Unsupported or
-non-source extensions are not inferred from content.
+Scoped V1 accepts Python repositories only. The current discovery inventory
+still recognizes JavaScript and TypeScript extensions as unsupported legacy
+metadata, but no V1 parser, retrieval, or repair support is planned for them.
+Unsupported or non-source extensions are not inferred from content.
 
 Discovery prunes `.git`, virtual environments, dependency/build outputs, and
 common tool caches. It does not implement `.gitignore`. Directory traversal
@@ -101,8 +102,8 @@ that could appear complete. Partial recovery is deferred until it has explicit
 representation and evaluation requirements.
 
 Git/URL/archive ingestion, module-header/configuration chunks, project-level
-persistence, dependency edges, vector retrieval, fusion, and reranking remain
-unimplemented.
+persistence, one-hop relationships, context packing, and reranking remain
+unimplemented. Dense retrieval and rank fusion are described below.
 
 ## Implemented M2 lexical retrieval foundation
 
@@ -196,53 +197,111 @@ and raw Chroma cosine distance. Smaller distance means closer. Chroma may
 return a tiny negative epsilon for an exact match because of floating-point
 precision; the raw value is preserved rather than mislabeled as similarity.
 Equal returned distances are secondarily ordered by chunk ID where practical.
-No BM25/vector fusion or RRF exists yet.
 
-## Planned later system boundary
+## Implemented M2B hybrid retrieval and evaluation foundation
+
+```text
+issue query
+    -> SQLiteLexicalIndex.search_lexical(candidate_k)
+    -> ChromaVectorIndex.search_vector(candidate_k)
+        -> 1-based lexical/vector ranks
+            -> score(d) = sum(1 / (k_rrf + rank(d)))
+                -> deterministic HybridSearchResult top_k
+```
+
+`backend/app/retrieval/hybrid.py` coordinates the existing retrievers without
+changing their score semantics. `candidate_k` controls how many items each
+modality supplies; `top_k` independently controls the fused output size. Both
+are positive integers and need not be equal. The conventional initial
+`k_rrf=60` baseline is configurable and is not a measured optimum.
+
+`HybridSearchResult` wraps the unchanged canonical `CodeChunk` with fused rank,
+RRF score, optional lexical/vector ranks, optional raw BM25/cosine values, and
+explicit source membership. RRF uses ranks only. Raw BM25 and cosine distance
+have incompatible scales and directions, so they remain diagnostic metadata
+and are never normalized or added. Equal fused scores break by `chunk_id`.
+
+`ChromaVectorIndex.search_vector()` translates expected embedding-provider and
+Chroma count/query failures into the narrow `VectorRetrievalError` boundary.
+The hybrid layer catches only that boundary and produces a
+`HybridSearchResponse` in explicit `lexical_only_degraded` mode with unchanged
+BM25 results and a useful reason. A successful dense call produces `hybrid`
+mode. This is a fallback, not a retry system; query validation and unexpected
+programming errors propagate normally.
+
+`backend/app/evaluation/` defines immutable JSON-friendly retrieval cases,
+variant adapters, per-case results, and aggregates. The harness accepts only
+the case query at the retriever boundary; gold file paths and optional symbols
+remain scoring data. Implemented variants are `ast_bm25`, `ast_dense`, and
+`ast_hybrid_rrf`. Later `fixed_bm25` and `hybrid_structure` variants have named
+extension points but are not implemented.
+
+Per-case metrics are relevant-file Hit@1, relevant-file Hit@5,
+relevant-symbol Hit@5 when symbol gold exists, file reciprocal rank, symbol
+reciprocal rank when symbol gold exists, wall-clock retrieval latency, ranked
+chunk provenance, and degradation status. Missing symbol gold yields `None`
+and is excluded from symbol aggregates. Aggregate p50/p95 latency uses the
+deterministic nearest-rank method only with at least five cases. The four
+controlled toy cases validate harness behavior only; they are not benchmark or
+SWE-bench results.
+
+## Scoped V1 planned system boundary
 
 ```text
 React Studio
     -> FastAPI API and event stream
-        -> persisted LangGraph run
-            -> tree-sitter semantic chunks (implemented)
-            -> SQLite FTS5 + Chroma (implemented separately) + dependency graph
-            -> Ollama (default) / vLLM adapter (optional)
-            -> approved Git workspace edits
-            -> Docker test sandbox
-        -> SQLite state, approvals, events, patches, tests, benchmarks
+        -> one persisted LangGraph repair workflow (M3+)
+            -> tree-sitter Python semantic chunks
+            -> SQLite FTS5 + Chroma + RRF
+            -> one-hop structure + bounded context pack
+            -> fixed local Ollama generation model
+            -> plan/file-scope human checkpoint
+            -> approved-file-only Git workspace edits
+            -> restricted Docker test sandbox
+            -> optional critic-assisted one retry
+            -> final human checkpoint and patch export
+        -> structured local state, approvals, traces, patches, and tests
 ```
 
-These later agent, hybrid fusion, dependency expansion, broader persistence,
-Git-editing, and sandbox components are not implemented.
+LangGraph will own shared state, stage transitions, the conditional test-failure
+branch, the hard maximum-one-retry control, pause/resume, and checkpoint
+persistence where needed. Selective LangChain use is limited to useful prompt,
+message, structured-output, and Runnable composition inside LLM-backed nodes.
+Neither framework replaces RepoPilot's custom retrieval stack, and neither is
+installed before M3.
+
+Structural expansion, context packing, orchestration, broader persistence,
+Git editing, Docker execution, critic retry, and final export are not yet
+implemented.
 
 ## End-to-end flow
 
-1. A user supplies a repository and issue.
-2. The backend creates a project/run and an isolated workspace.
-3. Ingestion detects languages and extracts AST-level chunks and dependency edges.
-4. Chunks enter the SQLite lexical index and Chroma vector collection.
-5. The planner proposes steps, risks, target areas, and a test strategy.
-6. The user approves, edits, or rejects the plan.
-7. Retrieval runs BM25 and vector search, fuses ranks, expands dependencies, and packs cited context.
-8. The user may pin/unpin context and approve the proposed edit scope.
-9. The patcher produces a structured edit/unified diff limited to existing approved paths.
-10. The patch applier dry-runs and applies the approved diff to the Git workspace.
-11. The test runner executes approved commands in Docker and captures results.
-12. On failure, the critic diagnoses the result and the loop may continue within hard limits.
-13. The user reviews the final diff and evidence before patch export.
+1. A user supplies a Python repository and issue.
+2. Tree-sitter builds cited AST-aware chunks.
+3. BM25 and dense retrieval run independently; RRF fuses their ranks.
+4. One-hop import/parent-child/related-test evidence is added and packed under a fixed token budget.
+5. The planner creates an evidence-grounded plan, risks, approved-file proposal, and test strategy.
+6. Human checkpoint one approves, edits, or rejects the plan and file scope.
+7. The patcher proposes and applies a dry-run-validated edit only to approved files.
+8. The test runner executes allowlisted commands in restricted Docker and captures evidence.
+9. On failure, an optional critic may guide one retry; there are at most two repair attempts total.
+10. Human checkpoint two reviews the final diff/test evidence and may approve patch export.
 
-## Agent nodes and failure behavior
+## One-workflow stages and failure behavior
+
+These are nodes/stages of one bounded LangGraph workflow, not independent
+autonomous agents or a multi-agent swarm.
 
 | Node | Output | Key failure behavior |
 |---|---|---|
-| Planner | Steps, target areas, risk, tests | Ask for clarification on underspecified issues |
-| Retriever | Ranked cited chunks | Widen query/fall back to lexical/graph neighbors |
+| Planner | Steps, approved-file proposal, risk, tests | Pause at checkpoint one; clarify underspecified issues |
+| Retriever | Ranked cited chunks + mode | Mark dense provider failure as lexical-only degraded |
 | Context packer | Token-budgeted context | Drop low-ranked context; preserve tests/signatures |
 | Patcher | Structured edit or diff | Reject hallucinated/unapproved paths |
 | Patch applier | Modified workspace | Dry-run first; do not partially apply invalid patches |
 | Test runner | Exit status, logs, duration | Timeout, capture evidence, clean up sandbox |
-| Critic | Diagnosis and next-edit hints | Stop on repetition or safety limit |
-| Human review | Immutable decision record | Persist decision and resume the same run |
+| Critic | Optional diagnosis and retry hints | Permit at most one retry, then stop |
+| Human checkpoints | Two immutable decision records | Persist decisions and resume the same run |
 
 ## Trust boundaries
 
@@ -250,11 +309,14 @@ Git-editing, and sandbox components are not implemented.
 - Model output is a proposal and cannot bypass validators or approvals.
 - Git edits stay under the normalized repository root and approved file set.
 - Repository commands execute only in the network-disabled sandbox by default.
-- Approval records bind the reviewer decision to a hash of exactly what was reviewed.
+- The first approval binds the plan and editable file set; the second binds the
+  final diff and export decision to exactly what was reviewed.
+- RepoPilot exports a patch only. It never autonomously creates or merges a PR.
 
 ## Proof obligations
 
-- Retrieval provenance and fixed-size-vs-AST ablation.
+- Retrieval provenance and frozen BM25/dense/RRF evaluation.
+- One-hop/context-pack evaluation only after M2C; fixed-size comparison later.
 - Approval interrupt/resume and approved-scope enforcement.
 - Patch dry-run, rollback behavior, and test isolation.
 - Reproducible traces and benchmark configuration.

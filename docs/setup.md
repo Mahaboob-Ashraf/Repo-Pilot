@@ -2,10 +2,12 @@
 
 ## Current status
 
-The M0 browser-to-local-inference product skeleton is implemented. It provides
-a React/Vite prompt screen, FastAPI health and inference endpoints, and a local
-Ollama provider. No agent, retrieval, ingestion, or sandbox functionality
-exists yet.
+The Scoped V1 foundation includes a React/Vite prompt screen, FastAPI health
+and inference endpoints, deterministic Python discovery/tree-sitter chunks,
+SQLite FTS5/BM25 retrieval, local-embedding Chroma retrieval, RRF hybrid
+fusion, and a frozen-case retrieval-evaluation harness. One-hop context,
+LangGraph orchestration, patching, Docker execution, critic retry, and review
+workflow are not yet implemented.
 
 ## Prerequisites
 
@@ -13,7 +15,9 @@ exists yet.
 - `uv`
 - Python 3.11+ (a compatible interpreter can be installed with `uv`)
 - Node.js and npm
-- Ollama running locally with `gemma4:e4b-it-qat` installed
+- Ollama running locally with `gemma4:e4b-it-qat` installed for generation
+- Ollama `embeddinggemma` installed only when running real embedding/hybrid
+  functional smokes; automated tests do not require it
 
 The default path is local and requires no API key or paid service.
 
@@ -54,6 +58,9 @@ not invoke `ollama run` as a subprocess.
 | `REPOPILOT_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama HTTP server |
 | `REPOPILOT_OLLAMA_MODEL` | `gemma4:e4b-it-qat` | Exact locally installed model tag |
 | `REPOPILOT_OLLAMA_TIMEOUT_SECONDS` | `120` | Per-request HTTP timeout |
+| `REPOPILOT_OLLAMA_EMBEDDING_BASE_URL` | `http://127.0.0.1:11434` | Separate embedding HTTP server |
+| `REPOPILOT_OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Local embedding model identity |
+| `REPOPILOT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS` | `60` | Per-embedding-request timeout |
 
 Example override for the current PowerShell session:
 
@@ -63,12 +70,19 @@ $env:REPOPILOT_OLLAMA_TIMEOUT_SECONDS = "180"
 
 ## Test
 
-Tests use a mocked Ollama HTTP transport and do not download or invoke a real
-model:
+Automated tests use mocked Ollama HTTP and deterministic fake embeddings. They
+do not download or invoke a real model:
 
 ```powershell
 Set-Location backend
 uv run --locked --offline pytest -q
+```
+
+Focused M2 retrieval/evaluation commands:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_lexical_retrieval.py tests/test_vector_retrieval.py tests/test_hybrid_retrieval.py
+uv run --locked --offline pytest -q tests/test_retrieval_evaluation.py
 ```
 
 ## Verified Windows commands
@@ -167,3 +181,18 @@ The failing test proves the intentional bug: a 20% discount on `100.0` returns
 `120.0` instead of `80.0`. The passing zero-percent test proves the fixture is
 not completely broken. This expected fixture failure is not a RepoPilot
 backend, frontend, or build failure.
+
+## Task 011 verification
+
+Verified on 2026-09-11 without downloading or invoking a model for automated
+tests:
+
+| Action | Command | Observed result |
+|---|---|---|
+| RRF/evaluation tests | `uv run --locked --offline pytest -q tests/test_hybrid_retrieval.py tests/test_retrieval_evaluation.py` | 33 passed after the dense-boundary fix |
+| Lexical/vector regressions | `uv run --locked --offline pytest -q tests/test_lexical_retrieval.py tests/test_vector_retrieval.py` | 26 passed after the dense-boundary fix |
+| Lexical/vector/M1 regressions | `uv run --locked --offline pytest -q tests/test_lexical_retrieval.py tests/test_vector_retrieval.py tests/test_python_parser.py tests/test_repository_discovery.py tests/test_code_chunks.py tests/test_repository_chunking_pipeline.py` | 59 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 115 passed after the dense-boundary fix; one known upstream `TestClient` deprecation warning |
+
+A separate real local `embeddinggemma` BM25/dense/RRF run was labeled a
+functional smoke, not a benchmark result.

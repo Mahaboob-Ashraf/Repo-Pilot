@@ -13,10 +13,12 @@ import chromadb
 from chromadb.api import ClientAPI
 from chromadb.api.models.Collection import Collection
 from chromadb.config import Settings as ChromaSettings
+from chromadb.errors import ChromaError
 
 from app.chunking import ChunkType, CodeChunk
 from app.providers.embeddings import (
     EmbeddingProvider,
+    EmbeddingProviderError,
     validate_embedding_batch,
 )
 
@@ -34,7 +36,11 @@ class DuplicateVectorChunkIdError(ValueError):
     """Raised when a vector rebuild receives duplicate canonical IDs."""
 
 
-class VectorCollectionError(RuntimeError):
+class VectorRetrievalError(RuntimeError):
+    """Expected dense-path failure that permits explicit lexical fallback."""
+
+
+class VectorCollectionError(VectorRetrievalError):
     """Raised when Chroma collection data/configuration is unusable."""
 
 
@@ -155,18 +161,35 @@ class ChromaVectorIndex:
             raise ValueError("k must be a positive integer")
 
         self._validate_collection_identity()
-        if self.count == 0:
+        try:
+            collection_count = self.count
+        except ChromaError as exc:
+            raise VectorRetrievalError(
+                f"Chroma vector count failed: {type(exc).__name__}: {exc}"
+            ) from exc
+        if collection_count == 0:
             return ()
 
-        query_embedding = validate_embedding_batch(
-            (await self._embedding_provider.embed_text(query),),
-            expected_count=1,
-        )[0]
-        raw_result = self._collection.query(
-            query_embeddings=[list(query_embedding)],
-            n_results=min(k, self.count),
-            include=["documents", "metadatas", "distances"],
-        )
+        try:
+            query_embedding = validate_embedding_batch(
+                (await self._embedding_provider.embed_text(query),),
+                expected_count=1,
+            )[0]
+        except EmbeddingProviderError as exc:
+            raise VectorRetrievalError(
+                f"Dense embedding failed: {type(exc).__name__}: {exc}"
+            ) from exc
+
+        try:
+            raw_result = self._collection.query(
+                query_embeddings=[list(query_embedding)],
+                n_results=min(k, collection_count),
+                include=["documents", "metadatas", "distances"],
+            )
+        except ChromaError as exc:
+            raise VectorRetrievalError(
+                f"Chroma vector query failed: {type(exc).__name__}: {exc}"
+            ) from exc
         hits = _read_query_hits(raw_result)
         ordered_hits = sorted(hits, key=lambda hit: (hit[2], hit[0]))
 

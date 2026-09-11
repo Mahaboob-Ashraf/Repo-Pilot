@@ -4,16 +4,22 @@ from pathlib import Path
 
 import chromadb
 from chromadb.config import Settings as ChromaSettings
+from chromadb.errors import InternalError
 import pytest
 
 from app.chunking import CodeChunk, build_repository_chunks
-from app.providers import EmbeddingBatch, EmbeddingVector
+from app.providers import (
+    EmbeddingBatch,
+    EmbeddingUnavailableError,
+    EmbeddingVector,
+)
 from app.providers.embeddings import validate_embedding_batch
 from app.retrieval import (
     ChromaVectorIndex,
     DuplicateVectorChunkIdError,
     EmbeddingModelMismatchError,
     VectorQueryError,
+    VectorRetrievalError,
     chunk_to_embedding_document,
 )
 
@@ -65,6 +71,17 @@ class EqualEmbeddingProvider(FakeSemanticEmbeddingProvider):
     @staticmethod
     def _vector(text: str) -> list[float]:
         return [1.0, 0.0, 0.0]
+
+
+class ToggleEmbeddingProvider(FakeSemanticEmbeddingProvider):
+    def __init__(self) -> None:
+        super().__init__()
+        self.available = True
+
+    async def embed_text(self, text: str) -> EmbeddingVector:
+        if not self.available:
+            raise EmbeddingUnavailableError("local embedding service unavailable")
+        return await super().embed_text(text)
 
 
 def _toy_chunks() -> tuple[CodeChunk, ...]:
@@ -237,3 +254,41 @@ def test_equal_distances_use_chunk_id_tie_breaking(tmp_path: Path) -> None:
         chunk.chunk_id for chunk in chunks
     )
     assert len({result.cosine_distance for result in results}) == 1
+
+
+def test_embedding_failure_surfaces_as_vector_retrieval_error(
+    tmp_path: Path,
+) -> None:
+    provider = ToggleEmbeddingProvider()
+    index = ChromaVectorIndex(provider, client=_client(tmp_path / "chroma"))
+    asyncio.run(index.rebuild(_toy_chunks()))
+    provider.available = False
+
+    with pytest.raises(VectorRetrievalError, match="Dense embedding failed") as exc:
+        asyncio.run(index.search_vector("discount"))
+
+    assert isinstance(exc.value.__cause__, EmbeddingUnavailableError)
+
+
+def test_chroma_query_failure_surfaces_as_vector_retrieval_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    index = ChromaVectorIndex(
+        FakeSemanticEmbeddingProvider(),
+        client=_client(tmp_path / "chroma"),
+    )
+    asyncio.run(index.rebuild(_toy_chunks()))
+
+    def fail_query(*args: object, **kwargs: object) -> object:
+        raise InternalError("storage unavailable")
+
+    monkeypatch.setattr(index._collection, "query", fail_query)
+
+    with pytest.raises(
+        VectorRetrievalError,
+        match="Chroma vector query failed: InternalError: storage unavailable",
+    ) as exc:
+        asyncio.run(index.search_vector("discount"))
+
+    assert isinstance(exc.value.__cause__, InternalError)
