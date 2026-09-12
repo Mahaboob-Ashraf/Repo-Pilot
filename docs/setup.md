@@ -5,9 +5,9 @@
 The Scoped V1 foundation includes a React/Vite prompt screen, FastAPI health
 and inference endpoints, deterministic Python discovery/tree-sitter chunks,
 SQLite FTS5/BM25 retrieval, local-embedding Chroma retrieval, RRF hybrid
-fusion, and a frozen-case retrieval-evaluation harness. One-hop context,
-LangGraph orchestration, patching, Docker execution, critic retry, and review
-workflow are not yet implemented.
+fusion, one-hop structural expansion, hard-budget ContextPacks, and frozen-case
+retrieval/context evaluation. LangGraph orchestration, patching, Docker
+execution, critic retry, and review workflow are not yet implemented.
 
 ## Prerequisites
 
@@ -83,6 +83,7 @@ Focused M2 retrieval/evaluation commands:
 ```powershell
 uv run --locked --offline pytest -q tests/test_lexical_retrieval.py tests/test_vector_retrieval.py tests/test_hybrid_retrieval.py
 uv run --locked --offline pytest -q tests/test_retrieval_evaluation.py
+uv run --locked --offline pytest -q tests/test_structural_context.py tests/test_context_packing.py tests/test_context_evaluation.py
 ```
 
 ## Verified Windows commands
@@ -196,3 +197,18 @@ tests:
 
 A separate real local `embeddinggemma` BM25/dense/RRF run was labeled a
 functional smoke, not a benchmark result.
+
+## Task 012 verification
+
+Verified on 2026-09-11 without invoking Ollama for automated tests:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Structural/context tests | `uv run --locked --offline pytest -q tests/test_structural_context.py tests/test_context_packing.py tests/test_context_evaluation.py` | 25 passed |
+| Structural/context + retrieval/M1 regressions | Focused Task 012, hybrid/evaluation, lexical/vector, parser/discovery/chunk/pipeline files | 118 passed, 1 skipped; existing Windows symlink-permission skip |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 139 passed, 1 skipped; existing Windows symlink-permission skip and known warnings |
+
+A separate real local smoke used Ollama 0.32.15, `embeddinggemma` (768
+dimensions), real Chroma cosine retrieval, BM25, RRF, one-hop related-test
+expansion, and a bounded ContextPack against the three-chunk toy repository.
+It was a functional smoke, not a benchmark result.

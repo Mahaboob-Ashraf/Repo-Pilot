@@ -32,6 +32,18 @@ from app.retrieval.vector import (
     VectorSearchResult,
     chunk_to_embedding_document,
 )
+from app.retrieval.structural import (
+    STRUCTURAL_RELATION_PRIORITY,
+    EvidenceOrigin,
+    ExpandedCandidate,
+    StructuralCause,
+    StructuralExpander,
+    StructuralExpansionResult,
+    StructuralIndex,
+    StructuralIndexError,
+    StructuralLink,
+    StructuralRelation,
+)
 
 __all__ = [
     "DEFAULT_CANDIDATE_K",
@@ -41,6 +53,8 @@ __all__ = [
     "DEFAULT_VECTOR_COLLECTION_NAME",
     "EMBEDDING_DOCUMENT_FORMAT",
     "EmbeddingModelMismatchError",
+    "EvidenceOrigin",
+    "ExpandedCandidate",
     "FTS5UnavailableError",
     "HybridProvenanceError",
     "HybridRetrievalMode",
@@ -50,6 +64,14 @@ __all__ = [
     "LexicalQueryError",
     "LexicalSearchResult",
     "SQLiteLexicalIndex",
+    "STRUCTURAL_RELATION_PRIORITY",
+    "StructuralCause",
+    "StructuralExpander",
+    "StructuralExpansionResult",
+    "StructuralIndex",
+    "StructuralIndexError",
+    "StructuralLink",
+    "StructuralRelation",
     "RetrievalSource",
     "ChromaVectorIndex",
     "VECTOR_DISTANCE_SPACE",

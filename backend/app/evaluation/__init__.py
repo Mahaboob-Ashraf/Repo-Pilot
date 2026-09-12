@@ -1,6 +1,17 @@
 """Frozen retrieval evaluation cases, adapters, metrics, and reports."""
 
 from app.evaluation.cases import RetrievalCase, load_retrieval_cases
+from app.evaluation.context import (
+    AggregateContextEvaluationResult,
+    ContextEvaluationHarness,
+    ContextEvaluationHit,
+    ContextEvaluationPipeline,
+    ContextEvaluationReport,
+    ContextEvaluationVariant,
+    PerCaseContextEvaluationResult,
+    aggregate_context_results,
+    score_context_pack,
+)
 from app.evaluation.harness import (
     MIN_CASES_FOR_LATENCY_PERCENTILES,
     AggregateEvaluationResult,
@@ -20,6 +31,12 @@ from app.evaluation.harness import (
 __all__ = [
     "MIN_CASES_FOR_LATENCY_PERCENTILES",
     "AggregateEvaluationResult",
+    "AggregateContextEvaluationResult",
+    "ContextEvaluationHarness",
+    "ContextEvaluationHit",
+    "ContextEvaluationPipeline",
+    "ContextEvaluationReport",
+    "ContextEvaluationVariant",
     "DenseEvaluationRetriever",
     "EvaluationHit",
     "EvaluationReport",
@@ -28,9 +45,12 @@ __all__ = [
     "HybridEvaluationRetriever",
     "LexicalEvaluationRetriever",
     "PerCaseEvaluationResult",
+    "PerCaseContextEvaluationResult",
     "RetrievalCase",
     "RetrievalEvaluationHarness",
     "aggregate_case_results",
+    "aggregate_context_results",
     "load_retrieval_cases",
     "score_case",
+    "score_context_pack",
 ]

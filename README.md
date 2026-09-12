@@ -22,7 +22,9 @@ required before the bounded repair workflow:
 * source provenance including file paths and line ranges;
 * lexical BM25 and local-embedding Chroma retrieval;
 * deterministic Reciprocal Rank Fusion with explicit dense-failure degradation;
-* frozen-case BM25/dense/hybrid evaluation harness and pre-context metrics;
+* deterministic one-hop parent/child, local-import, and related-test evidence;
+* immutable whole-chunk ContextPacks with hard estimated-token budgets;
+* frozen-case retrieval and post-pack context evaluation metrics;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
@@ -66,11 +68,14 @@ BM25 + Dense Retrieval
 Reciprocal Rank Fusion
     |
     v
-Relevant Files / Symbols
+One-Hop Structural Evidence
+    |
+    v
+Bounded ContextPack
 ```
 
-The current milestone concentrates on making this retrieval foundation
-measurable before adding one-hop evidence and the bounded repair workflow.
+The current foundation now produces bounded, cited repository evidence before
+the still-planned repair workflow.
 
 ## Structure-Aware Code Indexing
 
@@ -98,7 +103,7 @@ embeddings for semantic evidence. RRF combines 1-based ranks without adding raw
 BM25 scores to cosine distances. If the embedding provider is unavailable,
 hybrid retrieval returns BM25 evidence with an explicit degraded status.
 
-The next retrieval milestone adds:
+The implemented structural/context path adds:
 
 ```text
 Fused BM25 + Dense Ranking
@@ -109,7 +114,10 @@ One-Hop Import / Parent-Child / Related-Test Evidence
 Bounded Context Pack
 ```
 
-Structural expansion and context packing are not yet implemented.
+Expansion is exactly one hop and uses deterministic repository metadata. The
+packer includes only whole chunks, never silently exceeds its configured
+budget, and labels repository source as untrusted evidence rather than
+instructions.
 
 ## Local-First Inference
 
@@ -127,7 +135,8 @@ The repository currently includes automated coverage for:
 * repository discovery;
 * repository-to-chunk pipeline behavior;
 * lexical, dense, and hybrid retrieval;
-* frozen retrieval cases and pre-context evaluation metrics.
+* one-hop structural expansion and bounded context packing;
+* frozen retrieval cases and context evaluation metrics.
 
 As additional subsystems are implemented, the test surface will expand to cover agent state, approvals, patch safety, sandbox execution, and evaluation.
 
@@ -168,7 +177,6 @@ Human-Approved Patch Export
 
 Planned components include:
 
-* dependency-aware context expansion;
 * one bounded LangGraph repair workflow with selective LangChain utilities;
 * bounded patch generation;
 * immutable human approval boundaries;
@@ -209,6 +217,7 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 | Backend                  | Python, FastAPI   |
 | Parsing                  | tree-sitter       |
 | Current retrieval        | BM25 + Chroma + RRF |
+| Current context          | One-hop structural index + bounded ContextPack |
 | Local inference          | Ollama            |
 | Dependency management    | uv                |
 | Evaluation harness       | Frozen BM25/dense/hybrid cases |
@@ -229,13 +238,13 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Local embedding and Chroma dense retrieval
 * [x] Reciprocal Rank Fusion and dense-failure fallback
 * [x] Frozen-case retrieval evaluation harness
+* [x] One-hop structural expansion
+* [x] Whole-chunk bounded context packing and context metrics
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
 ### Next
 
-* [ ] Dependency-aware context expansion
-* [ ] Context packing
 * [ ] One bounded LangGraph repair workflow
 * [ ] Two-checkpoint human approval persistence
 * [ ] Scoped patch generation

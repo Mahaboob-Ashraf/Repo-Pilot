@@ -243,6 +243,55 @@ metrics, not retrieval quality. Dense-only evaluation still surfaces provider
 failures rather than silently falling back.
 
 **Testing/benchmark impact:** Unit tests use hand-calculated ranks and
-deterministic fake embeddings. Context precision, waste, and token metrics wait
-for M2C. Controlled fixture outputs are harness-validation evidence, not
-benchmark or SWE-bench results.
+deterministic fake embeddings. Context precision, waste, and token metrics were
+deferred to M2C. Controlled fixture outputs are harness-validation evidence,
+not benchmark or SWE-bench results.
+
+## ADR-010 - One-hop structural evidence and whole-chunk context budgets
+
+**Status:** Accepted
+
+**Decision:** Build a small in-memory `StructuralIndex` over canonical chunk
+IDs using only deterministic current metadata. Supported directed edges are
+method-to-parent class, class-to-direct-child method, exact matched local-module
+import, and directly-related test backed by a source-module import or exact
+source-symbol reference. Expansion traverses only the original hybrid results;
+newly added chunks are never seeds.
+
+Direct hybrid results remain first by rank. Structural-only candidates follow
+in `parent`, `related_test`, `imported_module`, then `child` priority, with
+stable seed/chunk-ID ties. Candidates are deduplicated, all structural causes
+are retained, and direct provenance wins when a chunk is both retrieved and
+reachable. Structural-only chunks receive no invented retrieval scores.
+
+The immutable `ContextPack` includes complete rendered evidence blocks under a
+hard configured budget and propagates retrieval degradation. The default
+replaceable counter uses UTF-8 byte length as conservative estimated units, not
+exact model tokens. Chunks are never split or silently truncated. Non-fitting
+lower-priority chunks are excluded; if the first chunk cannot fit, the pack
+returns `oversized_highest_priority` rather than substituting weaker evidence.
+Issue and repository source are rendered in explicit untrusted-data regions.
+
+**Why:** One deterministic hop supplies nearby code/tests that rank-only text
+retrieval may omit while keeping context growth explainable and bounded. A
+single immutable pack makes the future planner input auditable, and whole-chunk
+packing preserves exact source provenance.
+
+**Alternatives considered:** Recursive or transitive graph traversal; a graph
+database; semantic test linking; a full Python import resolver; score-based
+structural reranking; source truncation or secondary splitting; adding a large
+tokenizer dependency; allowing evaluation gold labels into expansion/packing.
+
+**Tradeoffs:** Exact import matching misses aliases, relative imports, and more
+complex package resolution. Related-test rules may add every test chunk in a
+module that explicitly imports the source module. UTF-8 byte estimates can
+under-utilize a model's real context window, and whole oversized chunks produce
+an explicit empty/error-status pack instead of partial code. These constraints
+favor safety and determinism over recall and density in the M2C baseline.
+
+**Testing/benchmark impact:** Offline fixtures prove each edge type, exactly
+one hop, deterministic ordering, deduplication, hard budgets, no truncation,
+degradation propagation, evidence delimiters, and post-pack gold isolation.
+Context coverage, file/symbol precision, token waste, and budget utilization
+are now valid harness metrics. Controlled fixture and toy smoke observations
+remain non-benchmark evidence.

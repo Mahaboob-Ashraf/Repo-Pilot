@@ -103,11 +103,11 @@ evaluation baseline, not the V1 code-RAG representation.
 ## Evaluation
 
 Retrieval evaluation uses frozen cases whose gold paths/symbols are scoring data
-only and never query input. Current pre-context metrics are relevant-file
-Hit@1/Hit@5, relevant-symbol Hit@5 where symbol labels exist, explicit file and
-symbol reciprocal rank, and per-case retrieval wall-clock latency. Context
-precision, context waste, and token counts begin only after M2C implements the
-context packer.
+only and never query input. Retrieval metrics are relevant-file Hit@1/Hit@5,
+relevant-symbol Hit@5 where symbol labels exist, explicit file and symbol
+reciprocal rank, and per-case retrieval wall-clock latency. M2C also measures
+file/symbol context coverage, file/symbol chunk precision and token waste, and
+budget utilization against completed ContextPacks.
 
 Later safety, repair, external, and system evaluation must freeze inputs and
 record environment, model, configuration, run count, method, failures, and
@@ -131,8 +131,8 @@ SWE-bench or public benchmark results.
 ## Canonical milestone sequence
 
 - M2A — Dense vector index + embedding pipeline — Complete
-- M2B — RRF + retrieval benchmark harness — Current
-- M2C — One-hop structure + context packer
+- M2B — RRF + retrieval benchmark harness — Complete
+- M2C — One-hop structure + context packer — Complete
 - M3 — Plan + approval state using LangGraph; selective LangChain
 - M4 — Scoped patch workspace
 - M5 — Docker test runner

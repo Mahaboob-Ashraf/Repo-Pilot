@@ -1,0 +1,9 @@
+[
+  {
+    "case_id": "checkout-structure",
+    "query": "checkout calculation",
+    "repository_ref": "backend/tests/fixtures/structure_repo",
+    "relevant_files": ["service.py", "tests/service_checks.py"],
+    "relevant_symbols": ["checkout", "test_checkout_uses_calculation"]
+  }
+]

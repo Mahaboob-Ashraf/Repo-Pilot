@@ -1,9 +1,9 @@
 # RepoPilot Evaluation Plan
 
 No project benchmark has run. Every public-quality or comparative result is
-currently **Not measured**. The controlled Task 011 cases validate code and
-metric behavior only; they are not benchmark, SWE-bench, or retrieval-quality
-claims.
+currently **Not measured**. The controlled Task 011 retrieval cases and Task
+012 structural/context cases validate code and metric behavior only; they are
+not benchmark, SWE-bench, or retrieval-quality claims.
 
 ## Evidence record required for every future measured run
 
@@ -43,7 +43,7 @@ only `query` and `top_k`, so labels cannot be added to the query being scored.
 | `ast_dense` | Tree-sitter `CodeChunk` + precomputed Chroma cosine vectors | Implemented |
 | `ast_hybrid_rrf` | Independent BM25/dense candidates fused by RRF | Implemented |
 | `fixed_bm25` | Fixed-size chunk baseline | Deferred; not implemented |
-| `hybrid_structure` | RRF followed by one-hop structural expansion | M2C; not implemented |
+| `hybrid_structure` | RRF, one-hop structure, then bounded ContextPack | Implemented for context evaluation |
 
 ### RRF baseline
 
@@ -127,11 +127,43 @@ deterministic fake. A real `embeddinggemma` smoke observed a 768-dimensional
 vector and successful three-chunk indexing/querying; that single toy run is
 functional smoke evidence, not a latency or retrieval benchmark.
 
-## Metrics deliberately deferred until M2C
+## Implemented M2C context evaluation
 
-Do not claim or calculate context precision, context waste, average context
-tokens, token-budget compliance, or structural-expansion gain before one-hop
-expansion and the fixed-budget context packer exist.
+M2C adds a separate `hybrid_structure` path: query-only hybrid retrieval,
+exactly one structural hop, fixed-budget packing, then evaluation against gold
+labels. The retriever, expander, and packer never receive gold files or
+symbols. Per-case context records preserve included chunk order, canonical
+provenance, origin, counted item cost, pack/degradation status, total cost,
+configured budget, and pipeline-boundary wall-clock latency.
+
+- **Relevant-file context coverage:** `1` when at least one included chunk path
+  matches any gold file; otherwise `0`.
+- **Relevant-symbol context coverage:** when symbol labels exist, `1` when an
+  included chunk symbol or qualified symbol matches; otherwise `0`. It is
+  `null` when symbol ground truth is absent.
+- **File context chunk precision:** included chunks whose paths match gold
+  files divided by all included chunks. An empty pack reports `null`.
+- **Symbol context chunk precision:** included chunks whose symbol or qualified
+  symbol matches symbol gold divided by all included chunks. It is `null` for
+  absent symbol labels or an empty pack.
+- **File context token waste:** counted evidence-item cost belonging to chunks
+  outside gold files divided by total included evidence-item cost. It is
+  `null` when the included item-cost denominator is zero.
+- **Symbol context token waste:** the corresponding nonmatching-symbol ratio;
+  it is also `null` without symbol labels or a nonzero denominator.
+- **Budget utilization:** complete rendered pack cost, including issue/evidence
+  framing, divided by the configured hard budget.
+
+Token waste is label-relative accounting, not a universal claim that
+nonmatching context is useless. Current production counts use the documented
+UTF-8-byte estimator and are estimated units, not exact Gemma tokens. Exact
+deterministic fake counters validate metric and budget math in automated tests.
+
+`backend/tests/fixtures/structure_repo/` and `structure_cases.json` validate
+parent/child, local-import, directly-related-test, third-party exclusion,
+one-hop, deduplication, budget exclusion, and gold-isolation behavior. These
+controlled fixtures and the canonical toy functional smoke are harness
+validation only. No aggregate result from them is a public benchmark claim.
 
 ## Later scoped evaluation
 

@@ -102,8 +102,8 @@ that could appear complete. Partial recovery is deferred until it has explicit
 representation and evaluation requirements.
 
 Git/URL/archive ingestion, module-header/configuration chunks, project-level
-persistence, one-hop relationships, context packing, and reranking remain
-unimplemented. Dense retrieval and rank fusion are described below.
+persistence, and reranking remain unimplemented. Dense retrieval, rank fusion,
+one-hop relationships, and context packing are described below.
 
 ## Implemented M2 lexical retrieval foundation
 
@@ -232,9 +232,9 @@ programming errors propagate normally.
 `backend/app/evaluation/` defines immutable JSON-friendly retrieval cases,
 variant adapters, per-case results, and aggregates. The harness accepts only
 the case query at the retriever boundary; gold file paths and optional symbols
-remain scoring data. Implemented variants are `ast_bm25`, `ast_dense`, and
-`ast_hybrid_rrf`. Later `fixed_bm25` and `hybrid_structure` variants have named
-extension points but are not implemented.
+remain scoring data. Implemented retrieval variants are `ast_bm25`,
+`ast_dense`, and `ast_hybrid_rrf`. Fixed-size chunk evaluation remains
+deferred; M2C adds a separate post-pack `hybrid_structure` context variant.
 
 Per-case metrics are relevant-file Hit@1, relevant-file Hit@5,
 relevant-symbol Hit@5 when symbol gold exists, file reciprocal rank, symbol
@@ -244,6 +244,68 @@ and is excluded from symbol aggregates. Aggregate p50/p95 latency uses the
 deterministic nearest-rank method only with at least five cases. The four
 controlled toy cases validate harness behavior only; they are not benchmark or
 SWE-bench results.
+
+## Implemented M2C one-hop structure and bounded context
+
+```text
+HybridSearchResponse
+    -> StructuralIndex over canonical chunk IDs
+        -> expand only original hybrid seeds by one hop
+            -> deterministic, deduplicated expanded candidates
+                -> ContextPacker whole-chunk budget enforcement
+                    -> immutable ContextPack
+```
+
+`backend/app/retrieval/structural.py` derives a small in-memory adjacency index
+from existing `CodeChunk` metadata; it is not a graph database. Supported
+directed relationships are method-to-parent class, class-to-direct-child
+methods, importing chunk-to-chunks in an exactly matched local module, and
+source chunk-to-directly-related test. A related test requires its module to
+import the source module or its exact source to reference the source symbol.
+Imports are resolved only when a normalized repository `.py` path maps
+unambiguously to the exact recorded import name. Standard-library and
+third-party imports therefore add nothing unless a same-named local module is
+actually present; this is deliberately not a full Python import resolver.
+
+Only original hybrid results are expansion seeds. Newly added chunks are never
+traversed, so a local import reached from a seed cannot lead to that module's
+own imports. Candidate order is all directly retrieved chunks by hybrid rank,
+then structural-only chunks by relation priority: `parent`, `related_test`,
+`imported_module`, `child`. Ties use seed rank, seed chunk ID, then target chunk
+ID. A chunk reached from multiple seeds appears once with all causes; if it was
+also directly retrieved, its direct origin and retrieval rank take precedence
+while structural causes remain inspectable. No BM25, cosine, or RRF values are
+invented for structural-only evidence.
+
+`backend/app/context_packing/` converts this expansion result into an immutable
+`ContextPack`. It records issue text, whole included canonical chunks and
+provenance, evidence origin and structural causes, source retrieval ranks,
+per-item counted cost, total/base cost, configured budget, exclusions, packing
+status, and propagated hybrid degradation state. Packing keeps all direct
+retrieval results ahead of structural-only additions and preserves the
+expander's deterministic order within each group. Duplicate IDs are removed
+defensively and direct provenance wins.
+
+`TokenCounter` is replaceable. The dependency-free production baseline counts
+UTF-8 bytes as deterministic conservative estimated units; it does not claim
+exact Gemma tokens. Tests inject an exact deterministic fake counter. The
+budget includes issue/evidence framing and each complete rendered evidence
+block. Source is never split or truncated: a non-fitting candidate is excluded,
+and when the highest-priority chunk cannot fit, the pack reports
+`oversized_highest_priority` with no lower-priority substitution. A future
+model-exact local tokenizer can replace the estimator without changing packing
+policy.
+
+Rendering labels issue text and repository source as untrusted data, delimits
+each verbatim source block, and keeps instructions outside repository evidence.
+This is the exact bounded evidence object M3 may place into a later prompt
+template; the planner will not receive the complete repository.
+
+Post-pack evaluation is a separate gold-aware scoring step. The
+`hybrid_structure` context variant records included order/provenance, pipeline
+latency, pack/degradation status, file/symbol coverage, explicit file/symbol
+chunk precision, explicit file/symbol token waste, and budget utilization.
+Gold labels never cross the retrieval/expansion/packing boundary.
 
 ## Scoped V1 planned system boundary
 
@@ -270,9 +332,8 @@ message, structured-output, and Runnable composition inside LLM-backed nodes.
 Neither framework replaces RepoPilot's custom retrieval stack, and neither is
 installed before M3.
 
-Structural expansion, context packing, orchestration, broader persistence,
-Git editing, Docker execution, critic retry, and final export are not yet
-implemented.
+Orchestration, broader persistence, Git editing, Docker execution, critic
+retry, and final export are not yet implemented.
 
 ## End-to-end flow
 
@@ -296,7 +357,7 @@ autonomous agents or a multi-agent swarm.
 |---|---|---|
 | Planner | Steps, approved-file proposal, risk, tests | Pause at checkpoint one; clarify underspecified issues |
 | Retriever | Ranked cited chunks + mode | Mark dense provider failure as lexical-only degraded |
-| Context packer | Token-budgeted context | Drop low-ranked context; preserve tests/signatures |
+| Context packer | Token-budgeted context | Exclude whole lower-priority chunks; report an oversized first chunk |
 | Patcher | Structured edit or diff | Reject hallucinated/unapproved paths |
 | Patch applier | Modified workspace | Dry-run first; do not partially apply invalid patches |
 | Test runner | Exit status, logs, duration | Timeout, capture evidence, clean up sandbox |
@@ -316,7 +377,8 @@ autonomous agents or a multi-agent swarm.
 ## Proof obligations
 
 - Retrieval provenance and frozen BM25/dense/RRF evaluation.
-- One-hop/context-pack evaluation only after M2C; fixed-size comparison later.
+- One-hop/context-pack validation is implemented; meaningful comparative and
+  fixed-size evaluation remains later work.
 - Approval interrupt/resume and approved-scope enforcement.
 - Patch dry-run, rollback behavior, and test isolation.
 - Reproducible traces and benchmark configuration.
