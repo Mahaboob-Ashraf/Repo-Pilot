@@ -134,3 +134,37 @@ def test_provider_failure_retains_only_safe_bounded_diagnostics(tmp_path) -> Non
         )
     assert raised.value.provider_error_message == "Inference provider is unavailable"
     assert "must-not-leak" not in str(raised.value)
+
+
+def test_retry_prompt_keeps_original_authority_and_bounded_failure_context(
+    tmp_path,
+) -> None:
+    repository = copy_toy_repository(tmp_path)
+    pack, plan, proposal = patch_inputs(repository)
+    context = PlanningContextSnapshot.from_context_pack(pack)
+    provider = FakeInferenceProvider(proposal.model_dump_json())
+    patcher = StructuredPatcher(provider)
+    retry_context = {
+        "previous_patch_hash": "a" * 64,
+        "previous_unified_diff": "--- a/pricing.py\n+++ b/pricing.py\n",
+        "previous_test_result": {"status": "failed", "stdout": "bounded"},
+        "critic_assessment": {"retry_recommended": True},
+    }
+
+    parsed = asyncio.run(
+        patcher.create_retry_patch(
+            context=context,
+            approved_plan=plan,
+            approved_plan_hash=repair_plan_hash(plan),
+            approved_files=plan.proposed_files,
+            retry_context=retry_context,
+        )
+    )
+
+    prompt = provider.prompts[0].lower()
+    assert parsed == proposal
+    assert "same clean approved baseline" in prompt
+    assert "final permitted patch attempt" in prompt
+    assert "human approval is the sole authority" in prompt
+    assert "untrusted bounded data" in prompt
+    assert "a" * 64 in prompt

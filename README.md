@@ -34,13 +34,16 @@ the first bounded planning/approval segment:
 * patch-hash-bound pytest execution through a restricted Docker runner;
 * disposable test snapshots that preserve the durable M4 review workspace;
 * bounded structured test evidence with distinct test/infrastructure outcomes;
+* a structured evidence-grounded critic after genuine attempt-one failures only;
+* a deterministic maximum of two clean-baseline patch attempts;
+* a second durable human interrupt bound to exact passing patch/test evidence;
+* idempotent export of the exact canonical diff after final approval only;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
 
-Planning, the first approval checkpoint, isolated approved-scope patching, and
-the Docker test-runner boundary are implemented. Critique/retry, final
-approval, and export are **not yet complete**. A real M5 Docker smoke remains
+The core bounded workflow through critique/retry, final approval, and patch
+export is implemented. A real M5/M6 Docker smoke remains
 blocked until the already-installed Docker daemon and a suitable local image
 are available; RepoPilot does not pull images automatically.
 
@@ -106,17 +109,17 @@ Human Approval Interrupt
     |       v
     |   Restricted Docker Pytest
     |       |
-    |       +--> `tests_passed`
-    |       +--> `tests_failed`
+    |       +--> `tests_passed` --> Final Hash-Bound Approval --> Patch Export
+    |       +--> `tests_failed` --> Grounded Critic --> One Clean Retry Maximum
     |       +--> `test_infrastructure_failed`
     |
     +--> Rejected / terminal
 ```
 
-The current foundation produces bounded, cited repository evidence, a validated
-structured plan, a durable first approval checkpoint, a reviewable isolated
-patch, and patch-bound structured test evidence without mounting or executing
-the canonical repository.
+The current foundation produces bounded cited evidence, a validated plan, two
+durable human checkpoints, approved-scope isolated patches, patch-bound test
+evidence, one optional clean-baseline retry, and exact patch export without
+mounting, executing, or modifying the canonical repository.
 
 ## Structure-Aware Code Indexing
 
@@ -184,6 +187,8 @@ The repository currently includes automated coverage for:
   exact matching, rollback, diff/hash identity, and replay isolation.
 * Docker argv construction, selector validation, sandbox restrictions,
   disposable snapshots, bounded output, exit classification, and M5 routing.
+* critic parsing/grounding, two-attempt enforcement, clean retry workspaces,
+  final hash-bound pause/resume, exact export, and replay isolation.
 
 Automated sandbox tests use deterministic process/runner fakes and do not
 require a Docker daemon. Optional real Docker integration remains a separately
@@ -224,8 +229,8 @@ Critique / Bounded Retry
 Human-Approved Patch Export
 ```
 
-The implemented path now includes one bounded LangGraph workflow through
-restricted patch-bound test evidence. Remaining planned components include:
+The implemented path now includes the core bounded LangGraph workflow through
+final human-approved patch export. Remaining planned components include:
 
 * structured execution traces;
 * retrieval benchmarks;
@@ -298,8 +303,8 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 
 ### Next
 
-* [ ] Optional critic / maximum-one-retry branch
-* [ ] Second/final approval and patch export
+* [x] Optional critic / maximum-one-retry branch
+* [x] Second/final approval and patch export
 * [ ] Retrieval and safety evaluation
 * [ ] External and system evaluation
 * [ ] React review studio

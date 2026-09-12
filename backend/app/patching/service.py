@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 import difflib
 from hashlib import sha256
 from pathlib import Path
+from typing import Any
 
 from app.patching.errors import (
     PatchApplicationError,
@@ -70,9 +71,16 @@ class ApprovedPatchService:
         approved_plan_hash: str,
         approved_files: tuple[str, ...],
         context: PlanningContextSnapshot,
+        attempt_number: int = 1,
+        retry_context: Mapping[str, Any] | None = None,
     ) -> PatchArtifact:
+        if attempt_number not in {1, 2}:
+            raise PatchScopeError("patch attempt number must be one or two")
+        if (attempt_number == 2) != (retry_context is not None):
+            raise PatchScopeError("retry patch context must exist only for attempt two")
         _validate_authority(
             workflow_status=workflow_status,
+            attempt_number=attempt_number,
             approval_plan_hash=approval_plan_hash,
             approved_plan=approved_plan,
             approved_plan_hash=approved_plan_hash,
@@ -88,6 +96,7 @@ class ApprovedPatchService:
         workspace_id = self._workspaces.workspace_id_for(
             thread_id=thread_id,
             approved_plan_hash=approved_plan_hash,
+            attempt_number=attempt_number,
         )
         snapshot = self._workspaces.prepare(workspace_id)
         existing = self._workspaces.load_patch_artifact(
@@ -102,12 +111,21 @@ class ApprovedPatchService:
             context=context,
             approved_files=approved_files,
         )
-        proposal = await self._patcher.create_patch(
-            context=context,
-            approved_plan=approved_plan,
-            approved_plan_hash=approved_plan_hash,
-            approved_files=approved_files,
-        )
+        if attempt_number == 1:
+            proposal = await self._patcher.create_patch(
+                context=context,
+                approved_plan=approved_plan,
+                approved_plan_hash=approved_plan_hash,
+                approved_files=approved_files,
+            )
+        else:
+            proposal = await self._patcher.create_retry_patch(
+                context=context,
+                approved_plan=approved_plan,
+                approved_plan_hash=approved_plan_hash,
+                approved_files=approved_files,
+                retry_context=retry_context or {},
+            )
 
         # Close the approval-to-application race against both source and snapshot.
         _validate_evidence_freshness(
@@ -180,13 +198,15 @@ class ApprovedPatchService:
 def _validate_authority(
     *,
     workflow_status: str,
+    attempt_number: int,
     approval_plan_hash: str,
     approved_plan: RepairPlan,
     approved_plan_hash: str,
     approved_files: tuple[str, ...],
     context: PlanningContextSnapshot,
 ) -> None:
-    if workflow_status != "approved_for_patch":
+    expected_status = "approved_for_patch" if attempt_number == 1 else "critic_complete"
+    if workflow_status != expected_status:
         raise PatchScopeError("workflow status does not authorize patching")
     if approval_plan_hash != approved_plan_hash:
         raise PatchScopeError("approval hash does not match the planned patch")

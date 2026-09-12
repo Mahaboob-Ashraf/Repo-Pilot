@@ -11,7 +11,11 @@ from app.patching.errors import (
     StaleApprovalError,
     WorkspaceError,
 )
-from app.patching.patcher import PATCHER_PROMPT_TEMPLATE, StructuredPatcher
+from app.patching.patcher import (
+    PATCHER_PROMPT_TEMPLATE,
+    RETRY_PATCHER_PROMPT_TEMPLATE,
+    StructuredPatcher,
+)
 from app.patching.schemas import PatchArtifact, PatchEdit, PatchProposal
 from app.patching.service import (
     ApprovedPatchService,
@@ -27,6 +31,7 @@ from app.patching.workspace import (
 __all__ = [
     "ApprovedPatchService",
     "PATCHER_PROMPT_TEMPLATE",
+    "RETRY_PATCHER_PROMPT_TEMPLATE",
     "PatchApplicationError",
     "PatchArtifact",
     "PatchConflictError",

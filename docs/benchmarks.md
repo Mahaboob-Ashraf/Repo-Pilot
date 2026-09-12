@@ -225,6 +225,28 @@ preflight evidence and a functional-smoke blocker, not a benchmark result.
 
 ## Later scoped evaluation
 
+## M6 bounded-workflow functional evidence
+
+M6 automated tests use deterministic fake inference providers and fake test
+runners. They validate strict critic parsing/grounding, eligible-failure-only
+routing, a hard two-attempt maximum, clean-baseline retry workspaces, final
+hash/test-bound interrupt persistence, exact export, and replay isolation. They
+do not measure critic quality, repair success rate, generation latency, Docker
+runtime, throughput, or production reliability.
+
+On 2026-09-12 the focused M6 set passed 32/32 and the complete backend suite
+passed 266/266. Those counts are regression evidence only, not benchmark
+results.
+
+The optional real critic generation was not run: the automated acceptance path
+was complete, while CPU-only `gemma4:e4b-it-qat` calls previously required
+minutes and the task explicitly allowed skipping a materially delaying smoke.
+A complete real M6 end-to-end smoke remains blocked by the unavailable local
+Docker daemon/image prerequisite recorded under M5. This is a functional-smoke
+blocker, not benchmark evidence.
+
+## Later scoped evaluation
+
 M8 will freeze a meaningful retrieval and safety case set before reporting
 comparative metrics. M9 will evaluate a feasible frozen external task set and
 complete-system behavior under the same two-checkpoint, two-attempt workflow.

@@ -13,6 +13,13 @@ from langgraph.types import Command
 from pydantic import ValidationError
 
 from app.context_packing import ContextPack
+from app.critic import CriticAssessment, CriticService
+from app.exporting import (
+    FinalReviewDecision,
+    FinalReviewPayload,
+    PatchExportArtifact,
+    PatchExporter,
+)
 from app.patching import ApprovedPatchService, PatchArtifact
 from app.planning import PlanningContextSnapshot, RepairPlan, StructuredPlanner
 from app.sandbox import ApprovedPatchTestService, TestRunRequest, TestRunResult
@@ -21,6 +28,7 @@ from app.workflow.models import (
     ApprovalDecision,
     ApprovalDecisionError,
     ApprovalPayload,
+    AttemptSummary,
     PlanReviewResult,
     PlanReviewState,
     WorkflowErrorRecord,
@@ -43,6 +51,8 @@ class PlanReviewService:
         patch_service: ApprovedPatchService | None = None,
         test_service: ApprovedPatchTestService | None = None,
         test_request: TestRunRequest | None = None,
+        critic_service: CriticService | None = None,
+        patch_exporter: PatchExporter | None = None,
     ) -> None:
         self._graph = build_plan_review_graph(
             planner,
@@ -50,6 +60,8 @@ class PlanReviewService:
             patch_service,
             test_service,
             test_request,
+            critic_service,
+            patch_exporter,
         )
 
     async def start_plan_review(
@@ -93,8 +105,68 @@ class PlanReviewService:
             "test_selectors": None,
             "test_result": None,
             "test_error": None,
+            "attempt_number": 1,
+            "attempts": [],
+            "retry_consumed": False,
+            "critic_assessment_id": None,
+            "critic_assessment": None,
+            "critic_error": None,
+            "final_candidate_patch_hash": None,
+            "final_candidate_test_run_id": None,
+            "final_approval_decision": None,
+            "final_reviewer_comment": None,
+            "final_approved_patch_hash": None,
+            "export_status": None,
+            "export_artifact": None,
+            "export_error": None,
         }
         output = await self._graph.ainvoke(initial_state, config=config)
+        return _result_from_output(thread_id, output)
+
+    async def resume_final_review(
+        self,
+        *,
+        thread_id: str,
+        decision: FinalReviewDecision | Mapping[str, object],
+    ) -> PlanReviewResult:
+        """Resume only the second, exact-patch-hash-bound human checkpoint."""
+
+        thread_id = _validate_thread_id(thread_id)
+        config = _config(thread_id)
+        snapshot = await self._graph.aget_state(config)
+        state = snapshot.values
+        if not state:
+            return _validation_failure(
+                thread_id, {}, ApprovalDecisionError(
+                    "thread_id has no checkpointed final review to resume"
+                )
+            )
+        if (
+            state.get("status") != WorkflowStatus.AWAITING_FINAL_APPROVAL.value
+            or "final_review" not in snapshot.next
+        ):
+            return _validation_failure(
+                thread_id, state, ApprovalDecisionError(
+                    "thread_id is not waiting at the final approval checkpoint"
+                )
+            )
+        try:
+            parsed = FinalReviewDecision.model_validate(decision)
+        except ValidationError:
+            return _validation_failure(
+                thread_id, state, ApprovalDecisionError(
+                    "invalid final review decision object"
+                )
+            )
+        if parsed.patch_hash != state.get("final_candidate_patch_hash"):
+            return _validation_failure(
+                thread_id, state, ApprovalDecisionError(
+                    "final approval patch hash does not match the tested candidate"
+                )
+            )
+        output = await self._graph.ainvoke(
+            Command(resume=parsed.model_dump(mode="json")), config=config
+        )
         return _result_from_output(thread_id, output)
 
     async def resume_plan_review(
@@ -158,6 +230,8 @@ async def open_sqlite_plan_review_service(
     patch_service: ApprovedPatchService | None = None,
     test_service: ApprovedPatchTestService | None = None,
     test_request: TestRunRequest | None = None,
+    critic_service: CriticService | None = None,
+    patch_exporter: PatchExporter | None = None,
 ) -> AsyncIterator[PlanReviewService]:
     """Open a durable local service; checkpoint DBs must live outside source."""
 
@@ -182,6 +256,8 @@ async def open_sqlite_plan_review_service(
             patch_service,
             test_service,
             test_request,
+            critic_service,
+            patch_exporter,
         )
 
 
@@ -214,16 +290,24 @@ def _result_from_output(
         else None
     )
     interrupt_payload = None
+    final_interrupt_payload = None
     interrupts = state.get("__interrupt__", ())
     if interrupts:
-        interrupt_payload = ApprovalPayload.model_validate(interrupts[0].value)
+        if status is WorkflowStatus.AWAITING_FINAL_APPROVAL:
+            final_interrupt_payload = FinalReviewPayload.model_validate(
+                interrupts[0].value
+            )
+        else:
+            interrupt_payload = ApprovalPayload.model_validate(interrupts[0].value)
     decision = (
         ApprovalDecision.model_validate(state["approval_decision"])
         if isinstance(state.get("approval_decision"), dict)
         else None
     )
     raw_error = (
-        state.get("test_error")
+        state.get("export_error")
+        or state.get("critic_error")
+        or state.get("test_error")
         or state.get("patch_error")
         or state.get("planner_error")
     )
@@ -239,6 +323,21 @@ def _result_from_output(
         if isinstance(state.get("test_result"), dict)
         else None
     )
+    critic = (
+        CriticAssessment.model_validate(state["critic_assessment"])
+        if isinstance(state.get("critic_assessment"), dict)
+        else None
+    )
+    final_decision = (
+        FinalReviewDecision.model_validate(state["final_approval_decision"])
+        if isinstance(state.get("final_approval_decision"), dict)
+        else None
+    )
+    export = (
+        PatchExportArtifact.model_validate(state["export_artifact"])
+        if isinstance(state.get("export_artifact"), dict)
+        else None
+    )
     return PlanReviewResult(
         thread_id=thread_id,
         status=status,
@@ -250,6 +349,15 @@ def _result_from_output(
         reviewer_comment=state.get("reviewer_comment"),
         patch=patch,
         test=test,
+        attempt_number=state.get("attempt_number", 1),
+        attempts=tuple(
+            AttemptSummary.model_validate(item) for item in state.get("attempts", [])
+        ),
+        critic_assessment=critic,
+        final_approval_payload=final_interrupt_payload,
+        final_approval_decision=final_decision,
+        final_candidate_patch_hash=state.get("final_candidate_patch_hash"),
+        export=export,
         error=error,
     )
 
@@ -265,8 +373,13 @@ def _validation_failure(
         else None
     )
     payload = None
+    final_payload = None
     if state.get("status") == WorkflowStatus.AWAITING_APPROVAL.value:
         payload = build_approval_payload(dict(state))
+    elif state.get("status") == WorkflowStatus.AWAITING_FINAL_APPROVAL.value:
+        from app.workflow.models import build_final_review_payload
+
+        final_payload = build_final_review_payload(dict(state))
     return PlanReviewResult(
         thread_id=thread_id,
         status=WorkflowStatus.VALIDATION_FAILED,
@@ -277,6 +390,27 @@ def _validation_failure(
         test=(
             TestRunResult.model_validate(state["test_result"])
             if isinstance(state.get("test_result"), dict)
+            else None
+        ),
+        attempt_number=state.get("attempt_number", 1),
+        attempts=tuple(
+            AttemptSummary.model_validate(item) for item in state.get("attempts", [])
+        ),
+        critic_assessment=(
+            CriticAssessment.model_validate(state["critic_assessment"])
+            if isinstance(state.get("critic_assessment"), dict)
+            else None
+        ),
+        final_approval_payload=final_payload,
+        final_approval_decision=(
+            FinalReviewDecision.model_validate(state["final_approval_decision"])
+            if isinstance(state.get("final_approval_decision"), dict)
+            else None
+        ),
+        final_candidate_patch_hash=state.get("final_candidate_patch_hash"),
+        export=(
+            PatchExportArtifact.model_validate(state["export_artifact"])
+            if isinstance(state.get("export_artifact"), dict)
             else None
         ),
         error=WorkflowErrorRecord(

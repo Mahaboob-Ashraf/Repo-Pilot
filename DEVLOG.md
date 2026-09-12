@@ -154,6 +154,43 @@ final approval, export a patch, or create a PR.
 
 None queued. The user explicitly requested no public post.
 
+## 2026-09-12 - Bounded repair loop completed without autonomous authority
+
+### What we were trying to do
+
+Complete the core workflow after M5 while preserving the first approved file
+scope, exact patch/test identity, and a strict maximum of two patch attempts.
+
+### Final solution
+
+RepoPilot now parses a strict evidence-grounded critic assessment only after a
+genuine attempt-one assertion failure. A deterministic acyclic controller may
+launch one retry in a fresh workspace copied from the original approved
+baseline. The first passing candidate pauses at a second real LangGraph human
+interrupt. Exact hash approval re-verifies the workspace and successful test
+evidence, then exports the existing canonical diff outside the repository.
+Rejection, stale hashes, tampering, infrastructure errors, malformed critic
+output, and second-attempt failure all terminate without further generation or
+export.
+
+### How it was verified
+
+Offline deterministic tests exercise critic security and parsing, clean retry
+identity, the two-attempt ceiling, pass/failure routing, durable final checkpoint
+restart, export bytes/hash/conflicts, stale workspace rejection, JSON state,
+replay, and thread isolation. The focused set passed 32/32 and the complete
+backend suite passed 266/266; neither required Docker nor Ollama.
+
+### Remaining limitations
+
+The React review workspace is not connected. The fixed Docker image and daemon
+must already exist for real tests, dependency provisioning remains out of
+scope, and RepoPilot exports a patch only—never apply/commit/push/merge/PR.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.
+
 ## 2026-09-12 - Exact patch identity crossed a restricted Docker boundary
 
 ### What we were trying to do

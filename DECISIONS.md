@@ -457,3 +457,54 @@ snapshot cleanup, workspace preservation, integrity rejection, bounded logs,
 durable replay, JSON state, and graph routing without requiring Docker. A real
 smoke is optional and may run only with an already-running daemon and suitable
 already-local image.
+
+## ADR-014 - Advisory grounded critic, acyclic two-attempt control, and exact export
+
+**Status:** Accepted
+
+**Decision:** M6 keeps criticism inside the same bounded LangGraph workflow but
+gives it no tools or authority. A strict `CriticAssessment` may diagnose one
+genuine attempt-one pytest assertion failure and recommend bounded actions only
+for the first human-approved files. Citations must belong to the approved
+ContextPack; requests for shell, network, environment, or new file authority
+fail closed. LangChain is limited to prompt templating and structured parsing
+through the existing `InferenceProvider`.
+
+The graph is acyclic and has distinct initial and retry patch/test nodes.
+`MAX_PATCH_ATTEMPTS = 2` is deterministic application policy. Attempt two, when
+recommended, receives the unchanged plan/hash/scope/evidence and bounded prior
+diff/test/critic data, but starts from a separate snapshot of the same approved
+canonical baseline. Passing tests immediately stop generation. Infrastructure,
+timeout, malformed-command, critic, patch, or second-test failures never trigger
+another model retry.
+
+A second real LangGraph interrupt is reached only for a passing candidate. The
+decision must repeat the exact patch hash and remains bound to the original plan
+hash, workspace artifact, and successful `TestRunResult`. Rejection exports
+nothing. Approval re-verifies those identities and writes only RepoPilot's
+existing canonical diff to an external `<patch_hash>.patch`; it never applies
+the patch or invokes Git. Identical export replay reuses exact bytes and a
+conflict is never overwritten.
+
+**Why:** Advisory diagnosis can improve one failed attempt without allowing the
+model to enlarge human authority or form an autonomous loop. Clean-baseline
+retry makes each candidate independently reviewable. Exact patch/test binding
+makes the second approval meaningful, and export-only completion preserves the
+no-commit/no-PR boundary.
+
+**Alternatives considered:** Critic-authored code; dynamic file scope; retrying
+infrastructure failures; applying attempt two over attempt one; a cyclic graph
+with a counter guard; more than two attempts; model-generated export diffs;
+overwriting conflicting artifacts; automatic apply/commit/push/PR creation.
+
+**Tradeoffs:** The conservative critic action filter can reject useful advice
+that mentions operational changes. V1 exports only a unified diff and does not
+package dependencies or execute a real end-to-end smoke without the already
+available Docker runtime/image. Attempt workspaces and durable evidence consume
+local disk until a later lifecycle policy is added.
+
+**Testing/benchmark impact:** Offline fake-provider/runner tests cover critic
+parsing and grounding, pass/infra routing, clean retry workspaces, the exact
+two-attempt ceiling, second interrupt durability, stale hash/workspace rejection,
+export identity/conflicts, replay, and thread isolation. These are functional
+safety tests, not repair-quality or performance benchmarks.

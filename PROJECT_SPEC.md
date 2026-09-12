@@ -139,7 +139,7 @@ SWE-bench or public benchmark results.
 - M3 — Plan + approval state using LangGraph; selective LangChain — Complete
 - M4 — Scoped patch workspace — Complete
 - M5 — Docker test runner — Complete
-- M6 — Critic + one retry + final review
+- M6 — Critic + one retry + final review — Complete
 - M7 — React review workspace
 - M8 — Retrieval + safety evaluation
 - M9 — External + system evaluation

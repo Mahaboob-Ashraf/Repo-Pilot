@@ -12,8 +12,9 @@ durable local SQLite checkpointing. M4 adds strict approved-scope patch
 proposals, durable isolated workspaces, transactional exact replacements, and
 RepoPilot-generated unified diffs/hashes. M5 adds patch-bound, restricted
 Docker pytest through disposable execution snapshots and bounded structured
-results. Critic retry, the second approval, and the frontend review workflow
-are not yet implemented.
+results. M6 adds the bounded critic, one clean-baseline retry maximum, the
+second hash-bound approval, and exact patch export. The frontend review
+workflow is not yet implemented.
 
 ## Prerequisites
 
@@ -116,6 +117,12 @@ Focused M5 sandbox/workflow command:
 uv run --locked --offline pytest -q tests/test_docker_test_runner.py tests/test_test_execution_service.py tests/test_test_workflow.py
 ```
 
+Focused M6 critic/retry/final/export command:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_critic.py tests/test_patcher.py tests/test_patch_export.py tests/test_m6_workflow.py
+```
+
 ## M3 checkpoint persistence
 
 `PlanReviewService.start_plan_review(...)` accepts a prepared `ContextPack`
@@ -202,6 +209,30 @@ docker image ls --no-trunc
 Do not pull/build an image or change Docker installation/configuration as part
 of a repair run. Missing daemon/image state is reported as infrastructure
 failure and requires a separate explicitly approved setup action.
+
+## M6 critic, final review, and export configuration
+
+Construct `StructuredCritic` with the existing `InferenceProvider`, then wrap
+it in `CriticService` with a caller-configured absolute durable
+`CriticAssessmentStore` directory. Construct `PatchExporter` with the same
+`WorkspaceManager` and an absolute export directory outside the canonical
+repository. Pass both to `PlanReviewService` or
+`open_sqlite_plan_review_service`; M6 is enabled only when patch, test, critic,
+and export services are all present.
+
+After a genuine attempt-one pytest assertion failure, the critic may recommend
+one retry. The retry is generated from the unchanged approved plan/hash/scope
+and ContextPack plus bounded prior evidence, then applied to a new durable
+workspace copied from the approved canonical baseline. Infrastructure and
+timeout outcomes never invoke the critic. No path can produce attempt three.
+
+The first passing attempt returns `awaiting_final_approval` and a bounded final
+review payload. Resume with `resume_final_review(...)`, the same thread ID, and
+`{"decision":"approve"|"reject","patch_hash":"<displayed exact hash>"}`.
+Approval re-verifies the workspace and matching successful test result before
+writing `<patch_hash>.patch`; rejection writes nothing. The export file is the
+exact existing canonical unified diff. RepoPilot never applies it to the
+canonical repository and never commits, pushes, merges, or creates a PR.
 
 ## Verified Windows commands
 
@@ -401,3 +432,19 @@ No installation, update, daemon start, image pull, build, or machine
 configuration change was attempted. Therefore the optional real smoke is
 reported as `real Docker smoke blocked — local test image unavailable`; the
 daemon also prevented proving whether any suitable image was locally present.
+
+## Task 016 verification
+
+Verified on 2026-09-12 without requiring Docker or Ollama:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Pre-change complete backend suite | `uv run --locked --offline pytest -q` | 240 passed |
+| M6 critic/patcher/export/workflow tests | Documented four-file M6 command | 32 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 266 passed in 4.99 seconds |
+
+The optional CPU-only critic smoke was skipped because it was nonessential and
+previous `gemma4:e4b-it-qat` CPU generations took minutes. A complete real M6
+smoke remains blocked at the already-recorded unavailable Docker daemon/image
+boundary. No image pull/build, machine change, source mutation, commit, push,
+merge, or PR action occurred.

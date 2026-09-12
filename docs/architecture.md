@@ -501,6 +501,39 @@ selectors, image reference, and resource policy. Exact replay returns the
 stored result without another Docker run. A changed patch, request, thread, or
 policy gets a different identity and cannot reuse stale evidence.
 
+## Implemented M6 bounded retry, final review, and export
+
+M6 extends the same workflow with explicit acyclic attempt-one and attempt-two
+nodes. Only a genuine pytest assertion failure from attempt one can enter the
+critic. The critic uses the existing `InferenceProvider`; LangChain supplies a
+prompt template and strict Pydantic parsing, not tools or an agent loop. Its
+assessment is advisory, cites the approved ContextPack, names only already
+approved files, and is rejected if it requests shell, network, environment, or
+new file authority.
+
+`MAX_PATCH_ATTEMPTS = 2` is application state, not a prompt request. A validated
+retry uses the exact original plan/hash/scope/evidence plus bounded attempt-one
+diff/test/critic evidence. Its workspace ID is attempt-specific, so the second
+proposal is applied to a new snapshot of the approved canonical baseline rather
+than on top of attempt one. Attempt summaries retain bounded workspace, patch,
+changed-file, test-status, and test-run references.
+
+The first genuinely passing attempt stops all generation and transitions through
+a small state-setting node into a second real LangGraph `interrupt()`. Its payload
+contains the exact candidate diff/hash, successful structured test result,
+approved scope and plan hash, provenance, attempt number, and critic summary when
+used. Resume requires the exact patch hash. Rejection is terminal and produces no
+artifact. Approval proceeds only after workspace integrity and successful-test
+binding are rechecked.
+
+The exporter writes the existing RepoPilot-generated canonical UTF-8 diff to a
+caller-configured directory outside the source repository as
+`<patch_hash>.patch`. It never regenerates or applies the diff and invokes no Git
+operation. The bytes are reread and SHA-256 verified. An identical existing file
+is reused; conflicting bytes are never overwritten. Durable patch/test/critic
+records plus checkpoint state prevent identical replay from repeating expensive
+work. A changed request or artifact identity fails closed.
+
 ## Scoped V1 system boundary
 
 ```text
@@ -519,16 +552,15 @@ React Studio
         -> structured local state, approvals, traces, patches, and tests
 ```
 
-LangGraph now owns M3 planner/approval, M4 approved patching, and M5 test
-execution. Later milestones extend the same bounded graph with
-critic/final-review transitions and the hard maximum-one-retry control.
-Selective LangChain use is limited to planner/patcher prompt templating and
+LangGraph now owns the M3–M6 core flow: planning/approval, approved patching,
+testing, bounded criticism/retry, final review, and export. Selective LangChain
+use is limited to planner/patcher/critic prompt templating and
 Pydantic output parsing. Neither framework replaces RepoPilot's custom
 retrieval or patch-validation boundaries.
 
-Critic retry, the second/final approval, patch export, and frontend review UI
-are not yet implemented. The optional real M5 smoke is currently blocked by an
-unavailable local Docker daemon; automated boundary tests do not require it.
+The frontend review UI is not yet implemented. The optional real M5/M6 smoke is
+currently blocked by an unavailable local Docker daemon; automated boundary
+tests do not require Docker or Ollama.
 
 ## End-to-end flow
 

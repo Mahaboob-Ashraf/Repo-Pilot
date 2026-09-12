@@ -78,9 +78,19 @@ class WorkspaceManager:
     def workspace_root(self) -> Path:
         return self._workspace_root
 
-    def workspace_id_for(self, *, thread_id: str, approved_plan_hash: str) -> str:
+    def workspace_id_for(
+        self,
+        *,
+        thread_id: str,
+        approved_plan_hash: str,
+        attempt_number: int = 1,
+    ) -> str:
+        if attempt_number not in {1, 2}:
+            raise WorkspaceError("workspace attempt number must be one or two")
+        attempt_identity = "" if attempt_number == 1 else "\0attempt:2"
         identity = (
             f"{self._repository_identity}\0{thread_id}\0{approved_plan_hash}"
+            f"{attempt_identity}"
         ).encode("utf-8")
         return f"workspace-{sha256(identity).hexdigest()}"
 

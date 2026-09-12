@@ -204,3 +204,33 @@ remain unverified on this machine until the daemon and image are available.
 Separate sandbox-policy correctness from environment availability: deterministic
 tests can prove command construction and fail-closed behavior without claiming
 that an unavailable local container runtime executed code.
+
+## 2026-09-12 - Complete real M6 smoke remained blocked by Docker prerequisite
+
+### Context and expected behavior
+
+Task 016 completed the post-test critic/retry/final-review/export workflow. A
+real end-to-end smoke would still need the M5 Docker stage to execute an exact
+patched workspace before final review.
+
+### Observed behavior
+
+The existing read-only M5 preflight had already established that the installed
+Docker client could not reach the `desktop-linux` daemon and could not enumerate
+the required local image. No new Docker execution was attempted, no image was
+pulled or built, and no machine configuration was changed.
+
+### Root cause and safe outcome
+
+The external daemon/image prerequisite remains unavailable. M6 automated tests
+therefore used deterministic providers and runner fakes. The workflow's real
+infrastructure branch remains distinct and cannot trigger critic inference or a
+repair retry. The optional standalone CPU-only critic smoke was also skipped
+because it was optional and prior model calls took minutes; no benchmark claim
+is made.
+
+### Remaining risk
+
+The combined real Docker test-to-final-review path remains unverified on this
+machine until an already-local compatible image and running daemon are
+available through a separately authorized setup action.
