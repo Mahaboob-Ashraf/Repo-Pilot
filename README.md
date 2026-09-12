@@ -13,8 +13,8 @@ The project is designed around a simple principle:
 
 RepoPilot is **actively under development**.
 
-The current implementation focuses on the retrieval/evaluation foundation
-required before the bounded repair workflow:
+The current implementation includes the retrieval/evaluation foundation and
+the first bounded planning/approval segment:
 
 * repository discovery and source-file ingestion;
 * Python structure-aware parsing;
@@ -25,11 +25,15 @@ required before the bounded repair workflow:
 * deterministic one-hop parent/child, local-import, and related-test evidence;
 * immutable whole-chunk ContextPacks with hard estimated-token budgets;
 * frozen-case retrieval and post-pack context evaluation metrics;
+* evidence-grounded structured repair plans with exact chunk citations;
+* a hash-bound LangGraph pause at the first human plan/file-scope approval;
+* restart-safe local SQLite checkpoints behind a start/resume service boundary;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
 
-The complete planning → patching → sandbox testing → critique → approval workflow is **not yet complete**.
+Planning and the first approval checkpoint are implemented. Patching, sandbox
+testing, critique/retry, final approval, and export are **not yet complete**.
 
 ## Why RepoPilot?
 
@@ -72,10 +76,20 @@ One-Hop Structural Evidence
     |
     v
 Bounded ContextPack
+    |
+    v
+Evidence-Grounded RepairPlan
+    |
+    v
+Human Approval Interrupt
+    |
+    +--> Approved for M4 patching (no edit yet)
+    |
+    +--> Rejected / terminal
 ```
 
-The current foundation now produces bounded, cited repository evidence before
-the still-planned repair workflow.
+The current foundation produces bounded, cited repository evidence, a validated
+structured plan, and a durable first approval checkpoint without editing files.
 
 ## Structure-Aware Code Indexing
 
@@ -136,7 +150,9 @@ The repository currently includes automated coverage for:
 * repository-to-chunk pipeline behavior;
 * lexical, dense, and hybrid retrieval;
 * one-hop structural expansion and bounded context packing;
-* frozen retrieval cases and context evaluation metrics.
+* frozen retrieval cases and context evaluation metrics;
+* structured planner grounding, plan identity, and approval state;
+* in-memory and durable SQLite pause/resume behavior.
 
 As additional subsystems are implemented, the test surface will expand to cover agent state, approvals, patch safety, sandbox execution, and evaluation.
 
@@ -221,7 +237,7 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 | Local inference          | Ollama            |
 | Dependency management    | uv                |
 | Evaluation harness       | Frozen BM25/dense/hybrid cases |
-| Planned orchestration    | LangGraph + selective LangChain |
+| Current orchestration    | LangGraph + selective LangChain |
 | Planned sandbox          | Docker            |
 | Planned frontend         | React, TypeScript |
 
@@ -240,16 +256,18 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Frozen-case retrieval evaluation harness
 * [x] One-hop structural expansion
 * [x] Whole-chunk bounded context packing and context metrics
+* [x] Evidence-grounded structured repair plan
+* [x] First hash-bound LangGraph human approval checkpoint
+* [x] In-memory and durable local SQLite workflow checkpoints
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
 ### Next
 
-* [ ] One bounded LangGraph repair workflow
-* [ ] Two-checkpoint human approval persistence
 * [ ] Scoped patch generation
 * [ ] Docker-isolated testing
 * [ ] Optional critic / maximum-one-retry branch
+* [ ] Second/final approval and patch export
 * [ ] Retrieval and safety evaluation
 * [ ] External and system evaluation
 * [ ] React review studio

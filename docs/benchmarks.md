@@ -3,7 +3,9 @@
 No project benchmark has run. Every public-quality or comparative result is
 currently **Not measured**. The controlled Task 011 retrieval cases and Task
 012 structural/context cases validate code and metric behavior only; they are
-not benchmark, SWE-bench, or retrieval-quality claims.
+not benchmark, SWE-bench, or retrieval-quality claims. Task 013 planner and
+approval tests are functional/safety evidence and likewise make no model-quality
+or repair-success claim.
 
 ## Evidence record required for every future measured run
 
@@ -164,6 +166,32 @@ parent/child, local-import, directly-related-test, third-party exclusion,
 one-hop, deduplication, budget exclusion, and gold-isolation behavior. These
 controlled fixtures and the canonical toy functional smoke are harness
 validation only. No aggregate result from them is a public benchmark claim.
+
+## M3 planner/approval functional evidence
+
+Offline tests use a deterministic fake `InferenceProvider`; they do not invoke
+Ollama and do not measure planning quality. They verify prompt trust boundaries,
+strict Pydantic parsing, ContextPack-only citations and file paths, canonical
+plan hashes, a real LangGraph interrupt, hash-bound approve/reject transitions,
+thread isolation, no planner rerun on resume, and no repository mutation.
+
+Persistence tests use isolated temporary SQLite databases. One test closes the
+first workflow/service and reconstructs a second over the same database, then
+resumes the paused thread with its original plan hash. This proves local
+checkpoint durability and thread semantics only; it is not a latency,
+throughput, scale, or reliability benchmark.
+
+One later real local smoke used the canonical toy issue and ContextPack with
+`gemma4:e4b-it-qat`. Retrieval completed normally, but the single 51.015-second
+generation call surfaced `PlannerInferenceError` before model output could be
+parsed. No retry occurred. This failed functional smoke is not a planning
+latency or quality benchmark.
+
+The one permitted diagnostic rerun took 52.784 seconds and again stopped before
+model output. Bounded diagnostics identified an Ollama HTTP 500, and only newly
+appended local server-log bytes identified the underlying Vulkan device loss.
+This single failed request is environment/runtime diagnostic evidence, not a
+generation-latency benchmark.
 
 ## Later scoped evaluation
 

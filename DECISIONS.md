@@ -50,7 +50,7 @@ nodes/stages, not an autonomous multi-agent swarm. LangChain is used selectively
 inside LLM-backed nodes for prompt templates, message composition, structured
 output parsing/schemas, and useful Runnable composition. Custom chunking,
 BM25, Chroma retrieval, RRF, structural expansion, and context packing remain
-RepoPilot-owned boundaries. LangGraph and LangChain are not installed before M3.
+RepoPilot-owned boundaries. LangGraph and LangChain entered the runtime in M3.
 
 **Alternatives considered:** One-shot prompt; free-running loop; in-memory-only
 orchestration; multi-agent swarm; five separate approval checkpoints; replacing
@@ -295,3 +295,55 @@ degradation propagation, evidence delimiters, and post-pack gold isolation.
 Context coverage, file/symbol precision, token waste, and budget utilization
 are now valid harness metrics. Controlled fixture and toy smoke observations
 remain non-benchmark evidence.
+
+## ADR-011 - Evidence-grounded plans and hash-bound LangGraph approval
+
+**Status:** Accepted
+
+**Decision:** M3 represents repair plans as strict frozen Pydantic models. Each
+ordered repair step names affected repository-relative files and cites one or
+more ContextPack chunk IDs. After LangChain's `PromptTemplate` renders the
+authoritative workflow/trust boundary and `PydanticOutputParser` parses model
+JSON, a first-party validator rejects citations and paths absent from the exact
+ContextPack. The existing async RepoPilot `InferenceProvider` remains the only
+generation boundary and no automatic planner retry is added.
+
+A validated plan is serialized as canonical UTF-8 JSON with sorted object keys
+and compact separators, then bound to approval by a lowercase SHA-256 digest.
+One LangGraph `StateGraph` owns planner, real `interrupt()`, approve, reject,
+and terminal transitions. JSON-friendly checkpoint state contains the rendered
+context snapshot and evidence provenance, retrieval degradation, plan/hash,
+decision, reviewer comment, status, and approved file scope; providers and
+checkpointers remain outside state. Approval freezes the validated proposed
+files for M4, while rejection creates no approved scope. Both paths terminate
+without editing the repository.
+
+Tests use `InMemorySaver`. The local durable path uses `AsyncSqliteSaver` from
+the separately pinned `langgraph-checkpoint-sqlite` package because RepoPilot's
+provider and graph invocation are async. A caller-supplied stable `thread_id`
+selects the checkpoint, and the service validates the decision object and plan
+hash before consuming the interrupt. SQLite checkpoint paths must be absolute
+and outside the source repository.
+
+**Why:** Evidence membership prevents a model from expanding edit authority,
+and the plan hash prevents approval of one proposal from authorizing a changed
+proposal. A narrow service keeps future API/UI callers independent of raw
+LangGraph invocation details while durable local checkpoints preserve the
+zero-cost, restart-safe first human control point.
+
+**Alternatives considered:** Free-form plans; silent citation repair; approval
+by an unbound string; in-memory-only product state; storing provider objects in
+graph state; LangChain agents or retriever/vector-store wrappers; PostgreSQL or
+cloud persistence.
+
+**Tradeoffs:** SQLite is intentionally a lightweight local persistence choice,
+not a horizontally scaled service. A stale decision must be resubmitted with
+the current hash. Plans can mention only files represented by the bounded pack,
+so insufficient retrieval evidence stops planning instead of broadening scope.
+
+**Testing/benchmark impact:** Offline fakes prove prompt boundaries, structured
+parsing, grounding failures, deterministic hashes, interrupt/pause behavior,
+thread isolation, approve/reject outcomes, no planner rerun on resume, and no
+repository mutation. A second service instance must resume a paused thread from
+the same isolated SQLite database. These are functional safety tests, not model
+quality benchmarks.

@@ -298,8 +298,8 @@ policy.
 
 Rendering labels issue text and repository source as untrusted data, delimits
 each verbatim source block, and keeps instructions outside repository evidence.
-This is the exact bounded evidence object M3 may place into a later prompt
-template; the planner will not receive the complete repository.
+This is the exact bounded evidence object M3 places into the planner prompt;
+the planner does not receive the complete repository.
 
 Post-pack evaluation is a separate gold-aware scoring step. The
 `hybrid_structure` context variant records included order/provenance, pipeline
@@ -307,7 +307,76 @@ latency, pack/degradation status, file/symbol coverage, explicit file/symbol
 chunk precision, explicit file/symbol token waste, and budget utilization.
 Gold labels never cross the retrieval/expansion/packing boundary.
 
-## Scoped V1 planned system boundary
+## Implemented M3 evidence-grounded plan and first approval
+
+```text
+ContextPack
+    -> deterministic PlanningContextSnapshot
+        -> LangChain PromptTemplate
+            -> existing RepoPilot InferenceProvider
+                -> LangChain PydanticOutputParser[RepairPlan]
+                    -> deterministic evidence/path grounding validator
+                        -> canonical JSON SHA-256 plan hash
+                            -> LangGraph approval interrupt
+                                -> approved_for_patch OR rejected -> END
+```
+
+`backend/app/planning/` defines strict frozen Pydantic models for
+`RepairPlan`, ordered `RepairStep` records, and a JSON-friendly evidence
+snapshot derived from the immutable ContextPack. The planner prompt repeats
+that workflow instructions and human authority are authoritative while issue
+text and repository source/comments/docstrings are untrusted data. LangChain
+is used concretely for f-string `PromptTemplate` rendering and
+`PydanticOutputParser`; RepoPilot still calls its own async
+`InferenceProvider`. There is no generic agent executor, LangChain retriever,
+vector-store wrapper, or hidden retry.
+
+Parsing is followed by first-party grounding validation. Every cited chunk ID
+must occur in the exact packed evidence, every proposed or affected file must
+be a canonical repository-relative POSIX path represented by that evidence,
+each step must cite evidence, and at least one concrete step must exist.
+Unknown citations and paths are errors; they are never repaired silently.
+Validated plans are hashed from compact canonical JSON with sorted object keys
+and SHA-256. No timestamp, machine path, or random value enters plan identity.
+
+`backend/app/workflow/` contains one `StateGraph`, not a multi-agent system.
+Its successful topology is `START -> planner -> approval -> approved|rejected
+-> END`; typed planner failures terminate before approval. Checkpoint-friendly
+state stores issue text, rendered context, chunk/path provenance, context and
+retrieval/degradation status, validated plan/hash, workflow status, explicit
+approval decision, reviewer comment, and approved file scope. Provider and
+checkpoint service objects are graph-construction dependencies and are not
+persisted in state.
+
+Expected inference-provider failures preserve Python exception chaining in the
+planner process and become a bounded JSON checkpoint diagnostic: top-level
+planner type/message, allowlisted provider type/classification/message, and
+model name. Only known safe Ollama response messages such as an HTTP status are
+retained verbatim. Availability and unknown provider text become generic safe
+messages, so credentials, headers, request bodies, arbitrary exception objects,
+and other request internals do not enter graph state.
+
+The approval node constructs a JSON payload containing the complete plan, plan
+hash, proposed file scope, cited evidence provenance, and the review question,
+then calls LangGraph `interrupt()`. All work before the interrupt is pure and
+deterministic because LangGraph restarts the node on resume. Resume accepts
+only `{decision: approve|reject, plan_hash, comment?}`. The service prevalidates
+the object and current checkpoint hash without consuming an invalid/stale
+decision; the node validates them again when resumed.
+
+Approval records the exact hash and freezes the validated proposed file list as
+`approved_file_scope` with terminal status `approved_for_patch`. Rejection has
+terminal status `rejected` and no approved scope. Neither path generates,
+applies, or exports a patch.
+
+Tests use `InMemorySaver`. The durable local boundary uses
+`AsyncSqliteSaver` from `langgraph-checkpoint-sqlite` so the async provider and
+graph remain nonblocking. Callers supply the stable `thread_id`; the same ID is
+required to resume the corresponding interrupt. Checkpoint database paths are
+absolute and enforced outside the source repository. Reconstructing the
+workflow/service over the same SQLite file resumes the paused checkpoint.
+
+## Scoped V1 system boundary
 
 ```text
 React Studio
@@ -325,15 +394,15 @@ React Studio
         -> structured local state, approvals, traces, patches, and tests
 ```
 
-LangGraph will own shared state, stage transitions, the conditional test-failure
-branch, the hard maximum-one-retry control, pause/resume, and checkpoint
-persistence where needed. Selective LangChain use is limited to useful prompt,
-message, structured-output, and Runnable composition inside LLM-backed nodes.
-Neither framework replaces RepoPilot's custom retrieval stack, and neither is
-installed before M3.
+LangGraph now owns M3 planner/approval state, first-checkpoint pause/resume, and
+checkpoint persistence. Later milestones extend the same bounded graph with
+patch/test/critic/final-review transitions and the hard maximum-one-retry
+control. Selective LangChain use currently consists of planner prompt templating
+and Pydantic output parsing. Neither framework replaces RepoPilot's custom
+retrieval stack.
 
-Orchestration, broader persistence, Git editing, Docker execution, critic
-retry, and final export are not yet implemented.
+Git editing, Docker execution, critic retry, the second/final approval, patch
+export, and frontend review UI are not yet implemented.
 
 ## End-to-end flow
 
@@ -342,7 +411,7 @@ retry, and final export are not yet implemented.
 3. BM25 and dense retrieval run independently; RRF fuses their ranks.
 4. One-hop import/parent-child/related-test evidence is added and packed under a fixed token budget.
 5. The planner creates an evidence-grounded plan, risks, approved-file proposal, and test strategy.
-6. Human checkpoint one approves, edits, or rejects the plan and file scope.
+6. Human checkpoint one approves or rejects the plan and file scope.
 7. The patcher proposes and applies a dry-run-validated edit only to approved files.
 8. The test runner executes allowlisted commands in restricted Docker and captures evidence.
 9. On failure, an optional critic may guide one retry; there are at most two repair attempts total.
@@ -355,7 +424,7 @@ autonomous agents or a multi-agent swarm.
 
 | Node | Output | Key failure behavior |
 |---|---|---|
-| Planner | Steps, approved-file proposal, risk, tests | Pause at checkpoint one; clarify underspecified issues |
+| Planner | Steps, approved-file proposal, diagnosis, tests | Fail on malformed or ungrounded output; pause at checkpoint one on success |
 | Retriever | Ranked cited chunks + mode | Mark dense provider failure as lexical-only degraded |
 | Context packer | Token-budgeted context | Exclude whole lower-priority chunks; report an oversized first chunk |
 | Patcher | Structured edit or diff | Reject hallucinated/unapproved paths |

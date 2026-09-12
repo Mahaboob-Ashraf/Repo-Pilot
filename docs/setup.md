@@ -6,8 +6,10 @@ The Scoped V1 foundation includes a React/Vite prompt screen, FastAPI health
 and inference endpoints, deterministic Python discovery/tree-sitter chunks,
 SQLite FTS5/BM25 retrieval, local-embedding Chroma retrieval, RRF hybrid
 fusion, one-hop structural expansion, hard-budget ContextPacks, and frozen-case
-retrieval/context evaluation. LangGraph orchestration, patching, Docker
-execution, critic retry, and review workflow are not yet implemented.
+retrieval/context evaluation. M3 adds a LangChain-structured evidence-grounded
+planner and the first LangGraph human approval interrupt with in-memory test or
+durable local SQLite checkpointing. Patching, Docker execution, critic retry,
+the second approval, and the frontend review workflow are not yet implemented.
 
 ## Prerequisites
 
@@ -32,6 +34,9 @@ uv sync --locked
 ```
 
 `uv sync --locked` creates `backend/.venv` from the committed `uv.lock`.
+The M3 direct pins are `langchain==1.4.0`, `langgraph==1.2.11`, and
+`langgraph-checkpoint-sqlite==3.1.1`. LangSmith is not a direct RepoPilot
+runtime requirement; it may appear only as a transitive LangChain dependency.
 
 ## Run the backend
 
@@ -85,6 +90,30 @@ uv run --locked --offline pytest -q tests/test_lexical_retrieval.py tests/test_v
 uv run --locked --offline pytest -q tests/test_retrieval_evaluation.py
 uv run --locked --offline pytest -q tests/test_structural_context.py tests/test_context_packing.py tests/test_context_evaluation.py
 ```
+
+Focused M3 planner/workflow commands:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_planner.py
+uv run --locked --offline pytest -q tests/test_plan_review_workflow.py
+```
+
+## M3 checkpoint persistence
+
+`PlanReviewService.start_plan_review(...)` accepts a prepared `ContextPack`
+and a caller-supplied stable `thread_id`. It returns either a pending approval
+payload or a terminal typed planner failure. Resume the same pause with
+`resume_plan_review(...)`, the same thread ID, and an explicit decision object
+containing `decision`, the displayed `plan_hash`, and an optional `comment`.
+The service returns terminal `approved_for_patch` or `rejected`; M3 never edits
+the repository.
+
+Tests inject `InMemorySaver`. The local durable product boundary is
+`open_sqlite_plan_review_service(...)`. Supply an absolute SQLite path outside
+the RepoPilot source checkout, such as a path under the user's local application
+data directory. In-repository and relative checkpoint paths are rejected, so
+no runtime checkpoint database is tracked as source. Reopen the service with
+the same database and thread ID after restart to resume the saved interrupt.
 
 ## Verified Windows commands
 
@@ -212,3 +241,36 @@ A separate real local smoke used Ollama 0.32.15, `embeddinggemma` (768
 dimensions), real Chroma cosine retrieval, BM25, RRF, one-hop related-test
 expansion, and a bounded ContextPack against the three-chunk toy repository.
 It was a functional smoke, not a benchmark result.
+
+## Task 013 verification
+
+Verified on 2026-09-12 without invoking Ollama for automated tests:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Planner tests | `uv run --locked --offline pytest -q tests/test_planner.py` | 13 passed |
+| Plan-review workflow/persistence tests | `uv run --locked --offline pytest -q tests/test_plan_review_workflow.py` | 13 passed |
+| Structural/ContextPack regressions | Documented three-file M2C command | 25 passed |
+| Hybrid retrieval/evaluation regressions | Documented two-file M2B command | 33 passed |
+| Lexical/vector/M1 regressions | Documented six-file regression command | 61 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 166 passed after the bounded diagnostic change |
+
+The SQLite durability test closed the first service/checkpointer and resumed the
+same paused thread through a separately constructed service over the same
+isolated temporary database.
+
+A later Task 013 final live smoke found both required Ollama models and ran the
+real hybrid retrieval/ContextPack path successfully. Its single
+`gemma4:e4b-it-qat` generation request took 51.015 seconds but surfaced the
+typed `PlannerInferenceError` before structured output was available, so no
+grounding, plan hash, or approval interrupt was reached. It was not retried;
+the toy repository remained unchanged. This is functional smoke evidence, not
+a benchmark result.
+
+After adding bounded provider diagnostics, one requested rerun used the same
+models, prompt, retrieval settings, and ContextPack. Its only generation call
+took 52.784 seconds and failed as `InferenceResponseError` / `response_error` /
+`Ollama returned HTTP 500`. The newly appended Ollama log output showed
+`ggml_vulkan: device lost on Vulkan0` on the GeForce GT 730 immediately before
+the 500 response. No plan, grounding, hash, approval interrupt, retry, or file
+mutation occurred.

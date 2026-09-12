@@ -64,20 +64,23 @@ in `models.lock.json`.
 
 ## One bounded repair workflow
 
-LangGraph will be introduced in M3 as the orchestration and state-machine layer
-for this single workflow. It should own shared run state, stage transitions, the
-conditional test-failure branch, maximum-one-retry control, pause/resume at the
-two human checkpoints, and checkpoint persistence where needed. Planner,
+LangGraph is introduced in M3 as the orchestration and state-machine layer for
+this single workflow. In M3 it owns the planner, first human approval interrupt,
+approve/reject transitions, and checkpoint persistence. Later milestones add the
+remaining stage transitions, the conditional test-failure branch,
+maximum-one-retry control, and the second human pause. Planner,
 retriever, context packer, patcher, test runner, and critic are nodes/stages of
 one bounded graph; they must not be described as an autonomous multi-agent
 swarm.
 
-LangChain will be used selectively inside LLM-backed nodes when prompt
-templates, message composition, structured output parsing/schemas, or Runnable
-composition provide concrete value. RepoPilot's custom `CodeChunk` pipeline,
+LangChain is used selectively inside the M3 planner for prompt templating and
+Pydantic structured-output parsing. It may be used inside later LLM-backed nodes
+when message composition or Runnable composition provides concrete value.
+RepoPilot's custom `CodeChunk` pipeline,
 SQLite/BM25 retrieval, Chroma retrieval, RRF, structural expansion, and context
-packing remain first-party boundaries and will not be replaced merely to add a
-framework. Neither LangGraph nor LangChain is installed before M3.
+packing remain first-party boundaries and are not replaced merely to add a
+framework. The existing RepoPilot `InferenceProvider` remains the generation
+boundary.
 
 Required future run state includes repository/run identity, issue text,
 retrieved chunk IDs and provenance, packed context, plan, approved file set,
@@ -133,7 +136,7 @@ SWE-bench or public benchmark results.
 - M2A — Dense vector index + embedding pipeline — Complete
 - M2B — RRF + retrieval benchmark harness — Complete
 - M2C — One-hop structure + context packer — Complete
-- M3 — Plan + approval state using LangGraph; selective LangChain
+- M3 — Plan + approval state using LangGraph; selective LangChain — Complete
 - M4 — Scoped patch workspace
 - M5 — Docker test runner
 - M6 — Critic + one retry + final review
