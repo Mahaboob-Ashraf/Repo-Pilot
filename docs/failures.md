@@ -146,3 +146,61 @@ under incomplete evidence.
 
 Line numbers are human provenance, not byte identity. Stale-approval checks need
 the exact reviewed bytes and an explicit cross-platform EOL policy.
+
+## 2026-09-12 - Real M5 Docker smoke blocked at daemon preflight
+
+### Context and expected behavior
+
+After the offline M5 runner, workspace, and graph tests passed, the optional
+canonical smoke required both a running Docker daemon and a suitable
+RepoPilot-controlled Python test image already available locally.
+
+### Observed behavior
+
+`docker version` reported client 29.7.2 and the `desktop-linux` context, but its
+server query and `docker info` could not open the
+`dockerDesktopLinuxEngine` named pipe. Local image enumeration failed at the
+same daemon boundary, so no image availability claim or container execution
+was possible.
+
+### Reproduction
+
+Run the read-only `docker version`, `docker info`, and `docker image ls
+--no-trunc` preflight with Docker Desktop's Linux context selected. The client
+is installed, but the daemon endpoint is absent.
+
+### Root cause
+
+The local Docker Linux daemon was not running or otherwise available. Because
+the daemon could not answer, whether the configured
+`repopilot-python-test:3.11-pytest9` image exists locally is unknown.
+
+### Why existing controls missed it
+
+Automated M5 tests deliberately inject deterministic process/runner fakes so
+the backend suite remains portable and cannot require Docker. A real daemon is
+checked only by the optional functional smoke preflight.
+
+### Fix and alternatives
+
+No machine change was authorized or attempted. RepoPilot fails this condition
+as distinct infrastructure evidence and never pulls automatically. Starting or
+installing Docker and pulling/building an image were explicitly outside Task
+015 authority; a later setup action requires explicit user approval.
+
+### Verification and regression test
+
+The 42 focused M5 tests cover daemon/image unavailability, verify that missing
+images never reach `docker run` or a pull, and keep the full 240-test backend
+suite independent of Docker. The real smoke did not run.
+
+### Remaining risk
+
+The concrete Windows-to-Docker bind mount and selected local image environment
+remain unverified on this machine until the daemon and image are available.
+
+### Interview/public lesson
+
+Separate sandbox-policy correctness from environment availability: deterministic
+tests can prove command construction and fail-closed behavior without claiming
+that an unavailable local container runtime executed code.

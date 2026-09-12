@@ -15,6 +15,7 @@ from pydantic import ValidationError
 from app.context_packing import ContextPack
 from app.patching import ApprovedPatchService, PatchArtifact
 from app.planning import PlanningContextSnapshot, RepairPlan, StructuredPlanner
+from app.sandbox import ApprovedPatchTestService, TestRunRequest, TestRunResult
 from app.workflow.graph import build_plan_review_graph
 from app.workflow.models import (
     ApprovalDecision,
@@ -40,8 +41,16 @@ class PlanReviewService:
         planner: StructuredPlanner,
         checkpointer: BaseCheckpointSaver[Any],
         patch_service: ApprovedPatchService | None = None,
+        test_service: ApprovedPatchTestService | None = None,
+        test_request: TestRunRequest | None = None,
     ) -> None:
-        self._graph = build_plan_review_graph(planner, checkpointer, patch_service)
+        self._graph = build_plan_review_graph(
+            planner,
+            checkpointer,
+            patch_service,
+            test_service,
+            test_request,
+        )
 
     async def start_plan_review(
         self,
@@ -78,6 +87,12 @@ class PlanReviewService:
             "unified_diff": None,
             "patch_hash": None,
             "patch_error": None,
+            "test_status": None,
+            "tested_patch_hash": None,
+            "test_mode": None,
+            "test_selectors": None,
+            "test_result": None,
+            "test_error": None,
         }
         output = await self._graph.ainvoke(initial_state, config=config)
         return _result_from_output(thread_id, output)
@@ -141,6 +156,8 @@ async def open_sqlite_plan_review_service(
     planner: StructuredPlanner,
     checkpoint_path: str | Path,
     patch_service: ApprovedPatchService | None = None,
+    test_service: ApprovedPatchTestService | None = None,
+    test_request: TestRunRequest | None = None,
 ) -> AsyncIterator[PlanReviewService]:
     """Open a durable local service; checkpoint DBs must live outside source."""
 
@@ -159,7 +176,13 @@ async def open_sqlite_plan_review_service(
 
     async with AsyncSqliteSaver.from_conn_string(str(resolved)) as checkpointer:
         await checkpointer.setup()
-        yield PlanReviewService(planner, checkpointer, patch_service)
+        yield PlanReviewService(
+            planner,
+            checkpointer,
+            patch_service,
+            test_service,
+            test_request,
+        )
 
 
 def _validate_thread_id(thread_id: str) -> str:
@@ -199,7 +222,11 @@ def _result_from_output(
         if isinstance(state.get("approval_decision"), dict)
         else None
     )
-    raw_error = state.get("patch_error") or state.get("planner_error")
+    raw_error = (
+        state.get("test_error")
+        or state.get("patch_error")
+        or state.get("planner_error")
+    )
     error = (
         WorkflowErrorRecord.model_validate(raw_error)
         if isinstance(raw_error, dict)
@@ -207,6 +234,11 @@ def _result_from_output(
     )
     approved = state.get("approved_file_scope")
     patch = _patch_artifact_from_state(state)
+    test = (
+        TestRunResult.model_validate(state["test_result"])
+        if isinstance(state.get("test_result"), dict)
+        else None
+    )
     return PlanReviewResult(
         thread_id=thread_id,
         status=status,
@@ -217,6 +249,7 @@ def _result_from_output(
         approved_file_scope=tuple(approved) if isinstance(approved, list) else None,
         reviewer_comment=state.get("reviewer_comment"),
         patch=patch,
+        test=test,
         error=error,
     )
 
@@ -241,6 +274,11 @@ def _validation_failure(
         plan_hash=state.get("plan_hash"),
         approval_payload=payload,
         patch=_patch_artifact_from_state(state),
+        test=(
+            TestRunResult.model_validate(state["test_result"])
+            if isinstance(state.get("test_result"), dict)
+            else None
+        ),
         error=WorkflowErrorRecord(
             error_type=type(error).__name__,
             message=str(error),

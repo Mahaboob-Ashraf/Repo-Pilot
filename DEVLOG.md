@@ -153,3 +153,58 @@ final approval, export a patch, or create a PR.
 ### Public-content angle
 
 None queued. The user explicitly requested no public post.
+
+## 2026-09-12 - Exact patch identity crossed a restricted Docker boundary
+
+### What we were trying to do
+
+Extend the approved M4 path through one bounded pytest execution without
+mounting or mutating the canonical repository or durable review workspace.
+
+### What happened
+
+The hard part was not invoking Docker; it was preserving identity across the
+boundary. A trustworthy result needs to prove which plan-bound patch, workspace
+bytes, selectors, image ID, and resource policy produced it, while preventing
+repository or model text from becoming shell syntax.
+
+### Why it happened
+
+Docker isolation alone does not make an unbounded command safe, and testing the
+durable review copy would allow pytest or repository code to contaminate the
+artifact later shown at final approval.
+
+### Final solution
+
+RepoPilot verifies every M4 workspace file against trusted patch metadata,
+copies exact bytes into a disposable snapshot, validates optional pytest node
+selectors, and passes fixed literal argv to a restricted Docker container with
+no network, dropped capabilities, no-new-privileges, non-root execution,
+read-only root/source filesystems, tmpfs, and explicit resource/time limits.
+Output is bounded and classified. Durable test evidence is keyed by thread,
+patch, request, image reference, and policy for replay safety.
+
+### How it was verified
+
+Deterministic fakes cover command safety, missing daemon/image behavior,
+timeout cleanup, output truncation, workspace tampering, snapshot disposal,
+canonical/durable preservation, result persistence, graph terminals, and
+thread isolation. No automated test requires Docker or Ollama.
+
+### Metrics / evidence
+
+The focused M5 set passed 42/42 and the complete backend suite passed 240/240
+on 2026-09-12. The optional real smoke was blocked because the installed Docker
+client could not reach its Linux daemon, so no local image or runtime claim was
+made. These are functional safety results, not benchmarks.
+
+### Remaining limitations
+
+No dependency provisioning, networked install, critic, retry, final approval,
+patch export, frontend integration, or real Docker smoke is included. The fixed
+test image must already exist locally and contain the repository's test
+environment.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.

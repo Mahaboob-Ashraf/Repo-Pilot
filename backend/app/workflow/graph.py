@@ -18,7 +18,18 @@ from app.planning import (
     RepairPlan,
     StructuredPlanner,
 )
-from app.patching import ApprovedPatchService, PatchError, PatchInferenceError
+from app.patching import (
+    ApprovedPatchService,
+    PatchArtifact,
+    PatchError,
+    PatchInferenceError,
+)
+from app.sandbox import (
+    ApprovedPatchTestService,
+    TestRunRequest,
+    TestRunResult,
+    TestStatus,
+)
 from app.workflow.models import (
     ApprovalDecision,
     ApprovalDecisionError,
@@ -32,8 +43,14 @@ def build_plan_review_graph(
     planner: StructuredPlanner,
     checkpointer: BaseCheckpointSaver[Any],
     patch_service: ApprovedPatchService | None = None,
+    test_service: ApprovedPatchTestService | None = None,
+    test_request: TestRunRequest | None = None,
 ):
-    """Compile the bounded M3 graph with an optional M4 patch continuation."""
+    """Compile the bounded graph with optional M4 and M5 continuations."""
+
+    if test_service is not None and patch_service is None:
+        raise ValueError("M5 test execution requires the M4 patch service")
+    configured_test_request = test_request or TestRunRequest()
 
     async def planner_node(state: PlanReviewState) -> PlanReviewState:
         context = PlanningContextSnapshot.model_validate(
@@ -122,6 +139,31 @@ def build_plan_review_graph(
             "status": WorkflowStatus.PATCH_READY.value,
         }
 
+    async def test_node(state: PlanReviewState) -> PlanReviewState:
+        if test_service is None:
+            raise RuntimeError("test node requires an ApprovedPatchTestService")
+        patch = _patch_artifact_from_state(state)
+        changed_files = state.get("changed_files")
+        approved_plan_hash = state.get("source_plan_hash")
+        if (
+            patch is None
+            or not isinstance(changed_files, list)
+            or not isinstance(approved_plan_hash, str)
+        ):
+            return _test_state_failure(
+                "TestWorkspaceIntegrityError",
+                "patch-ready state is incomplete",
+            )
+        result = await test_service.run_tests(
+            thread_id=state["thread_id"],
+            workflow_status=state["status"],
+            approved_plan_hash=approved_plan_hash,
+            changed_files=tuple(changed_files),
+            patch=patch,
+            request=configured_test_request,
+        )
+        return _test_result_state(result)
+
     def rejected_node(state: PlanReviewState) -> PlanReviewState:
         return {
             "approved_file_scope": None,
@@ -135,6 +177,8 @@ def build_plan_review_graph(
     builder.add_node("rejected", rejected_node)
     if patch_service is not None:
         builder.add_node("patch", patch_node)
+    if test_service is not None:
+        builder.add_node("test", test_node)
     builder.add_edge(START, "planner")
     builder.add_conditional_edges(
         "planner",
@@ -150,7 +194,15 @@ def build_plan_review_graph(
         builder.add_edge("approved", END)
     else:
         builder.add_edge("approved", "patch")
-        builder.add_edge("patch", END)
+        if test_service is None:
+            builder.add_edge("patch", END)
+        else:
+            builder.add_conditional_edges(
+                "patch",
+                _after_patch,
+                {"test": "test", "end": END},
+            )
+            builder.add_edge("test", END)
     builder.add_edge("rejected", END)
     return builder.compile(checkpointer=checkpointer)
 
@@ -261,3 +313,75 @@ def _after_approval(state: PlanReviewState) -> str:
     if decision == "reject":
         return "rejected"
     raise ApprovalDecisionError("approval decision must be approve or reject")
+
+
+def _after_patch(state: PlanReviewState) -> str:
+    if state.get("status") == WorkflowStatus.PATCH_READY.value:
+        return "test"
+    return "end"
+
+
+def _patch_artifact_from_state(state: PlanReviewState) -> PatchArtifact | None:
+    fields = (
+        state.get("workspace_id"),
+        state.get("source_plan_hash"),
+        state.get("changed_files"),
+        state.get("unified_diff"),
+        state.get("patch_hash"),
+    )
+    if not all(value is not None for value in fields):
+        return None
+    return PatchArtifact(
+        workspace_id=fields[0],
+        source_plan_hash=fields[1],
+        changed_files=tuple(fields[2]),
+        unified_diff=fields[3],
+        patch_hash=fields[4],
+    )
+
+
+def _test_result_state(result: TestRunResult) -> PlanReviewState:
+    if result.status is TestStatus.PASSED:
+        workflow_status = WorkflowStatus.TESTS_PASSED
+    elif result.status in {TestStatus.FAILED, TestStatus.NO_TESTS_COLLECTED}:
+        workflow_status = WorkflowStatus.TESTS_FAILED
+    else:
+        workflow_status = WorkflowStatus.TEST_INFRASTRUCTURE_FAILED
+    error = None
+    if result.failure_classification is not None:
+        error = {
+            "error_type": result.failure_classification,
+            "message": result.failure_message or "test stage failed safely",
+            "provider_error_type": None,
+            "provider_error_classification": None,
+            "provider_error_message": None,
+            "model": None,
+        }
+    return {
+        "test_status": result.status.value,
+        "tested_patch_hash": result.patch_hash,
+        "test_mode": result.mode.value,
+        "test_selectors": list(result.validated_selectors),
+        "test_result": result.model_dump(mode="json"),
+        "test_error": error,
+        "status": workflow_status.value,
+    }
+
+
+def _test_state_failure(error_type: str, message: str) -> PlanReviewState:
+    return {
+        "test_status": TestStatus.INFRASTRUCTURE_FAILED.value,
+        "tested_patch_hash": None,
+        "test_mode": None,
+        "test_selectors": None,
+        "test_result": None,
+        "test_error": {
+            "error_type": error_type,
+            "message": message,
+            "provider_error_type": None,
+            "provider_error_classification": None,
+            "provider_error_message": None,
+            "model": None,
+        },
+        "status": WorkflowStatus.TEST_INFRASTRUCTURE_FAILED.value,
+    }

@@ -10,8 +10,10 @@ retrieval/context evaluation. M3 adds a LangChain-structured evidence-grounded
 planner and the first LangGraph human approval interrupt with in-memory test or
 durable local SQLite checkpointing. M4 adds strict approved-scope patch
 proposals, durable isolated workspaces, transactional exact replacements, and
-RepoPilot-generated unified diffs/hashes. Docker execution, critic retry, the
-second approval, and the frontend review workflow are not yet implemented.
+RepoPilot-generated unified diffs/hashes. M5 adds patch-bound, restricted
+Docker pytest through disposable execution snapshots and bounded structured
+results. Critic retry, the second approval, and the frontend review workflow
+are not yet implemented.
 
 ## Prerequisites
 
@@ -22,6 +24,8 @@ second approval, and the frontend review workflow are not yet implemented.
 - Ollama running locally with `gemma4:e4b-it-qat` installed for generation
 - Ollama `embeddinggemma` installed only when running real embedding/hybrid
   functional smokes; automated tests do not require it
+- Docker with a running Linux-container daemon and the configured test image
+  already present locally only for real M5 execution; automated tests use fakes
 
 The default path is local and requires no API key or paid service.
 
@@ -106,6 +110,12 @@ Focused M4 patching/workflow commands:
 uv run --locked --offline pytest -q tests/test_patcher.py tests/test_patch_workspace.py tests/test_patch_workflow.py
 ```
 
+Focused M5 sandbox/workflow command:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_docker_test_runner.py tests/test_test_execution_service.py tests/test_test_workflow.py
+```
+
 ## M3 checkpoint persistence
 
 `PlanReviewService.start_plan_review(...)` accepts a prepared `ContextPack`
@@ -144,6 +154,54 @@ commit, or export files.
 manager, then passed to `PlanReviewService` (or the SQLite service factory).
 The patcher continues to use the existing `InferenceProvider`; automated tests
 inject deterministic providers and never require Ollama.
+
+## M5 Docker test configuration
+
+M5 composes `ApprovedPatchTestService` from the same `WorkspaceManager`, a
+`DisposableTestSnapshotManager`, a `DockerTestRunner`, and a durable
+`TestResultStore`, then supplies it to `PlanReviewService`. With this service
+configured, the approved path continues from `patch_ready` into one test node
+and terminates as `tests_passed`, `tests_failed`, or
+`test_infrastructure_failed`. M3-only and M4-terminal service construction
+remain supported for focused regressions.
+
+The default image reference is `repopilot-python-test:3.11-pytest9`. RepoPilot
+does not pull or build it automatically. The runner locally inspects the image,
+records its resolved ID, and executes that ID with `--pull never`. General
+dependency installation is not implemented; the image must already contain a
+Python/pytest environment suitable for the repository.
+
+The fixed in-container command is:
+
+```text
+python -m pytest -q -p no:cacheprovider
+```
+
+Targeted mode may append validated selectors such as
+`tests/test_pricing.py::test_twenty_percent_discount_reduces_price`. Selectors
+are literal argv values, not shell text. Absolute/traversal/nonexistent paths,
+control characters, shell-like node text, and non-Python files are rejected.
+`RepairPlan.suggested_tests` is never executed as a command.
+
+Default bounds are a 120-second wall timeout, 512 MiB memory, 1 CPU, 128 PIDs,
+a 64 MiB `/tmp` tmpfs, and 64 KiB per stdout/stderr stream. Required controls
+are network `none`, all capabilities dropped, no-new-privileges, non-root
+UID/GID `65532:65532`, read-only container root, and read-only `/workspace`.
+Only the disposable patched snapshot is mounted. The canonical repository,
+durable M4 workspace, Docker socket, host home, and host credentials are never
+mounted.
+
+Safe Docker preflight is read-only:
+
+```powershell
+docker version
+docker info
+docker image ls --no-trunc
+```
+
+Do not pull/build an image or change Docker installation/configuration as part
+of a repair run. Missing daemon/image state is reported as infrastructure
+failure and requires a separate explicitly approved setup action.
 
 ## Verified Windows commands
 
@@ -324,3 +382,22 @@ plan produced in that run was approved through the normal resume path, and the
 workflow reached `patch_ready` with a RepoPilot-generated relative diff in an
 isolated workspace. The canonical toy repository remained byte-identical. This
 is functional smoke evidence, not a latency benchmark.
+
+## Task 015 verification
+
+Verified on 2026-09-12 without requiring Docker or Ollama for automated tests:
+
+| Action | Command | Observed result |
+|---|---|---|
+| M5 command/sandbox/workflow tests | Documented three-file M5 command | 42 passed |
+| M4 patch/workspace regressions | Documented three-file M4 command | 32 passed |
+| M3 planner/approval regressions | Documented two-file M3 command | 26 passed |
+| M1/M2 retrieval/context regressions | Documented parser through ContextPack test files | 132 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 240 passed |
+| Docker client preflight | `docker version` | Client 29.7.2, API 1.55, `desktop-linux` context |
+| Docker daemon/image preflight | `docker info` and local image inventory | Daemon unavailable at `dockerDesktopLinuxEngine`; image inventory unavailable |
+
+No installation, update, daemon start, image pull, build, or machine
+configuration change was attempted. Therefore the optional real smoke is
+reported as `real Docker smoke blocked — local test image unavailable`; the
+daemon also prevented proving whether any suitable image was locally present.

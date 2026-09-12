@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.patching import PatchArtifact
 from app.planning import PlanningEvidence, RepairPlan
+from app.sandbox import TestRunResult
 
 
 class WorkflowModel(BaseModel):
@@ -22,6 +23,9 @@ class WorkflowStatus(StrEnum):
     APPROVED_FOR_PATCH = "approved_for_patch"
     PATCH_READY = "patch_ready"
     PATCH_FAILED = "patch_failed"
+    TESTS_PASSED = "tests_passed"
+    TESTS_FAILED = "tests_failed"
+    TEST_INFRASTRUCTURE_FAILED = "test_infrastructure_failed"
     REJECTED = "rejected"
     PLANNER_FAILED = "planner_failed"
     VALIDATION_FAILED = "validation_failed"
@@ -71,6 +75,7 @@ class PlanReviewResult(WorkflowModel):
     approved_file_scope: tuple[str, ...] | None = None
     reviewer_comment: str | None = None
     patch: PatchArtifact | None = None
+    test: TestRunResult | None = None
     error: WorkflowErrorRecord | None = None
 
 
@@ -98,6 +103,12 @@ class PlanReviewState(TypedDict, total=False):
     unified_diff: str | None
     patch_hash: str | None
     patch_error: dict[str, str | None] | None
+    test_status: str | None
+    tested_patch_hash: str | None
+    test_mode: str | None
+    test_selectors: list[str] | None
+    test_result: dict[str, Any] | None
+    test_error: dict[str, str | None] | None
 
 
 class ApprovalDecisionError(ValueError):

@@ -128,12 +128,7 @@ class WorkspaceManager:
         if not record_path.exists():
             self._verify_unpatched_snapshot(snapshot)
             return None
-        try:
-            record = json.loads(record_path.read_text(encoding="utf-8"))
-            artifact = PatchArtifact.model_validate(record["artifact"])
-            patched_hashes = record["patched_file_hashes"]
-        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
-            raise PatchConflictError("workspace patch record is invalid") from exc
+        artifact, patched_hashes = self._load_patch_record(record_path)
         if artifact.source_plan_hash != approved_plan_hash:
             raise PatchConflictError(
                 "workspace already contains a patch for a different approved plan"
@@ -149,6 +144,43 @@ class WorkspaceManager:
                     "workspace content conflicts with its completed patch record"
                 )
         return artifact
+
+    def verify_patch_artifact(self, artifact: PatchArtifact) -> dict[str, str]:
+        """Verify one exact M4 artifact and every durable workspace file byte."""
+
+        snapshot = self.prepare(artifact.workspace_id)
+        record_path = (
+            self._workspace_container(artifact.workspace_id) / _PATCH_METADATA_NAME
+        )
+        if not record_path.exists():
+            raise PatchConflictError("workspace has no completed patch record")
+        recorded, patched_hashes = self._load_patch_record(record_path)
+        if recorded != artifact:
+            raise PatchConflictError("workspace patch record does not match artifact")
+        if sha256(artifact.unified_diff.encode("utf-8")).hexdigest() != artifact.patch_hash:
+            raise PatchConflictError("workspace patch hash is inconsistent")
+        if (
+            artifact.changed_files != tuple(sorted(set(artifact.changed_files)))
+            or set(patched_hashes) != set(artifact.changed_files)
+        ):
+            raise PatchConflictError("workspace changed-file scope is inconsistent")
+
+        expected_hashes = dict(snapshot.baseline_hashes)
+        for path, digest in patched_hashes.items():
+            try:
+                validate_repository_relative_path(path)
+            except PatchValidationError as exc:
+                raise PatchConflictError("workspace patch record path is invalid") from exc
+            if path not in expected_hashes:
+                raise PatchConflictError("workspace patch record contains a new file")
+            expected_hashes[path] = digest
+
+        current_hashes = self._repository_hashes(snapshot.repository_root)
+        if current_hashes != dict(sorted(expected_hashes.items())):
+            raise PatchConflictError(
+                "workspace content no longer matches the completed patch artifact"
+            )
+        return current_hashes
 
     def save_patch_artifact(
         self,
@@ -201,6 +233,48 @@ class WorkspaceManager:
 
     def repository_root_for(self, workspace_id: str) -> Path:
         return self.prepare(workspace_id).repository_root
+
+    @staticmethod
+    def _load_patch_record(record_path: Path) -> tuple[PatchArtifact, dict[str, str]]:
+        try:
+            record = json.loads(record_path.read_text(encoding="utf-8"))
+            artifact = PatchArtifact.model_validate(record["artifact"])
+            patched_hashes = record["patched_file_hashes"]
+        except (OSError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise PatchConflictError("workspace patch record is invalid") from exc
+        if not isinstance(patched_hashes, dict) or any(
+            not isinstance(path, str) or not isinstance(digest, str)
+            for path, digest in patched_hashes.items()
+        ):
+            raise PatchConflictError("workspace patch record is invalid")
+        return artifact, dict(patched_hashes)
+
+    @staticmethod
+    def _repository_hashes(repository_root: Path) -> dict[str, str]:
+        hashes: dict[str, str] = {}
+        try:
+            for current, directory_names, file_names in os.walk(
+                repository_root,
+                topdown=True,
+                followlinks=False,
+            ):
+                current_path = Path(current)
+                for name in directory_names:
+                    if (current_path / name).is_symlink():
+                        raise PatchConflictError(
+                            "workspace contains an unexpected directory symlink"
+                        )
+                for name in sorted(file_names):
+                    target = current_path / name
+                    if target.is_symlink() or not target.is_file():
+                        raise PatchConflictError(
+                            "workspace contains an unexpected non-regular file"
+                        )
+                    relative = target.relative_to(repository_root).as_posix()
+                    hashes[relative] = _hash_bytes(target.read_bytes())
+        except OSError as exc:
+            raise PatchConflictError("workspace content could not be verified") from exc
+        return dict(sorted(hashes.items()))
 
     def _workspace_container(self, workspace_id: str) -> Path:
         if not isinstance(workspace_id, str) or not _WORKSPACE_ID_PATTERN.fullmatch(

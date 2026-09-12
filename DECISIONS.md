@@ -400,3 +400,60 @@ parsing, unsafe paths, scope expansion, stale evidence, exact matching,
 ambiguity, overlaps, multi-file all-or-nothing validation, rollback, canonical
 diffs/hashes, replay, thread isolation, and graph routing. These are functional
 safety checks, not repair-quality or latency benchmark results.
+
+## ADR-013 - Patch-bound Docker pytest through disposable snapshots
+
+**Status:** Accepted
+
+**Decision:** M5 treats Docker as a fixed execution boundary, never as an LLM
+tool. The test stage requires a verified `patch_ready` M4 artifact whose plan
+hash, patch hash, changed-file scope, trusted patch record, and complete durable
+workspace bytes still agree. It copies those bytes into a disposable execution
+snapshot and mounts only that snapshot read-only at `/workspace`; neither the
+canonical repository nor the durable M4 review workspace is mounted.
+
+RepoPilot owns the Docker executable, image reference, and in-container command.
+The only V1 command is `python -m pytest -q -p no:cacheprovider`, optionally
+followed by strictly parsed repository-relative `.py` node selectors as literal
+argv elements. Process creation always uses explicit argv and `shell=False`.
+Model/repository text cannot supply an executable, shell fragment, install
+script, image, mount, or Docker option.
+
+The default sandbox disables networking, drops all capabilities, enables
+no-new-privileges, uses a non-root UID/GID, sets a read-only container root and
+source mount, provides a bounded `/tmp` tmpfs, disables bytecode writes, and
+sets wall-clock, memory, CPU, PID, and output limits. The configured image is
+inspected locally and Docker runs its resolved image ID with `--pull never`.
+No dependency installation or image pull occurs during repair execution.
+
+Immutable `TestRunResult` evidence binds the exact patch/workspace to mode,
+validated selectors, image reference/resolved ID, policy, exit code, duration,
+bounded stdout/stderr, truncation, and a classified outcome. Pytest assertion
+failure is distinct from timeout, Docker/image failure, and pytest
+usage/internal errors. A durable result key includes thread, patch, request,
+image reference, and policy so identical replay returns completed evidence
+without another container run.
+
+**Why:** Executing untrusted repository code on the host or mounting the source
+or review workspace would invalidate RepoPilot's safety and review guarantees.
+Patch-hash binding makes every test claim refer to one exact review artifact,
+while a disposable snapshot prevents pytest or repository code from
+contaminating that artifact.
+
+**Alternatives considered:** Host pytest; free-form plan test commands; shell
+wrappers; mounting the canonical or durable workspace; writable source mounts;
+networked dependency installation; implicit image pulling; treating every
+nonzero exit as an assertion failure; rerunning automatically on replay.
+
+**Tradeoffs:** The fixed image supports only repositories compatible with its
+preinstalled environment. Missing dependencies or images fail as
+infrastructure rather than being installed automatically. Docker availability
+is a host prerequisite, and M5 intentionally does not add critic reasoning,
+retry, or final approval.
+
+**Testing/benchmark impact:** Automated tests inject fake process and runner
+boundaries, assert exact argv/security flags and status mapping, and verify
+snapshot cleanup, workspace preservation, integrity rejection, bounded logs,
+durable replay, JSON state, and graph routing without requiring Docker. A real
+smoke is optional and may run only with an already-running daemon and suitable
+already-local image.

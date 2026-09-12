@@ -138,7 +138,7 @@ SWE-bench or public benchmark results.
 - M2C — One-hop structure + context packer — Complete
 - M3 — Plan + approval state using LangGraph; selective LangChain — Complete
 - M4 — Scoped patch workspace — Complete
-- M5 — Docker test runner
+- M5 — Docker test runner — Complete
 - M6 — Critic + one retry + final review
 - M7 — React review workspace
 - M8 — Retrieval + safety evaluation

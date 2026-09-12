@@ -209,6 +209,20 @@ the canonical repository stayed byte-identical. No test execution or retry ran.
 These single-run observations are functional smoke evidence, not latency,
 throughput, quality, or comparative benchmark results.
 
+## M5 sandbox functional evidence
+
+The 42 focused M5 tests use deterministic process and runner fakes. They prove
+fixed argv construction, selector rejection, sandbox flags, status mapping,
+bounded logs, M4 integrity checks, disposable snapshot cleanup, durable
+workspace preservation, replay identity, and LangGraph routing. They do not
+measure Docker startup, pytest runtime, resource isolation strength, repair
+quality, or host performance.
+
+The optional real Docker smoke did not run. Docker client 29.7.2 was installed,
+but the `desktop-linux` daemon endpoint was unavailable, so local image
+inventory and the configured image could not be verified. This is environment
+preflight evidence and a functional-smoke blocker, not a benchmark result.
+
 ## Later scoped evaluation
 
 M8 will freeze a meaningful retrieval and safety case set before reporting

@@ -443,6 +443,64 @@ creates a workspace snapshot. A durable completion record returns the existing
 artifact if LangGraph replays after application; a changed or half-completed
 workspace fails as `PatchConflictError` instead of applying twice.
 
+## Implemented M5 Docker-isolated test execution
+
+```text
+patch_ready + exact PatchArtifact
+    -> complete durable-workspace integrity verification
+        -> strict full/targeted pytest request validation
+            -> disposable byte-matched execution snapshot
+                -> local image availability and resolved-ID check
+                    -> restricted Docker container
+                        -> fixed python -m pytest argv
+                            -> bounded TestRunResult
+                                -> tests_passed
+                                -> tests_failed
+                                -> test_infrastructure_failed
+```
+
+`backend/app/sandbox/` separates `TestRunner` from `DockerTestRunner` and keeps
+Docker subprocess behavior outside LangGraph. The concrete runner invokes only
+literal argv with `shell=False`. RepoPilot fixes `docker`, its run/inspect
+operations, and `python -m pytest -q -p no:cacheprovider`; an optional targeted
+selector is a strictly validated repository-relative `.py` path plus restricted
+`::node` segments passed as one literal argument. Suggested tests, repository
+text, and model output never define an executable or shell command.
+
+Before execution, `WorkspaceManager.verify_patch_artifact` checks the exact
+artifact against trusted M4 metadata, recomputes its diff hash, validates the
+changed-file set, and compares every current regular-file hash against the
+baseline-plus-patch manifest. Missing, added, changed, or symlinked workspace
+content fails closed before Docker. A `DisposableTestSnapshotManager` then
+copies and re-hashes those exact patched bytes into an external temporary
+execution directory. Only that disposable directory is mounted at `/workspace`
+read-only. It is removed after the run, and the durable workspace is verified
+again; the canonical repository is neither mounted nor executed.
+
+The configured image is `repopilot-python-test:3.11-pytest9`. The runner first
+inspects it locally, records its resolved `sha256:` image ID, and runs that ID
+with `--pull never`. The container uses `--network none`, `--cap-drop ALL`,
+`no-new-privileges`, UID/GID `65532:65532`, a read-only root filesystem, bounded
+`/tmp` tmpfs, fixed `/workspace`, `PYTHONDONTWRITEBYTECODE=1`, and explicit
+memory, CPU, PID, output, and wall-clock limits. No Docker socket, home,
+credentials, canonical source, or durable workspace is mounted. M5 performs no
+dependency installation or repository-controlled setup script.
+
+`TestRunResult` is immutable and JSON-friendly. It records the exact patch and
+workspace IDs, full/targeted mode, validated selectors, status, exit code,
+duration, bounded stdout/stderr and truncation, image reference/resolved ID,
+resource policy, and safe failure classification/message. Exit 0 is `passed`,
+exit 1 is assertion `failed`, exit 5 is `no_tests_collected`, pytest exits 2-4
+are `pytest_error`, a wall timeout is `timed_out`, and Docker/image/container
+failures are `infrastructure_failed`. The graph maps the first two test-failure
+outcomes to `tests_failed`; timeouts, pytest execution errors, and Docker/image
+failures end at `test_infrastructure_failed`.
+
+A durable test-result ID hashes thread ID, workspace/patch identity, mode,
+selectors, image reference, and resource policy. Exact replay returns the
+stored result without another Docker run. A changed patch, request, thread, or
+policy gets a different identity and cannot reuse stale evidence.
+
 ## Scoped V1 system boundary
 
 ```text
@@ -461,15 +519,16 @@ React Studio
         -> structured local state, approvals, traces, patches, and tests
 ```
 
-LangGraph now owns M3 planner/approval state and the M4 approved patch
-continuation. Later milestones extend the same bounded graph with
-test/critic/final-review transitions and the hard maximum-one-retry control.
+LangGraph now owns M3 planner/approval, M4 approved patching, and M5 test
+execution. Later milestones extend the same bounded graph with
+critic/final-review transitions and the hard maximum-one-retry control.
 Selective LangChain use is limited to planner/patcher prompt templating and
 Pydantic output parsing. Neither framework replaces RepoPilot's custom
 retrieval or patch-validation boundaries.
 
-Docker execution, critic retry, the second/final approval, patch export, and
-frontend review UI are not yet implemented.
+Critic retry, the second/final approval, patch export, and frontend review UI
+are not yet implemented. The optional real M5 smoke is currently blocked by an
+unavailable local Docker daemon; automated boundary tests do not require it.
 
 ## End-to-end flow
 

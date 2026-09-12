@@ -31,13 +31,18 @@ the first bounded planning/approval segment:
 * strict structured exact-replacement patch proposals grounded in approved evidence;
 * durable isolated workspaces with all-or-nothing approved-scope application;
 * RepoPilot-generated repository-relative unified diffs and deterministic patch hashes;
+* patch-hash-bound pytest execution through a restricted Docker runner;
+* disposable test snapshots that preserve the durable M4 review workspace;
+* bounded structured test evidence with distinct test/infrastructure outcomes;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
 
-Planning, the first approval checkpoint, and isolated approved-scope patching
-are implemented. Sandbox testing, critique/retry, final approval, and export
-are **not yet complete**.
+Planning, the first approval checkpoint, isolated approved-scope patching, and
+the Docker test-runner boundary are implemented. Critique/retry, final
+approval, and export are **not yet complete**. A real M5 Docker smoke remains
+blocked until the already-installed Docker daemon and a suitable local image
+are available; RepoPilot does not pull images automatically.
 
 ## Why RepoPilot?
 
@@ -94,13 +99,24 @@ Human Approval Interrupt
     |       |
     |       v
     |   Canonical Diff + Patch Hash (`patch_ready`)
+    |       |
+    |       v
+    |   Verified Disposable Test Snapshot
+    |       |
+    |       v
+    |   Restricted Docker Pytest
+    |       |
+    |       +--> `tests_passed`
+    |       +--> `tests_failed`
+    |       +--> `test_infrastructure_failed`
     |
     +--> Rejected / terminal
 ```
 
 The current foundation produces bounded, cited repository evidence, a validated
-structured plan, a durable first approval checkpoint, and a reviewable patch in
-an isolated workspace without editing the canonical repository.
+structured plan, a durable first approval checkpoint, a reviewable isolated
+patch, and patch-bound structured test evidence without mounting or executing
+the canonical repository.
 
 ## Structure-Aware Code Indexing
 
@@ -166,8 +182,12 @@ The repository currently includes automated coverage for:
 * in-memory and durable SQLite pause/resume behavior;
 * patch schema/prompt boundaries, scope and evidence enforcement, stale approval,
   exact matching, rollback, diff/hash identity, and replay isolation.
+* Docker argv construction, selector validation, sandbox restrictions,
+  disposable snapshots, bounded output, exit classification, and M5 routing.
 
-As additional subsystems are implemented, the test surface will expand to cover agent state, approvals, patch safety, sandbox execution, and evaluation.
+Automated sandbox tests use deterministic process/runner fakes and do not
+require a Docker daemon. Optional real Docker integration remains a separately
+reported functional smoke.
 
 ## Target Architecture
 
@@ -205,9 +225,8 @@ Human-Approved Patch Export
 ```
 
 The implemented path now includes one bounded LangGraph workflow through
-approved isolated patch creation. Remaining planned components include:
+restricted patch-bound test evidence. Remaining planned components include:
 
-* Docker-isolated repository testing;
 * structured execution traces;
 * retrieval benchmarks;
 * feasible frozen external/system evaluation;
@@ -249,7 +268,7 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 | Dependency management    | uv                |
 | Evaluation harness       | Frozen BM25/dense/hybrid cases |
 | Current orchestration    | LangGraph + selective LangChain |
-| Planned sandbox          | Docker            |
+| Current sandbox boundary | Restricted Docker pytest |
 | Planned frontend         | React, TypeScript |
 
 ## Roadmap
@@ -273,12 +292,12 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Approved-scope structured patch generation
 * [x] Durable isolated workspace application and rollback
 * [x] Canonical unified diff and deterministic patch hash
+* [x] Patch-bound restricted Docker test runner and structured evidence
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
 ### Next
 
-* [ ] Docker-isolated testing
 * [ ] Optional critic / maximum-one-retry branch
 * [ ] Second/final approval and patch export
 * [ ] Retrieval and safety evaluation
