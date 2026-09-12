@@ -8,8 +8,10 @@ SQLite FTS5/BM25 retrieval, local-embedding Chroma retrieval, RRF hybrid
 fusion, one-hop structural expansion, hard-budget ContextPacks, and frozen-case
 retrieval/context evaluation. M3 adds a LangChain-structured evidence-grounded
 planner and the first LangGraph human approval interrupt with in-memory test or
-durable local SQLite checkpointing. Patching, Docker execution, critic retry,
-the second approval, and the frontend review workflow are not yet implemented.
+durable local SQLite checkpointing. M4 adds strict approved-scope patch
+proposals, durable isolated workspaces, transactional exact replacements, and
+RepoPilot-generated unified diffs/hashes. Docker execution, critic retry, the
+second approval, and the frontend review workflow are not yet implemented.
 
 ## Prerequisites
 
@@ -34,7 +36,7 @@ uv sync --locked
 ```
 
 `uv sync --locked` creates `backend/.venv` from the committed `uv.lock`.
-The M3 direct pins are `langchain==1.4.0`, `langgraph==1.2.11`, and
+The M3+ direct pins are `langchain==1.4.0`, `langgraph==1.2.11`, and
 `langgraph-checkpoint-sqlite==3.1.1`. LangSmith is not a direct RepoPilot
 runtime requirement; it may appear only as a transitive LangChain dependency.
 
@@ -98,6 +100,12 @@ uv run --locked --offline pytest -q tests/test_planner.py
 uv run --locked --offline pytest -q tests/test_plan_review_workflow.py
 ```
 
+Focused M4 patching/workflow commands:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_patcher.py tests/test_patch_workspace.py tests/test_patch_workflow.py
+```
+
 ## M3 checkpoint persistence
 
 `PlanReviewService.start_plan_review(...)` accepts a prepared `ContextPack`
@@ -105,8 +113,11 @@ and a caller-supplied stable `thread_id`. It returns either a pending approval
 payload or a terminal typed planner failure. Resume the same pause with
 `resume_plan_review(...)`, the same thread ID, and an explicit decision object
 containing `decision`, the displayed `plan_hash`, and an optional `comment`.
-The service returns terminal `approved_for_patch` or `rejected`; M3 never edits
-the repository.
+Without an M4 patch service, the compatibility path returns terminal
+`approved_for_patch` or `rejected`. With `ApprovedPatchService` configured,
+approval continues through patch generation/application and returns
+`patch_ready` or `patch_failed`; rejection still terminates without calling the
+patcher.
 
 Tests inject `InMemorySaver`. The local durable product boundary is
 `open_sqlite_plan_review_service(...)`. Supply an absolute SQLite path outside
@@ -114,6 +125,25 @@ the RepoPilot source checkout, such as a path under the user's local application
 data directory. In-repository and relative checkpoint paths are rejected, so
 no runtime checkpoint database is tracked as source. Reopen the service with
 the same database and thread ID after restart to resume the saved interrupt.
+
+## M4 isolated workspace configuration
+
+Construct `WorkspaceManager` with the canonical repository and a caller-owned
+absolute workspace root outside that repository. The manager creates an opaque
+workspace ID and a durable nested `repository/` snapshot for later M5 use.
+Callers and graph state use only the workspace ID; absolute paths, service
+objects, and file handles are not checkpointed or included in the review diff.
+
+The snapshot excludes `.git`, environment, dependency, cache, build, and
+generated directories covered by RepoPilot discovery policy. It copies regular
+file bytes and does not follow symlinks. M4 supports exact replacements in
+existing UTF-8 text files only. It does not create, delete, rename, test,
+commit, or export files.
+
+`ApprovedPatchService` is configured with `StructuredPatcher` and the workspace
+manager, then passed to `PlanReviewService` (or the SQLite service factory).
+The patcher continues to use the existing `InferenceProvider`; automated tests
+inject deterministic providers and never require Ollama.
 
 ## Verified Windows commands
 
@@ -274,3 +304,23 @@ took 52.784 seconds and failed as `InferenceResponseError` / `response_error` /
 `ggml_vulkan: device lost on Vulkan0` on the GeForce GT 730 immediately before
 the 500 response. No plan, grounding, hash, approval interrupt, retry, or file
 mutation occurred.
+
+## Task 014 verification
+
+Verified on 2026-09-12 without invoking Ollama for automated tests:
+
+| Action | Command | Observed result |
+|---|---|---|
+| M4 patcher/workspace/workflow tests | `uv run --locked --offline pytest -q tests/test_patcher.py tests/test_patch_workspace.py tests/test_patch_workflow.py` | 32 passed |
+| Combined M3/M4 focused tests | M4 command plus both documented M3 files | 58 passed |
+| Parser/repository pipeline after LF policy | Both documented M1 parser/pipeline files | 12 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 198 passed |
+
+One optional CPU-only smoke used the process-scoped
+`REPOPILOT_OLLAMA_TIMEOUT_SECONDS=600` override without changing the source
+default. `ollama ps` reported `100% CPU`. Exactly one planner request and one
+patcher request ran, taking 183.976 and 161.725 seconds respectively. The exact
+plan produced in that run was approved through the normal resume path, and the
+workflow reached `patch_ready` with a RepoPilot-generated relative diff in an
+isolated workspace. The canonical toy repository remained byte-identical. This
+is functional smoke evidence, not a latency benchmark.

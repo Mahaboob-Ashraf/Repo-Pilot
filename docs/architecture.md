@@ -340,8 +340,9 @@ Validated plans are hashed from compact canonical JSON with sorted object keys
 and SHA-256. No timestamp, machine path, or random value enters plan identity.
 
 `backend/app/workflow/` contains one `StateGraph`, not a multi-agent system.
-Its successful topology is `START -> planner -> approval -> approved|rejected
--> END`; typed planner failures terminate before approval. Checkpoint-friendly
+The M3 segment is `START -> planner -> approval -> approved|rejected`; typed
+planner failures terminate before approval, rejection ends, and M4 can continue
+from `approved`. Checkpoint-friendly
 state stores issue text, rendered context, chunk/path provenance, context and
 retrieval/degradation status, validated plan/hash, workflow status, explicit
 approval decision, reviewer comment, and approved file scope. Provider and
@@ -365,9 +366,10 @@ the object and current checkpoint hash without consuming an invalid/stale
 decision; the node validates them again when resumed.
 
 Approval records the exact hash and freezes the validated proposed file list as
-`approved_file_scope` with terminal status `approved_for_patch`. Rejection has
-terminal status `rejected` and no approved scope. Neither path generates,
-applies, or exports a patch.
+`approved_file_scope` with status `approved_for_patch`. Rejection has terminal
+status `rejected` and no approved scope. With the M4 patch service configured,
+the approved state continues into the patch node; the M3-only construction
+still terminates there for focused compatibility tests.
 
 Tests use `InMemorySaver`. The durable local boundary uses
 `AsyncSqliteSaver` from `langgraph-checkpoint-sqlite` so the async provider and
@@ -375,6 +377,71 @@ graph remain nonblocking. Callers supply the stable `thread_id`; the same ID is
 required to resume the corresponding interrupt. Checkpoint database paths are
 absolute and enforced outside the source repository. Reconstructing the
 workflow/service over the same SQLite file resumes the paused checkpoint.
+
+## Implemented M4 approved-scope patch workspace
+
+```text
+approved_for_patch
+    -> exact plan/hash/scope and evidence-freshness validation
+        -> durable isolated workspace snapshot outside source repository
+            -> LangChain PromptTemplate
+                -> existing RepoPilot InferenceProvider
+                    -> PydanticOutputParser[PatchProposal]
+                        -> whole-proposal deterministic validation
+                            -> transactional exact replacements in workspace only
+                                -> RepoPilot canonical unified diff
+                                    -> SHA-256 patch hash
+                                        -> patch_ready -> END
+```
+
+`backend/app/patching/` defines frozen, extra-forbidden `PatchProposal` and
+`PatchEdit` schemas. A proposal contains only a summary and exact replacements;
+it has no approval or scope field. The patch prompt includes the exact approved
+plan, plan hash, frozen scope, issue, and ContextPack evidence. It labels the
+issue and repository content as untrusted data, denies comments/docstrings any
+authority, prohibits path invention and file creation/deletion/rename, and
+requires same-file citations. LangChain is limited to prompt rendering and
+Pydantic parsing. The existing async provider receives plain text and no tools.
+
+The patch service revalidates the plan hash, approval-decision hash, workflow
+status, exact frozen scope, and M3 plan grounding. `PlanningEvidence` now
+retains the bounded chunk's exact source and SHA-256 content hash. Before patch
+generation and immediately before application, each approved-scope evidence
+slice must still match both the canonical repository and the workspace. Missing
+legacy fingerprints or changed code fail as `StaleApprovalError`; an old
+approval is never interpreted against new source.
+
+`WorkspaceManager` creates a durable directory beneath a caller-configured
+absolute root that must be outside the canonical repository. An opaque
+workspace ID binds repository identity, thread ID, and approved plan hash. The
+snapshot copies regular-file bytes with relative layout, prunes the same VCS,
+environment, dependency, cache, build, and generated directories as discovery,
+and never follows or copies symlinks. Workspace metadata is adjacent to a
+nested `repository/` snapshot, so metadata cannot enter the generated diff.
+The canonical source is read only.
+
+Validation completes for every edit before any write. Each path must be a
+normalized repository-relative POSIX path in the frozen approved set and must
+resolve to an existing UTF-8, non-NUL, regular, non-symlink workspace file.
+Every citation must belong to the exact ContextPack, with at least one cited
+chunk from the edited file. `expected_old_text` must occur once in the original
+file and its range must be contained by cited same-file evidence. Fuzzy matching
+is absent. Ranges are sorted, overlaps are rejected, and validated replacements
+apply from the end of a file toward its beginning.
+
+All intended file bytes and the complete diff are computed before mutation.
+Original bytes are retained for every changed file; an application or metadata
+failure restores them before returning a typed error. RepoPilot generates a
+sorted unified diff using only `a/<relative path>` and `b/<relative path>`
+headers and hashes the exact canonical UTF-8 diff with SHA-256. State stores
+only workspace ID, source plan hash, changed files, diff, patch hash, status,
+and bounded error data—never paths, handles, services, or exception objects.
+
+The M4 graph continuation is `approved -> patch -> patch_ready -> END`; patch
+failure terminates as `patch_failed`. Rejection never invokes the patcher or
+creates a workspace snapshot. A durable completion record returns the existing
+artifact if LangGraph replays after application; a changed or half-completed
+workspace fails as `PatchConflictError` instead of applying twice.
 
 ## Scoped V1 system boundary
 
@@ -387,22 +454,22 @@ React Studio
             -> one-hop structure + bounded context pack
             -> fixed local Ollama generation model
             -> plan/file-scope human checkpoint
-            -> approved-file-only Git workspace edits
+            -> approved-file-only isolated workspace edits
             -> restricted Docker test sandbox
             -> optional critic-assisted one retry
             -> final human checkpoint and patch export
         -> structured local state, approvals, traces, patches, and tests
 ```
 
-LangGraph now owns M3 planner/approval state, first-checkpoint pause/resume, and
-checkpoint persistence. Later milestones extend the same bounded graph with
-patch/test/critic/final-review transitions and the hard maximum-one-retry
-control. Selective LangChain use currently consists of planner prompt templating
-and Pydantic output parsing. Neither framework replaces RepoPilot's custom
-retrieval stack.
+LangGraph now owns M3 planner/approval state and the M4 approved patch
+continuation. Later milestones extend the same bounded graph with
+test/critic/final-review transitions and the hard maximum-one-retry control.
+Selective LangChain use is limited to planner/patcher prompt templating and
+Pydantic output parsing. Neither framework replaces RepoPilot's custom
+retrieval or patch-validation boundaries.
 
-Git editing, Docker execution, critic retry, the second/final approval, patch
-export, and frontend review UI are not yet implemented.
+Docker execution, critic retry, the second/final approval, patch export, and
+frontend review UI are not yet implemented.
 
 ## End-to-end flow
 

@@ -38,8 +38,8 @@ class FakeInferenceProvider:
         return self.response
 
 
-def make_context_pack() -> ContextPack:
-    chunks = build_repository_chunks(TOY_REPOSITORY).chunks
+def make_context_pack(repository: Path = TOY_REPOSITORY) -> ContextPack:
+    chunks = build_repository_chunks(repository).chunks
     candidates = tuple(
         ExpandedCandidate(
             chunk=chunk,
@@ -86,4 +86,3 @@ def make_valid_plan(pack: ContextPack | None = None) -> RepairPlan:
         ),
         suggested_tests=("Run the pricing unit tests.",),
     )
-

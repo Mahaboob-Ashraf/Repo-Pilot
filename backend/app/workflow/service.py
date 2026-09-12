@@ -13,6 +13,7 @@ from langgraph.types import Command
 from pydantic import ValidationError
 
 from app.context_packing import ContextPack
+from app.patching import ApprovedPatchService, PatchArtifact
 from app.planning import PlanningContextSnapshot, RepairPlan, StructuredPlanner
 from app.workflow.graph import build_plan_review_graph
 from app.workflow.models import (
@@ -38,8 +39,9 @@ class PlanReviewService:
         self,
         planner: StructuredPlanner,
         checkpointer: BaseCheckpointSaver[Any],
+        patch_service: ApprovedPatchService | None = None,
     ) -> None:
-        self._graph = build_plan_review_graph(planner, checkpointer)
+        self._graph = build_plan_review_graph(planner, checkpointer, patch_service)
 
     async def start_plan_review(
         self,
@@ -61,6 +63,7 @@ class PlanReviewService:
 
         context = PlanningContextSnapshot.from_context_pack(context_pack)
         initial_state: PlanReviewState = {
+            "thread_id": thread_id,
             **context.model_dump(mode="json"),
             "plan": None,
             "plan_hash": None,
@@ -69,6 +72,12 @@ class PlanReviewService:
             "approved_file_scope": None,
             "reviewer_comment": None,
             "planner_error": None,
+            "workspace_id": None,
+            "source_plan_hash": None,
+            "changed_files": None,
+            "unified_diff": None,
+            "patch_hash": None,
+            "patch_error": None,
         }
         output = await self._graph.ainvoke(initial_state, config=config)
         return _result_from_output(thread_id, output)
@@ -131,6 +140,7 @@ async def open_sqlite_plan_review_service(
     *,
     planner: StructuredPlanner,
     checkpoint_path: str | Path,
+    patch_service: ApprovedPatchService | None = None,
 ) -> AsyncIterator[PlanReviewService]:
     """Open a durable local service; checkpoint DBs must live outside source."""
 
@@ -149,7 +159,7 @@ async def open_sqlite_plan_review_service(
 
     async with AsyncSqliteSaver.from_conn_string(str(resolved)) as checkpointer:
         await checkpointer.setup()
-        yield PlanReviewService(planner, checkpointer)
+        yield PlanReviewService(planner, checkpointer, patch_service)
 
 
 def _validate_thread_id(thread_id: str) -> str:
@@ -189,12 +199,14 @@ def _result_from_output(
         if isinstance(state.get("approval_decision"), dict)
         else None
     )
+    raw_error = state.get("patch_error") or state.get("planner_error")
     error = (
-        WorkflowErrorRecord.model_validate(state["planner_error"])
-        if isinstance(state.get("planner_error"), dict)
+        WorkflowErrorRecord.model_validate(raw_error)
+        if isinstance(raw_error, dict)
         else None
     )
     approved = state.get("approved_file_scope")
+    patch = _patch_artifact_from_state(state)
     return PlanReviewResult(
         thread_id=thread_id,
         status=status,
@@ -204,6 +216,7 @@ def _result_from_output(
         approval_decision=decision,
         approved_file_scope=tuple(approved) if isinstance(approved, list) else None,
         reviewer_comment=state.get("reviewer_comment"),
+        patch=patch,
         error=error,
     )
 
@@ -227,9 +240,28 @@ def _validation_failure(
         plan=plan,
         plan_hash=state.get("plan_hash"),
         approval_payload=payload,
+        patch=_patch_artifact_from_state(state),
         error=WorkflowErrorRecord(
             error_type=type(error).__name__,
             message=str(error),
         ),
     )
 
+
+def _patch_artifact_from_state(state: Mapping[str, Any]) -> PatchArtifact | None:
+    fields = (
+        state.get("workspace_id"),
+        state.get("source_plan_hash"),
+        state.get("changed_files"),
+        state.get("unified_diff"),
+        state.get("patch_hash"),
+    )
+    if not all(value is not None for value in fields):
+        return None
+    return PatchArtifact(
+        workspace_id=fields[0],
+        source_plan_hash=fields[1],
+        changed_files=tuple(fields[2]),
+        unified_diff=fields[3],
+        patch_hash=fields[4],
+    )

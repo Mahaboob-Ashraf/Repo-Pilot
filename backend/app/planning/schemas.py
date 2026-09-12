@@ -58,6 +58,8 @@ class PlanningEvidence(PlanningSchema):
     chunk_type: str = Field(min_length=1)
     start_line: int = Field(ge=1)
     end_line: int = Field(ge=1)
+    content_hash: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
+    source_text: str | None = None
     origin: str = Field(min_length=1)
     source_retrieval_rank: int | None = Field(default=None, ge=1)
     structural_causes: tuple[str, ...] = ()
@@ -84,6 +86,8 @@ class PlanningContextSnapshot(PlanningSchema):
                 chunk_type=item.chunk.chunk_type.value,
                 start_line=item.chunk.start_line,
                 end_line=item.chunk.end_line,
+                content_hash=item.chunk.content_hash,
+                source_text=item.chunk.source_text,
                 origin=item.origin.value,
                 source_retrieval_rank=item.source_retrieval_rank,
                 structural_causes=tuple(

@@ -193,6 +193,22 @@ appended local server-log bytes identified the underlying Vulkan device loss.
 This single failed request is environment/runtime diagnostic evidence, not a
 generation-latency benchmark.
 
+## M4 patch functional evidence
+
+Offline M4 tests use deterministic fake providers and do not measure model
+quality or runtime performance. They validate approved-scope authority,
+evidence freshness, all-or-nothing exact replacements, rollback, workspace
+isolation, deterministic diff/hash identity, LangGraph routing, and replay.
+
+One later CPU-only functional smoke used the canonical discount issue,
+`gemma4:e4b-it-qat`, and the normal 1,805/2,000-unit ContextPack. `ollama ps`
+reported `100% CPU`. Exactly one planner generation (183.976 seconds) and one
+patcher generation (161.725 seconds) ran. The exact in-run plan/hash was
+approved through LangGraph, the isolated workspace reached `patch_ready`, and
+the canonical repository stayed byte-identical. No test execution or retry ran.
+These single-run observations are functional smoke evidence, not latency,
+throughput, quality, or comparative benchmark results.
+
 ## Later scoped evaluation
 
 M8 will freeze a meaningful retrieval and safety case set before reporting

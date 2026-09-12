@@ -18,6 +18,7 @@ from app.planning import (
     RepairPlan,
     StructuredPlanner,
 )
+from app.patching import ApprovedPatchService, PatchError, PatchInferenceError
 from app.workflow.models import (
     ApprovalDecision,
     ApprovalDecisionError,
@@ -30,8 +31,9 @@ from app.workflow.models import (
 def build_plan_review_graph(
     planner: StructuredPlanner,
     checkpointer: BaseCheckpointSaver[Any],
+    patch_service: ApprovedPatchService | None = None,
 ):
-    """Compile the M3 graph with services captured outside checkpointed state."""
+    """Compile the bounded M3 graph with an optional M4 patch continuation."""
 
     async def planner_node(state: PlanReviewState) -> PlanReviewState:
         context = PlanningContextSnapshot.model_validate(
@@ -88,6 +90,38 @@ def build_plan_review_graph(
             "status": WorkflowStatus.APPROVED_FOR_PATCH.value,
         }
 
+    async def patch_node(state: PlanReviewState) -> PlanReviewState:
+        if patch_service is None:
+            raise RuntimeError("patch node requires an ApprovedPatchService")
+        plan = _repair_plan_from_state(state)
+        context = _planning_context_from_state(state)
+        approval_data = state.get("approval_decision")
+        approved_files = state.get("approved_file_scope")
+        if not isinstance(approval_data, dict) or not isinstance(approved_files, list):
+            return _patch_failure(PatchError("approved patch authority is incomplete"))
+        try:
+            approval = ApprovalDecision.model_validate(approval_data)
+            artifact = await patch_service.prepare_patch(
+                thread_id=state["thread_id"],
+                workflow_status=state["status"],
+                approval_plan_hash=approval.plan_hash,
+                approved_plan=plan,
+                approved_plan_hash=state["plan_hash"],
+                approved_files=tuple(approved_files),
+                context=context,
+            )
+        except (PatchError, PlanValidationError, ValidationError) as exc:
+            return _patch_failure(exc)
+        return {
+            "workspace_id": artifact.workspace_id,
+            "source_plan_hash": artifact.source_plan_hash,
+            "changed_files": list(artifact.changed_files),
+            "unified_diff": artifact.unified_diff,
+            "patch_hash": artifact.patch_hash,
+            "patch_error": None,
+            "status": WorkflowStatus.PATCH_READY.value,
+        }
+
     def rejected_node(state: PlanReviewState) -> PlanReviewState:
         return {
             "approved_file_scope": None,
@@ -99,6 +133,8 @@ def build_plan_review_graph(
     builder.add_node("approval", approval_node)
     builder.add_node("approved", approved_node)
     builder.add_node("rejected", rejected_node)
+    if patch_service is not None:
+        builder.add_node("patch", patch_node)
     builder.add_edge(START, "planner")
     builder.add_conditional_edges(
         "planner",
@@ -110,7 +146,11 @@ def build_plan_review_graph(
         _after_approval,
         {"approved": "approved", "rejected": "rejected"},
     )
-    builder.add_edge("approved", END)
+    if patch_service is None:
+        builder.add_edge("approved", END)
+    else:
+        builder.add_edge("approved", "patch")
+        builder.add_edge("patch", END)
     builder.add_edge("rejected", END)
     return builder.compile(checkpointer=checkpointer)
 
@@ -122,6 +162,20 @@ def _repair_plan_from_state(state: PlanReviewState) -> RepairPlan:
     if not isinstance(plan_data, dict):
         raise ApprovalDecisionError("workflow has no validated repair plan")
     return RepairPlan.model_validate(plan_data)
+
+
+def _planning_context_from_state(state: PlanReviewState) -> PlanningContextSnapshot:
+    return PlanningContextSnapshot.model_validate(
+        {
+            "issue_text": state["issue_text"],
+            "rendered_context": state["rendered_context"],
+            "evidence": state["evidence"],
+            "context_status": state["context_status"],
+            "retrieval_mode": state["retrieval_mode"],
+            "retrieval_degraded": state["retrieval_degraded"],
+            "degradation_reason": state.get("degradation_reason"),
+        }
+    )
 
 
 def _after_planner(state: PlanReviewState) -> str:
@@ -153,6 +207,48 @@ def _planner_error_record(
             }
         )
     return record
+
+
+def _patch_failure(error: Exception) -> PlanReviewState:
+    messages = {
+        "PatchOutputError": "patch output was not valid structured data",
+        "PatchScopeError": "patch proposal exceeded approved authority",
+        "PatchValidationError": "patch proposal failed deterministic validation",
+        "StaleApprovalError": "approved evidence no longer matches source",
+        "PatchConflictError": "workspace state conflicts with the approved patch",
+        "PatchApplicationError": "workspace patch application failed safely",
+        "WorkspaceError": "isolated workspace could not be prepared",
+        "PatchInferenceError": "patch inference failed",
+        "PlanValidationError": "approved plan grounding is no longer valid",
+        "ValidationError": "approved patch state is invalid",
+        "PatchError": "approved patch authority is incomplete",
+    }
+    record: dict[str, str | None] = {
+        "error_type": type(error).__name__,
+        "message": messages.get(type(error).__name__, "patch stage failed safely"),
+        "provider_error_type": None,
+        "provider_error_classification": None,
+        "provider_error_message": None,
+        "model": None,
+    }
+    if isinstance(error, PatchInferenceError):
+        record.update(
+            {
+                "provider_error_type": error.provider_error_type,
+                "provider_error_classification": error.provider_error_classification,
+                "provider_error_message": error.provider_error_message,
+                "model": error.model,
+            }
+        )
+    return {
+        "workspace_id": None,
+        "source_plan_hash": None,
+        "changed_files": None,
+        "unified_diff": None,
+        "patch_hash": None,
+        "patch_error": record,
+        "status": WorkflowStatus.PATCH_FAILED.value,
+    }
 
 
 def _after_approval(state: PlanReviewState) -> str:

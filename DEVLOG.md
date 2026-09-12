@@ -89,3 +89,67 @@ planner/grounding/graph behavior was changed to obtain a pass.
 Human approval is meaningful only when it is bound to an immutable artifact:
 validate evidence membership first, hash the exact plan, and make stale
 decisions fail closed.
+
+## 2026-09-12 - Approved scope became executable without touching source
+
+### What we were trying to do
+
+Extend the first human checkpoint into bounded patch generation while keeping
+the canonical repository read-only and stopping before any test execution.
+
+### What happened
+
+A valid patch schema alone was insufficient. M4 also needed to prove that the
+approval still referred to current evidence, validate all replacements before
+one write, recover from a multi-file failure, generate its own review diff, and
+avoid applying again when LangGraph replays a completed node.
+
+### Why it happened
+
+Model output is untrusted intent, not edit authority or diff syntax. Tree-sitter
+line provenance also did not reproduce exact node end bytes, and a Windows CRLF
+checkout exposed that source fingerprints require explicit EOL policy.
+
+### Approaches considered
+
+Model-authored diffs, fuzzy matching, direct source-checkout edits, partial
+application, model-selected paths, mandatory Git commits/worktrees, ephemeral-
+only workspaces, and automatic patch retries were rejected.
+
+### Final solution
+
+LangChain templates and parses strict exact-replacement proposals through the
+existing provider. RepoPilot rechecks the approval hash/scope and exact chunk
+source/hash, creates a durable external snapshot, validates every path,
+citation, old-text occurrence, and range against the original snapshot, then
+applies non-overlapping edits from the end of each file. Original bytes support
+rollback. RepoPilot creates and hashes the canonical relative unified diff.
+Opaque repository/thread/plan-bound workspace IDs plus durable completion
+records make successful replay idempotent and conflicting state explicit.
+
+### How it was verified
+
+Offline tests cover prompt authority, strict parsing, unsafe paths, new-file and
+symlink attempts, unapproved scope, invented/unrelated evidence, stale source,
+missing/ambiguous/overlapping old text, deterministic multi-edits, whole-patch
+rejection, rollback, workspace persistence, diff/hash identity, graph routing,
+bounded state, replay, and thread isolation.
+
+### Metrics / evidence
+
+The 32 focused M4 tests, 58 combined M3/M4 tests, and complete 198-test backend
+suite passed on 2026-09-12. In the one optional CPU-only functional smoke, the
+single planner request took 183.976 seconds and the single patcher request took
+161.725 seconds. The exact in-run plan was approved normally, the graph reached
+`patch_ready`, and both canonical toy source hashes remained unchanged. These
+are functional safety results, not benchmark measurements.
+
+### Remaining limitations
+
+M4 modifies existing UTF-8 regular files only. It cannot create, delete, or
+rename files, fuzzy-match source, execute tests, invoke a critic, retry, perform
+final approval, export a patch, or create a PR.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.

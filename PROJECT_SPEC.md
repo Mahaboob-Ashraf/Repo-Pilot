@@ -53,7 +53,7 @@ own hardware and electricity.
 | Embeddings | Local model through the RepoPilot embedding-provider boundary |
 | Lexical/vector retrieval | SQLite FTS5 BM25 and Chroma with precomputed embeddings |
 | Parsing | tree-sitter Python parser and semantic chunks |
-| Patch workspace | Git through a narrow approved-path adapter |
+| Patch workspace | Durable isolated snapshot through a narrow approved-path adapter |
 | Test sandbox | Docker with disabled-by-default networking and explicit limits |
 | Frontend | React, Vite, TypeScript, and a focused review workspace |
 | Evidence | Structured local run traces and frozen evaluation artifacts |
@@ -137,7 +137,7 @@ SWE-bench or public benchmark results.
 - M2B — RRF + retrieval benchmark harness — Complete
 - M2C — One-hop structure + context packer — Complete
 - M3 — Plan + approval state using LangGraph; selective LangChain — Complete
-- M4 — Scoped patch workspace
+- M4 — Scoped patch workspace — Complete
 - M5 — Docker test runner
 - M6 — Critic + one retry + final review
 - M7 — React review workspace

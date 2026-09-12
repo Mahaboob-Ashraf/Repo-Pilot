@@ -7,6 +7,7 @@ from typing import Any, Literal, TypedDict
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.patching import PatchArtifact
 from app.planning import PlanningEvidence, RepairPlan
 
 
@@ -19,6 +20,8 @@ class WorkflowStatus(StrEnum):
     AWAITING_APPROVAL = "awaiting_approval"
     APPROVAL_RECORDED = "approval_recorded"
     APPROVED_FOR_PATCH = "approved_for_patch"
+    PATCH_READY = "patch_ready"
+    PATCH_FAILED = "patch_failed"
     REJECTED = "rejected"
     PLANNER_FAILED = "planner_failed"
     VALIDATION_FAILED = "validation_failed"
@@ -67,12 +70,14 @@ class PlanReviewResult(WorkflowModel):
     approval_decision: ApprovalDecision | None = None
     approved_file_scope: tuple[str, ...] | None = None
     reviewer_comment: str | None = None
+    patch: PatchArtifact | None = None
     error: WorkflowErrorRecord | None = None
 
 
 class PlanReviewState(TypedDict, total=False):
     """Checkpoint-friendly graph state containing only serializable values."""
 
+    thread_id: str
     issue_text: str
     rendered_context: str
     evidence: list[dict[str, Any]]
@@ -87,6 +92,12 @@ class PlanReviewState(TypedDict, total=False):
     approved_file_scope: list[str] | None
     reviewer_comment: str | None
     planner_error: dict[str, str | None] | None
+    workspace_id: str | None
+    source_plan_hash: str | None
+    changed_files: list[str] | None
+    unified_diff: str | None
+    patch_hash: str | None
+    patch_error: dict[str, str | None] | None
 
 
 class ApprovalDecisionError(ValueError):

@@ -28,12 +28,16 @@ the first bounded planning/approval segment:
 * evidence-grounded structured repair plans with exact chunk citations;
 * a hash-bound LangGraph pause at the first human plan/file-scope approval;
 * restart-safe local SQLite checkpoints behind a start/resume service boundary;
+* strict structured exact-replacement patch proposals grounded in approved evidence;
+* durable isolated workspaces with all-or-nothing approved-scope application;
+* RepoPilot-generated repository-relative unified diffs and deterministic patch hashes;
 * local Ollama model integration through a provider boundary;
 * FastAPI application foundation;
 * automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
 
-Planning and the first approval checkpoint are implemented. Patching, sandbox
-testing, critique/retry, final approval, and export are **not yet complete**.
+Planning, the first approval checkpoint, and isolated approved-scope patching
+are implemented. Sandbox testing, critique/retry, final approval, and export
+are **not yet complete**.
 
 ## Why RepoPilot?
 
@@ -83,13 +87,20 @@ Evidence-Grounded RepairPlan
     v
 Human Approval Interrupt
     |
-    +--> Approved for M4 patching (no edit yet)
+    +--> Approved
+    |       |
+    |       v
+    |   Isolated Approved-Scope Patch
+    |       |
+    |       v
+    |   Canonical Diff + Patch Hash (`patch_ready`)
     |
     +--> Rejected / terminal
 ```
 
 The current foundation produces bounded, cited repository evidence, a validated
-structured plan, and a durable first approval checkpoint without editing files.
+structured plan, a durable first approval checkpoint, and a reviewable patch in
+an isolated workspace without editing the canonical repository.
 
 ## Structure-Aware Code Indexing
 
@@ -152,7 +163,9 @@ The repository currently includes automated coverage for:
 * one-hop structural expansion and bounded context packing;
 * frozen retrieval cases and context evaluation metrics;
 * structured planner grounding, plan identity, and approval state;
-* in-memory and durable SQLite pause/resume behavior.
+* in-memory and durable SQLite pause/resume behavior;
+* patch schema/prompt boundaries, scope and evidence enforcement, stale approval,
+  exact matching, rollback, diff/hash identity, and replay isolation.
 
 As additional subsystems are implemented, the test surface will expand to cover agent state, approvals, patch safety, sandbox execution, and evaluation.
 
@@ -191,11 +204,9 @@ Critique / Bounded Retry
 Human-Approved Patch Export
 ```
 
-Planned components include:
+The implemented path now includes one bounded LangGraph workflow through
+approved isolated patch creation. Remaining planned components include:
 
-* one bounded LangGraph repair workflow with selective LangChain utilities;
-* bounded patch generation;
-* immutable human approval boundaries;
 * Docker-isolated repository testing;
 * structured execution traces;
 * retrieval benchmarks;
@@ -259,12 +270,14 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Evidence-grounded structured repair plan
 * [x] First hash-bound LangGraph human approval checkpoint
 * [x] In-memory and durable local SQLite workflow checkpoints
+* [x] Approved-scope structured patch generation
+* [x] Durable isolated workspace application and rollback
+* [x] Canonical unified diff and deterministic patch hash
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
 ### Next
 
-* [ ] Scoped patch generation
 * [ ] Docker-isolated testing
 * [ ] Optional critic / maximum-one-retry branch
 * [ ] Second/final approval and patch export

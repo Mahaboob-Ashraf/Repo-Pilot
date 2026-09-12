@@ -85,3 +85,64 @@ after failure, so loaded status alone does not prove successful inference.
 Failing closed is necessary but insufficient for diagnosis: preserve only the
 small, explicitly safe error fields needed to distinguish infrastructure
 failure from model-output and validation failure.
+
+## 2026-09-12 - Line ranges alone produced false stale-evidence failures
+
+### Context and expected behavior
+
+M4 must prove that approved Tree-sitter evidence is unchanged before patch
+generation and application. The first validator combined a chunk content hash
+with its inclusive start/end line numbers and re-hashed those physical lines.
+
+### Observed behavior
+
+The initial focused M4 run rejected fresh canonical evidence in 19 tests as
+`StaleApprovalError`. Separately, the clean pre-task backend baseline had two
+failures because one toy Python fixture was checked out as CRLF while its
+committed exact-source expectations were LF.
+
+### Reproduction
+
+Tree-sitter chunk end bytes stop at the syntax node and exclude the physical
+line terminator. Reconstructing an inclusive final line added that terminator,
+so its digest differed from the chunk digest. Git also reported `i/lf w/crlf`
+for `fixtures/toy-repo/tests/test_pricing.py` before an EOL policy existed.
+
+### Root cause
+
+Line provenance identifies a review location but is not an exact byte span.
+The checkpoint lacked the chunk source needed to pair the digest with the exact
+approved text. The repository also relied on platform Git defaults for Python
+line endings despite hashing exact UTF-8 source.
+
+### Why existing controls missed it
+
+M3 used evidence for citation/path membership but did not yet compare a later
+workspace snapshot to the exact approved source. Existing tests had previously
+run against LF working-tree bytes.
+
+### Fix and alternatives
+
+`PlanningEvidence` now carries both exact bounded chunk source and its SHA-256
+hash. M4 verifies their internal consistency and exact source occurrence at the
+recorded start line in both canonical and workspace copies. A root
+`.gitattributes` enforces LF for Python files, and the toy fixture was restored
+to its committed LF content. Hashing normalized source or accepting a full
+physical line was rejected because either would weaken exact-source identity.
+
+### Verification and regression test
+
+After the fix, 32 focused M4 tests and the combined 58-test M3/M4 set passed.
+The parser/pipeline regression set returned to 12/12 passing. The complete
+backend result is recorded in `CONTEXT.md` after final verification.
+
+### Remaining risk
+
+Older durable M3 checkpoints do not contain exact source fingerprints. They can
+still be inspected or rejected, but M4 must fail them as stale rather than patch
+under incomplete evidence.
+
+### Interview/public lesson
+
+Line numbers are human provenance, not byte identity. Stale-approval checks need
+the exact reviewed bytes and an explicit cross-platform EOL policy.

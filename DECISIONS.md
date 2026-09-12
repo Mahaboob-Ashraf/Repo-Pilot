@@ -347,3 +347,56 @@ thread isolation, approve/reject outcomes, no planner rerun on resume, and no
 repository mutation. A second service instance must resume a paused thread from
 the same isolated SQLite database. These are functional safety tests, not model
 quality benchmarks.
+
+## ADR-012 - Exact structured edits in durable isolated workspaces
+
+**Status:** Accepted
+
+**Decision:** M4 accepts only strict frozen `PatchProposal` objects containing
+existing-file exact replacements. LangChain supplies patch prompt templating and
+Pydantic parsing, while the existing `InferenceProvider` remains the only model
+boundary and receives no filesystem or shell tools. The human-approved plan
+hash and frozen file scope are authoritative; the model cannot define or widen
+them.
+
+Before generation and again before application, exact approved chunk text and
+its SHA-256 fingerprint must still match the canonical repository and isolated
+snapshot. The whole proposal is validated against the original workspace text:
+paths are normalized and contained, targets are existing UTF-8 regular files,
+symlinks and unapproved paths are rejected, citations must exist and include
+same-file evidence, old text must occur exactly once inside cited evidence, and
+edit ranges must not overlap. Valid ranges apply from the end of each file
+toward the beginning only after every edit passes.
+
+Each run uses an opaque workspace ID bound to repository identity, thread ID,
+and approved plan hash. The durable snapshot lives under a caller-configured
+root outside the canonical repository, excludes VCS/environment/cache/build
+directories, copies regular-file bytes, and keeps metadata outside the copied
+repository tree. Multi-file writes capture originals and roll back on failure.
+RepoPilot—not model output—creates a sorted, repository-relative unified diff;
+SHA-256 of its exact UTF-8 representation is the patch hash. A completed patch
+record makes replay return the existing artifact, while inconsistent workspace
+state fails explicitly.
+
+**Why:** Human approval is meaningful only if later generation cannot expand
+scope or reinterpret changed evidence. Exact replacements avoid fuzzy guesses,
+an external workspace protects the source repository, and a first-party diff
+provides one deterministic artifact for later test and final-approval binding.
+
+**Alternatives considered:** Applying model-authored diffs directly; fuzzy
+matching; editing the canonical checkout; Git commits/worktrees as a mandatory
+runtime requirement; model-selected scope; partial application; automatically
+deleted temporary directories; unrestricted tools; retrying patch generation.
+
+**Tradeoffs:** V1 cannot create, delete, or rename files and rejects legitimate
+edits when old text is duplicated or crosses the exact cited chunk boundary.
+Filesystem snapshots cost disk space, and process crashes before the completion
+record may leave a conflicting workspace that requires explicit recovery rather
+than blind replay. Test execution and a second human checkpoint remain later
+milestones.
+
+**Testing/benchmark impact:** Offline fakes cover prompt authority, structured
+parsing, unsafe paths, scope expansion, stale evidence, exact matching,
+ambiguity, overlaps, multi-file all-or-nothing validation, rollback, canonical
+diffs/hashes, replay, thread isolation, and graph routing. These are functional
+safety checks, not repair-quality or latency benchmark results.
