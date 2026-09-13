@@ -552,3 +552,44 @@ and cover exact hashes, transitions, refresh, safe failures, and serialization.
 Frontend tests mock only the typed API client and cover text-safe rendering,
 decisions, test classifications, retry display, completion, and pending-state
 guards. These are functional UI/API results, not M8 evaluation evidence.
+
+## ADR-016 - Frozen scoring-only labels and non-averaged safety evidence
+
+**Status:** Accepted
+
+**Decision:** M8 keeps synthetic development/smoke fixtures separate from the
+frozen `evaluation/fixtures/m8/` set. Gold paths and symbols are loaded only by
+evaluation scoring after a production retrieval/structure/ContextPack boundary
+returns. The runner accepts no gold-bearing retriever interface and includes no
+download operation.
+
+Real dense and hybrid rows require the locked local `embeddinggemma:latest`.
+Provider unavailability is a first-class blocked result, never replaced with a
+fake vector. The production lexical-only degradation route may be measured
+separately, but its label must not imply normal hybrid retrieval.
+
+Safety results are a category scorecard with every frozen scenario retained.
+Any failed safety invariant makes the safety/full command non-zero; critical
+failures cannot disappear into one average. Prompt-injection claims are limited
+to deterministic authority containment, not universal model robustness.
+
+**Why:** Labels entering execution would invalidate retrieval evidence, fake
+embeddings would misstate the locked real stack, and one aggregate safety score
+could conceal a critical failure.
+
+**Alternatives considered:** Query enrichment from gold labels; silently using
+deterministic embeddings for a real run; dropping blocked variants; averaging
+all safety cases into one score; treating small synthetic percentages as broad
+repository accuracy.
+
+**Tradeoffs:** Dense/hybrid comparisons may remain incomplete on machines
+without the local model. The small frozen suite gives controlled regression
+evidence rather than statistical generality. Full external repair evidence is
+deferred to M9, and measured optimization remains M10.
+
+**Testing/benchmark impact:** Automated tests cover leakage-resistant query
+boundaries, deterministic fixture/artifact identity, malformed labels, metric
+math, structural accounting, budget exclusions, provider blocking, safe JSON,
+and scorecard failure propagation. The completed real M8 run records measured
+BM25, `embeddinggemma:latest` dense/hybrid, structure/ContextPack, and all safety
+categories without parameter tuning.

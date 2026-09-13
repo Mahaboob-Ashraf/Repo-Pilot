@@ -141,7 +141,7 @@ SWE-bench or public benchmark results.
 - M5 — Docker test runner — Complete
 - M6 — Critic + one retry + final review — Complete
 - M7 — React review workspace — Complete
-- M8 — Retrieval + safety evaluation
+- M8 — Retrieval + safety evaluation — Complete
 - M9 — External + system evaluation
 - M10 — Measured optimization + polish
 

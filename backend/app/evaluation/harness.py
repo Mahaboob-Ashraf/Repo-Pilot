@@ -150,6 +150,7 @@ class PerCaseEvaluationResult:
     relevant_symbols: tuple[str, ...] | None
     file_hit_at_1: bool
     file_hit_at_5: bool
+    symbol_hit_at_1: bool | None
     symbol_hit_at_5: bool | None
     file_reciprocal_rank: float
     symbol_reciprocal_rank: float | None
@@ -175,6 +176,7 @@ class PerCaseEvaluationResult:
             ),
             "file_hit_at_1": self.file_hit_at_1,
             "file_hit_at_5": self.file_hit_at_5,
+            "symbol_hit_at_1": self.symbol_hit_at_1,
             "symbol_hit_at_5": self.symbol_hit_at_5,
             "file_reciprocal_rank": self.file_reciprocal_rank,
             "symbol_reciprocal_rank": self.symbol_reciprocal_rank,
@@ -193,6 +195,7 @@ class AggregateEvaluationResult:
     symbol_case_count: int
     file_hit_at_1_rate: float
     file_hit_at_5_rate: float
+    symbol_hit_at_1_rate: float | None
     symbol_hit_at_5_rate: float | None
     mean_file_reciprocal_rank: float
     mean_symbol_reciprocal_rank: float | None
@@ -207,6 +210,7 @@ class AggregateEvaluationResult:
             "symbol_case_count": self.symbol_case_count,
             "file_hit_at_1_rate": self.file_hit_at_1_rate,
             "file_hit_at_5_rate": self.file_hit_at_5_rate,
+            "symbol_hit_at_1_rate": self.symbol_hit_at_1_rate,
             "symbol_hit_at_5_rate": self.symbol_hit_at_5_rate,
             "mean_file_reciprocal_rank": self.mean_file_reciprocal_rank,
             "mean_symbol_reciprocal_rank": self.mean_symbol_reciprocal_rank,
@@ -326,6 +330,9 @@ def score_case(
         relevant_symbols=case.relevant_symbols,
         file_hit_at_1=1 in file_ranks,
         file_hit_at_5=any(rank <= 5 for rank in file_ranks),
+        symbol_hit_at_1=(
+            1 in symbol_ranks if symbol_ranks is not None else None
+        ),
         symbol_hit_at_5=(
             any(rank <= 5 for rank in symbol_ranks)
             if symbol_ranks is not None
@@ -363,6 +370,11 @@ def aggregate_case_results(
         symbol_case_count=len(symbol_results),
         file_hit_at_1_rate=_mean(result.file_hit_at_1 for result in results),
         file_hit_at_5_rate=_mean(result.file_hit_at_5 for result in results),
+        symbol_hit_at_1_rate=(
+            _mean(result.symbol_hit_at_1 for result in symbol_results)
+            if symbol_results
+            else None
+        ),
         symbol_hit_at_5_rate=(
             _mean(result.symbol_hit_at_5 for result in symbol_results)
             if symbol_results

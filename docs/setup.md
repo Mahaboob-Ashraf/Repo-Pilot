@@ -269,6 +269,26 @@ services after restart, and isolated patch/test/critic/export artifacts. These
 implementation paths are not returned by the API; export responses expose only
 the safe content-addressed `.patch` filename and identifier.
 
+## M8 frozen local evaluation
+
+Run from `backend/`. The runner never downloads a model or container image and
+does not require the frontend:
+
+```powershell
+uv run --locked --offline python -m app.evaluation.m8 --mode retrieval
+uv run --locked --offline python -m app.evaluation.m8 --mode safety
+uv run --locked --offline python -m app.evaluation.m8 --mode full
+```
+
+All modes write `evaluation/results/m8/m8-results.json` and
+`evaluation/results/m8/m8-report.md`. Retrieval uses the frozen synthetic M8
+repositories and production SQLite/Chroma/RRF/structure/ContextPack code. The
+locked real dense path requests the already-local `embeddinggemma:latest`; if it
+is unavailable, dense-dependent variants are recorded as blocked and no fake
+embedding is substituted. A blocked real dense variant does not make the
+deterministic safety suite fail. Invalid fixtures/configuration or any failed
+safety invariant returns a non-zero exit code.
+
 ## Verified Windows commands
 
 These commands were executed successfully on 2026-08-15:
@@ -502,3 +522,40 @@ The optional functional UI smoke did not run because `ollama` and `docker`
 were not available on the current command PATH. No installation, daemon start,
 image pull/build, model download, or machine configuration change was
 attempted. No benchmark claim is made.
+
+## Task 018 verification
+
+Verified on 2026-09-13 without Docker, generation, network downloads, or fake
+benchmark embeddings:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Focused M8 tests | `uv run --locked --offline pytest -q tests/test_m8_evaluation.py` | 12 passed |
+| Complete backend suite before real run | `uv run --locked --offline pytest -q` | 285 passed in 5.18 seconds |
+| Final complete backend suite | `uv run --locked --offline pytest -q` | 287 passed in 6.26 seconds |
+| Full frozen M8 run | `uv run --locked --offline python -m app.evaluation.m8 --mode full` | Exit 0; artifacts written under `evaluation/results/m8/` |
+| Frontend regression tests | `npm test` | 18 passed |
+| Frontend typecheck/build | `npm run build` | TypeScript passed; Vite 7.3.6 built 32 modules |
+
+This initial Task 018 run measured BM25 on 10 frozen synthetic cases. The locked real
+`embeddinggemma:latest` path returned `EmbeddingUnavailableError`, so real
+dense/RRF results were blocked in that run. The production lexical-only degraded
+fallback was measured separately through one-hop structure and the ContextPack.
+No model/image was downloaded, no Docker command ran, and no
+retrieval/prompt/budget/retry tuning was performed.
+
+## Task 018B real retrieval verification
+
+Verified on 2026-09-13 after the exact already-local
+`embeddinggemma:latest` became reachable:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Full real M8 retrieval + safety artifact | `uv run --locked --offline python -m app.evaluation.m8 --mode full` | Exit 0; BM25, dense, hybrid, one-hop, and ContextPack measured; 33/33 safety scenarios retained |
+| Focused M8 tests | `uv run --locked --offline pytest -q tests/test_m8_evaluation.py` | 12 passed in 2.15 seconds |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 287 passed in 6.66 seconds |
+
+The run recorded model digest
+`85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`.
+It invoked neither Docker nor a generation model, performed no download, and
+did not change retrieval parameters, prompts, budget, fixture labels, or policy.

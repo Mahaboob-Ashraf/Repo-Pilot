@@ -154,6 +154,87 @@ final approval, export a patch, or create a PR.
 
 None queued. The user explicitly requested no public post.
 
+## 2026-09-13 - M8 real dense and hybrid evidence completed
+
+### What we were trying to do
+
+Replace only the previously blocked real retrieval rows after the locked local
+`embeddinggemma:latest` service became available, without tuning the frozen
+benchmark or invoking Docker or generation.
+
+### Final solution
+
+The existing M8 production path ran Tree-sitter chunks through the Ollama
+embedding provider, Chroma, BM25, RRF, one-hop structure, and ContextPack. The
+artifact now records the exact local model digest and measured pack-status
+distribution; report prose selects measured or blocked conclusions from the
+artifact instead of retaining stale text.
+
+### Metrics / evidence
+
+Across 10 frozen cases, BM25 and dense each measured file Hit@1 0.90 and file
+MRR 0.95; hybrid RRF measured 1.00 for file and symbol Hit@1, Hit@5, and MRR.
+Dense query p50/p95 was 135.6953/221.1889 ms and hybrid was
+136.7950/216.8195 ms. One-hop expansion added no chunks. Final packs covered all
+labeled gold files and symbols, with mean file precision 0.3750 and file token
+waste 0.6195. The deterministic safety rerun remained 33/33 passing.
+
+### Remaining limitations
+
+This is a small synthetic controlled evaluation, not external repair or
+production evidence. At returned depth 10 the small repositories exposed no
+measurable structural-expansion effect. No Docker, Gemma generation, download,
+fixture change, or retrieval/prompt/budget/policy tuning occurred.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.
+
+## 2026-09-13 - Task 018 frozen retrieval and safety evaluation
+
+### Problem
+
+The existing evaluation code proved retrieval and ContextPack metric behavior
+against one toy repository, but it did not provide a frozen multi-repository
+M8 dataset, structural-effect accounting, context-budget cases, formal safety
+scorecard, reproducible CLI, or durable reports.
+
+### Final solution
+
+Added 10 synthetic issue cases across four evaluation-only Python repositories,
+symbol Hit@1 and full gold coverage/exclusion fields, explicit one-hop causes and
+noise/help accounting, and four fixed 16,384-unit ContextPack policy scenarios.
+The M8 CLI runs retrieval, safety, or both and writes stable JSON plus Markdown.
+
+The 33-scenario safety suite keeps eight categories separate and exercises real
+RepoPilot validators plus deterministic approval, patch workspace, critic,
+selector, retry, and export probes. A failed invariant makes the command fail.
+Repository/issue/test prompt injection is evaluated as inability to grant
+deterministic authority, not as universal LLM immunity.
+
+### Metrics / evidence
+
+The initial 10-case BM25 run measured file Hit@1 0.90, Hit@5 1.00, and file
+MRR 0.95. `embeddinggemma:latest` was unavailable, so real dense and hybrid rows
+were explicitly blocked in that initial artifact. A separately labeled lexical-only degraded run found
+structure helped two cases, added only non-gold evidence in five, and produced
+mean file token waste 0.535 while retaining full file coverage in these small
+cases. The budget competition case excluded relevant evidence and retained 0.50
+gold coverage. All 33 safety scenarios passed.
+
+The pre-run complete backend suite passed 285 tests in 5.18 seconds; focused M8
+tests passed 12. Frontend regressions remained 18 passing tests plus a successful
+TypeScript/Vite build. After artifact completion, the final backend suite passed
+287 tests in 6.26 seconds.
+
+### Limitations
+
+This is controlled local evidence, not SWE-bench, external repair success,
+production reliability, or a statistically representative sample. No model,
+image, or dependency was downloaded; no retrieval/prompt/budget/retry parameter
+was tuned; no Docker or real generation smoke ran. M9 owns external/system
+evaluation and M10 owns evidence-driven optimization.
+
 ## 2026-09-12 - Bounded repair loop completed without autonomous authority
 
 ### What we were trying to do

@@ -4,6 +4,7 @@ from app.evaluation.cases import RetrievalCase, load_retrieval_cases
 from app.evaluation.context import (
     AggregateContextEvaluationResult,
     ContextEvaluationHarness,
+    ContextEvaluationExclusion,
     ContextEvaluationHit,
     ContextEvaluationPipeline,
     ContextEvaluationReport,
@@ -27,12 +28,29 @@ from app.evaluation.harness import (
     aggregate_case_results,
     score_case,
 )
+from app.evaluation.safety import (
+    FROZEN_SAFETY_SCENARIOS,
+    SafetyCategoryScore,
+    SafetyObservation,
+    SafetyReport,
+    SafetyScenario,
+    run_safety_evaluation,
+)
+from app.evaluation.structure import (
+    AggregateStructuralResult,
+    PerCaseStructuralResult,
+    StructuralAddedChunk,
+    aggregate_structural_results,
+    score_structural_expansion,
+)
 
 __all__ = [
     "MIN_CASES_FOR_LATENCY_PERCENTILES",
     "AggregateEvaluationResult",
     "AggregateContextEvaluationResult",
+    "AggregateStructuralResult",
     "ContextEvaluationHarness",
+    "ContextEvaluationExclusion",
     "ContextEvaluationHit",
     "ContextEvaluationPipeline",
     "ContextEvaluationReport",
@@ -46,11 +64,21 @@ __all__ = [
     "LexicalEvaluationRetriever",
     "PerCaseEvaluationResult",
     "PerCaseContextEvaluationResult",
+    "PerCaseStructuralResult",
     "RetrievalCase",
     "RetrievalEvaluationHarness",
+    "FROZEN_SAFETY_SCENARIOS",
+    "SafetyCategoryScore",
+    "SafetyObservation",
+    "SafetyReport",
+    "SafetyScenario",
+    "StructuralAddedChunk",
     "aggregate_case_results",
     "aggregate_context_results",
+    "aggregate_structural_results",
     "load_retrieval_cases",
     "score_case",
     "score_context_pack",
+    "score_structural_expansion",
+    "run_safety_evaluation",
 ]

@@ -653,3 +653,27 @@ autonomous agents or a multi-agent swarm.
 - Approval interrupt/resume and approved-scope enforcement.
 - Patch dry-run, rollback behavior, and test isolation.
 - Reproducible traces and benchmark configuration.
+
+## M8 evaluation boundary
+
+M8 is a separate local measurement boundary, not part of the repair workflow
+and not an authority source. Frozen gold files/symbols are loaded by scoring
+code only after production retrieval, structural expansion, or ContextPack
+construction returns. Production retriever and packer interfaces accept only
+the issue query and ordinary locked configuration.
+
+The runner groups 10 synthetic issue cases by four repository fixtures and
+uses the production Tree-sitter chunks, SQLite FTS5/BM25, Chroma precomputed-
+embedding index, RRF, one-hop structural index, and fixed-budget ContextPacker.
+Provider/index setup latency is recorded separately from query latency. If the
+locked real embedding provider is unavailable, dense and hybrid remain blocked;
+the separately named lexical-only degraded run exercises the production
+fallback, structural expansion, and packing without pretending fake embeddings
+are benchmark evidence.
+
+The 33-case safety scorecard executes deterministic validator, patch workspace,
+approval, critic, selector, retry-bound, and export probes. Repository, issue,
+and test text are not claimed to be unable to influence an LLM; the evaluated
+claim is that such text cannot grant scope, path, approval, retry, shell/network,
+or export authority across deterministic boundaries. Any failed safety case
+remains visible and makes the safety/full command fail.

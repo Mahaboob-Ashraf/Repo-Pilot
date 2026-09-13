@@ -1,0 +1,72 @@
+[
+  {
+    "case_id": "single-function-quantity-clamp",
+    "query": "Quantities below one should be clamped to one instead of returning zero.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/commerce",
+    "relevant_files": ["quantities.py"],
+    "relevant_symbols": ["clamp_quantity"]
+  },
+  {
+    "case_id": "class-method-invoice-total",
+    "query": "Invoice totals add tax twice when computing the amount due.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/commerce",
+    "relevant_files": ["invoice.py"],
+    "relevant_symbols": ["Invoice.amount_due"]
+  },
+  {
+    "case_id": "source-and-related-test-discount",
+    "query": "A twenty percent discount on 100 should produce 80; include the regression test evidence.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/commerce",
+    "relevant_files": ["pricing.py", "tests/test_pricing.py"],
+    "relevant_symbols": ["discounted_total", "test_twenty_percent_discount"]
+  },
+  {
+    "case_id": "cross-module-email-helper",
+    "query": "Account registration must trim and lowercase email addresses through the shared helper.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/identity",
+    "relevant_files": ["accounts.py", "normalization.py"],
+    "relevant_symbols": ["register_account", "normalize_email"]
+  },
+  {
+    "case_id": "semantic-slug-paraphrase",
+    "query": "Turn a display title into a URL-safe lowercase identifier with hyphens.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/identity",
+    "relevant_files": ["slug.py"],
+    "relevant_symbols": ["make_slug"]
+  },
+  {
+    "case_id": "ambiguous-product-normalize",
+    "query": "Product SKU normalization should remove spaces, not user-name normalization.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/ambiguous",
+    "relevant_files": ["products.py"],
+    "relevant_symbols": ["normalize"]
+  },
+  {
+    "case_id": "imported-tax-dependency",
+    "query": "Checkout uses the regional levy helper and applies the rate as a whole number.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/structure",
+    "relevant_files": ["checkout.py", "tax_rules.py"],
+    "relevant_symbols": ["checkout_total", "regional_tax"]
+  },
+  {
+    "case_id": "filename-unmentioned-backoff",
+    "query": "The delay between repeated delivery attempts should double after each failure.",
+    "repository_ref": "evaluation/fixtures/m8/repositories/structure",
+    "relevant_files": ["backoff.py"],
+    "relevant_symbols": ["retry_delay"]
+  },
+  {
+    "case_id": "structure-adds-checkout-test",
+    "query": "checkout_total tax calculation",
+    "repository_ref": "evaluation/fixtures/m8/repositories/structure",
+    "relevant_files": ["checkout.py", "tests/test_checkout.py"],
+    "relevant_symbols": ["checkout_total", "test_checkout_total_includes_tax"]
+  },
+  {
+    "case_id": "structure-noise-from-import",
+    "query": "format the checkout receipt total to two decimal places",
+    "repository_ref": "evaluation/fixtures/m8/repositories/structure",
+    "relevant_files": ["checkout.py"],
+    "relevant_symbols": ["format_receipt"]
+  }
+]

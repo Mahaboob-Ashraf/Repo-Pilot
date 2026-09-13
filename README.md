@@ -24,7 +24,8 @@ the first bounded planning/approval segment:
 * deterministic Reciprocal Rank Fusion with explicit dense-failure degradation;
 * deterministic one-hop parent/child, local-import, and related-test evidence;
 * immutable whole-chunk ContextPacks with hard estimated-token budgets;
-* frozen-case retrieval and post-pack context evaluation metrics;
+* a frozen 10-case/four-repository local retrieval suite and 33-scenario safety matrix;
+* machine-readable M8 artifacts plus a concise Markdown report;
 * evidence-grounded structured repair plans with exact chunk citations;
 * a hash-bound LangGraph pause at the first human plan/file-scope approval;
 * restart-safe local SQLite checkpoints behind a start/resume service boundary;
@@ -43,12 +44,20 @@ the first bounded planning/approval segment:
 * a focused React review workspace for evidence, plans, diffs, tests, retry history, final approval, and export;
 * automated tests for repository discovery, parsing, chunking, retrieval, workflow safety, API behavior, and the review UI.
 
-The core bounded workflow and M7 review/control surface are implemented. The
+The core bounded workflow, M7 review/control surface, and M8 frozen local
+evaluation are implemented. The
 backend remains authoritative for state, scope, approvals, retries, testing,
 and export; browser refresh uses read-only checkpoint retrieval and does not
 repeat expensive stages. A real Docker-backed end-to-end smoke still requires
 an already-running daemon and suitable local image; RepoPilot never pulls one
 automatically.
+
+The current frozen M8 run measured BM25 and real `embeddinggemma:latest`
+dense/hybrid retrieval on 10 synthetic cases. BM25 and dense each measured file
+Hit@1 `0.90`, while hybrid RRF measured `1.00`; all three measured file Hit@5
+`1.00`. These are controlled local results, not SWE-bench or broad production
+claims. See `evaluation/results/m8/m8-report.md` for the complete metrics,
+limitations, ContextPack evidence, and safety category scorecard.
 
 ## Why RepoPilot?
 

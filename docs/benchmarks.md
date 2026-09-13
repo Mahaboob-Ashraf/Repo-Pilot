@@ -1,11 +1,10 @@
 # RepoPilot Evaluation Plan
 
-No project benchmark has run. Every public-quality or comparative result is
-currently **Not measured**. The controlled Task 011 retrieval cases and Task
-012 structural/context cases validate code and metric behavior only; they are
-not benchmark, SWE-bench, or retrieval-quality claims. Task 013 planner and
-approval tests are functional/safety evidence and likewise make no model-quality
-or repair-success claim.
+M8 has run as a small frozen local controlled evaluation. It is not SWE-bench,
+production evidence, external-repository evaluation, or statistically
+representative of Python repositories. Earlier Task 011/012 toy cases remain
+harness validation only. The canonical artifacts are
+`evaluation/results/m8/m8-results.json` and `m8-report.md`.
 
 ## Evidence record required for every future measured run
 
@@ -224,6 +223,94 @@ inventory and the configured image could not be verified. This is environment
 preflight evidence and a functional-smoke blocker, not a benchmark result.
 
 ## Later scoped evaluation
+
+## M8 frozen local retrieval and safety evaluation
+
+### Setup and provenance
+
+- Frozen set: `m8-frozen-local-v1`, 10 issues across four synthetic local
+  Python repositories.
+- Fixture fingerprint:
+  `0dccc964a8da7a4e0a0988116e54d8e3b2f4d3354a05d35763b39a4c28ec9e7b`.
+- Source commit at measurement: `2fe14b4a0f5634b8a0ec187d372736cc89eeb2c8`
+  plus the uncommitted Task 018 implementation under evaluation.
+- Current configuration: RRF `k=60`, candidate depth `20`, returned depth `10`,
+  ContextPack budget `16,384` UTF-8-byte estimated units.
+- Locked dense model: `embeddinggemma:latest`; no generation model was used.
+  The measured local model digest was
+  `85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`.
+
+Gold paths and symbols are scoring-only values. The retriever and ContextPack
+boundaries receive query text plus normal configuration, never labels. Fixture
+and artifact identities exclude timestamps and machine paths. Query latency is
+separate from repository chunking and indexing timings in JSON.
+
+### Direct retrieval results
+
+| Variant | Status | File Hit@1 | File Hit@5 | File MRR | Symbol Hit@1 | Symbol Hit@5 | Symbol MRR | p50 ms | p95 ms |
+|---|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| `ast_bm25` | measured | 0.90 | 1.00 | 0.95 | 1.00 | 1.00 | 1.00 | 0.1807 | 0.4323 |
+| `ast_dense` | measured | 0.90 | 1.00 | 0.95 | 0.90 | 1.00 | 0.95 | 135.6953 | 221.1889 |
+| `ast_hybrid_rrf` | measured | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 1.00 | 136.7950 | 216.8195 |
+
+The one BM25 Hit@1 miss was the deliberately ambiguous same-name `normalize`
+case: the user-name symbol ranked before the gold product file, which appeared
+at rank two. Symbol Hit@1 remains 1.00 there because the label is necessarily
+ambiguous at the unqualified-symbol level; file metrics expose the miss. Dense
+retrieval's one Hit@1 miss was the cross-module email-helper case, where the
+related test ranked first and the labeled helper ranked second. Hybrid RRF put
+the labeled file and symbol first in all 10 cases.
+
+### Structural expansion and ContextPack
+
+The real hybrid one-hop run added no chunks in all 10 cases: zero cases were
+helped, zero received only non-gold additions, and all 10 were unchanged. Mean
+additions and estimated source cost were therefore both zero. At returned depth
+10, the direct candidate set already contained all chunks selected by the
+current one-hop policy in these small repositories, so this run provides no
+evidence that structure helped or hurt.
+
+Final bounded ContextPacks covered every labeled gold file and symbol. Mean file
+and symbol chunk precision were 0.3750 and 0.2988; mean file and symbol token
+waste were 0.6195 and 0.6979. Mean budget utilization was 0.2012, no ordinary
+case excluded relevant evidence, and all 10 packs had `complete` status.
+
+The current fixed 16,384-unit policy was also exercised independently: the
+all-fit pack used 1,342 units; the useful-evidence competition pack used 14,849
+units, retained 0.50 gold coverage, and excluded one relevant candidate; the
+near-boundary highest-priority item fit at 15,527 units; and the oversized-first
+case returned `oversized_highest_priority`, 0 coverage, and no lower-priority
+substitution. These are policy measurements, not tuning inputs.
+
+### Safety scorecard
+
+| Category | Scenarios | Passed | Failed |
+|---|---:|---:|---:|
+| Scope authority | 5 | 5 | 0 |
+| Path isolation | 4 | 4 | 0 |
+| Stale-state binding | 5 | 5 | 0 |
+| Prompt-injection authority | 4 | 4 | 0 |
+| Workspace integrity | 4 | 4 | 0 |
+| Test execution | 4 | 4 | 0 |
+| Retry bound | 3 | 3 | 0 |
+| Final approval/export | 4 | 4 | 0 |
+
+The suite uses deterministic malicious proposals, stale decisions, injected
+faults, and real RepoPilot validators/workspaces/export boundaries where
+authority is exercised. Its prompt-injection result means untrusted text cannot
+grant deterministic authority; it does not prove that an LLM can never be
+influenced. A failed safety row is never averaged away and makes the command
+return non-zero.
+
+### Limitations and M9 handoff
+
+This dataset is too small and synthetic for broad accuracy claims. The direct
+top-10 sets leave structural expansion with no observable effect, and the final
+packs retain all gold evidence at the cost of substantial non-gold content.
+The separate budget competition case still excludes useful evidence. M9 must
+freeze external repositories/tasks and measure complete repair success through
+both human checkpoints and the existing two-attempt limit. Optimization remains
+M10 work.
 
 ## M6 bounded-workflow functional evidence
 

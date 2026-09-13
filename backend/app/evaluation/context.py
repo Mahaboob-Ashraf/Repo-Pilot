@@ -44,6 +44,22 @@ class ContextEvaluationHit:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class ContextEvaluationExclusion:
+    chunk_id: str
+    path: str
+    estimated_token_cost: int
+    reason: str
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "chunk_id": self.chunk_id,
+            "path": self.path,
+            "estimated_token_cost": self.estimated_token_cost,
+            "reason": self.reason,
+        }
+
+
 class ContextEvaluationPipeline(Protocol):
     """Gold-free boundary from an issue query to a completed ContextPack."""
 
@@ -58,10 +74,13 @@ class PerCaseContextEvaluationResult:
     case_id: str
     variant: ContextEvaluationVariant
     included_hits: tuple[ContextEvaluationHit, ...]
+    excluded_candidates: tuple[ContextEvaluationExclusion, ...]
     relevant_files: tuple[str, ...]
     relevant_symbols: tuple[str, ...] | None
     file_context_coverage: bool
     symbol_context_coverage: bool | None
+    gold_file_coverage: float
+    gold_symbol_coverage: float | None
     file_context_chunk_precision: float | None
     symbol_context_chunk_precision: float | None
     file_context_token_waste: float | None
@@ -73,6 +92,7 @@ class PerCaseContextEvaluationResult:
     degraded: bool
     retrieval_mode: str
     pack_status: ContextPackStatus
+    relevant_evidence_excluded_by_budget: bool
 
     @property
     def included_chunk_ids(self) -> tuple[str, ...]:
@@ -84,6 +104,9 @@ class PerCaseContextEvaluationResult:
             "variant": self.variant.value,
             "included_hits": [hit.to_dict() for hit in self.included_hits],
             "included_chunk_ids": list(self.included_chunk_ids),
+            "excluded_candidates": [
+                item.to_dict() for item in self.excluded_candidates
+            ],
             "relevant_files": list(self.relevant_files),
             "relevant_symbols": (
                 list(self.relevant_symbols)
@@ -92,6 +115,8 @@ class PerCaseContextEvaluationResult:
             ),
             "file_context_coverage": self.file_context_coverage,
             "symbol_context_coverage": self.symbol_context_coverage,
+            "gold_file_coverage": self.gold_file_coverage,
+            "gold_symbol_coverage": self.gold_symbol_coverage,
             "file_context_chunk_precision": self.file_context_chunk_precision,
             "symbol_context_chunk_precision": self.symbol_context_chunk_precision,
             "file_context_token_waste": self.file_context_token_waste,
@@ -103,6 +128,9 @@ class PerCaseContextEvaluationResult:
             "degraded": self.degraded,
             "retrieval_mode": self.retrieval_mode,
             "pack_status": self.pack_status.value,
+            "relevant_evidence_excluded_by_budget": (
+                self.relevant_evidence_excluded_by_budget
+            ),
         }
 
 
@@ -237,6 +265,15 @@ def score_context_pack(
         )
         for position, item in enumerate(pack.included_chunks, start=1)
     )
+    exclusions = tuple(
+        ContextEvaluationExclusion(
+            chunk_id=item.chunk_id,
+            path=item.path,
+            estimated_token_cost=item.estimated_token_cost,
+            reason=item.reason.value,
+        )
+        for item in pack.excluded_candidates
+    )
     file_matches = tuple(hit.path in case.relevant_files for hit in hits)
     symbol_matches = (
         tuple(
@@ -252,11 +289,31 @@ def score_context_pack(
         case_id=case.case_id,
         variant=variant,
         included_hits=hits,
+        excluded_candidates=exclusions,
         relevant_files=case.relevant_files,
         relevant_symbols=case.relevant_symbols,
         file_context_coverage=any(file_matches),
         symbol_context_coverage=(
             any(symbol_matches) if symbol_matches is not None else None
+        ),
+        gold_file_coverage=(
+            len({hit.path for hit in hits} & set(case.relevant_files))
+            / len(case.relevant_files)
+        ),
+        gold_symbol_coverage=(
+            len(
+                {
+                    label
+                    for label in case.relevant_symbols
+                    if any(
+                        hit.symbol == label or hit.qualified_symbol == label
+                        for hit in hits
+                    )
+                }
+            )
+            / len(case.relevant_symbols)
+            if case.relevant_symbols is not None
+            else None
         ),
         file_context_chunk_precision=_precision(file_matches),
         symbol_context_chunk_precision=(
@@ -275,6 +332,9 @@ def score_context_pack(
         degraded=pack.degraded,
         retrieval_mode=pack.retrieval_mode.value,
         pack_status=pack.status,
+        relevant_evidence_excluded_by_budget=any(
+            item.path in case.relevant_files for item in exclusions
+        ),
     )
 
 

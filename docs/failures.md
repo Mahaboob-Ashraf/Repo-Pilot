@@ -257,3 +257,36 @@ attempted. The 275-test backend suite, 18 frontend tests, TypeScript check, and
 production build passed with deterministic boundaries, but the real M7
 browser-to-Gemma path and Docker continuation remain unverified in this
 session. This is an environment limitation, not benchmark evidence.
+
+## 2026-09-13 - M8 real dense and hybrid retrieval were blocked
+
+### Expected behavior
+
+The frozen M8 run should use production Chroma and the locked already-local
+`embeddinggemma:latest` provider. It must not download a model or replace a
+missing real embedding with a deterministic fake result.
+
+### Observed behavior
+
+The production embedding boundary returned `EmbeddingUnavailableError` during
+dense index setup. Consequently `ast_dense`, `ast_hybrid_rrf`, and their normal
+hybrid-dependent structure/ContextPack rows were recorded as blocked in the
+initial M8 artifacts. BM25 completed normally. A separately labeled lexical-only degraded
+probe exercised production fallback, one-hop expansion, and packing without
+using or claiming vector evidence.
+
+### Safe outcome and remaining limitation
+
+No download, retry loop, parameter change, fake benchmark vector, or arbitrary
+provider diagnostic was introduced. Real dense/hybrid retrieval quality remains
+unmeasured in this run and must be rerun only when the locked model is already
+available. The blocked result does not invalidate the offline deterministic
+safety scorecard.
+
+### Follow-up resolution
+
+Task 018B retained this initial failure record, then successfully reran the same
+frozen production path after the exact already-local model became reachable.
+The current M8 artifacts contain real dense/hybrid measurements and the model
+digest; no model download, retrieval tuning, Docker, or Gemma generation was
+used.
