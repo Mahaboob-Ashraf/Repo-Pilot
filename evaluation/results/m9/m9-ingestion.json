@@ -1,0 +1,770 @@
+[
+  {
+    "case_id": "more-take-off-by-one",
+    "chunk_count": 474,
+    "discovered_file_count": 4,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 207,
+        "construct_count": 207,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/more.py",
+        "success": true
+      },
+      {
+        "chunk_count": 68,
+        "construct_count": 68,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 199,
+        "construct_count": 199,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "tests/test_recipes.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 4,
+    "repository_id": "more-itertools",
+    "success": true
+  },
+  {
+    "case_id": "more-quantify-inverted",
+    "chunk_count": 474,
+    "discovered_file_count": 4,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 207,
+        "construct_count": 207,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/more.py",
+        "success": true
+      },
+      {
+        "chunk_count": 68,
+        "construct_count": 68,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "more_itertools/recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 199,
+        "construct_count": 199,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "tests/test_recipes.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 4,
+    "repository_id": "more-itertools",
+    "success": true
+  },
+  {
+    "case_id": "toolz-take-off-by-one",
+    "chunk_count": 357,
+    "discovered_file_count": 31,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 17,
+        "construct_count": 17,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/_signatures.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/compatibility.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/exceptions.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/operator.py",
+        "success": true
+      },
+      {
+        "chunk_count": 14,
+        "construct_count": 14,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/dicttoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 66,
+        "construct_count": 66,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/functoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 40,
+        "construct_count": 40,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/itertoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 8,
+        "construct_count": 8,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/core.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/parallel.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 4,
+        "construct_count": 4,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/test_core.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/test_parallel.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_compatibility.py",
+        "success": true
+      },
+      {
+        "chunk_count": 11,
+        "construct_count": 11,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_curried.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_curried_doctests.py",
+        "success": true
+      },
+      {
+        "chunk_count": 39,
+        "construct_count": 39,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_dicttoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 50,
+        "construct_count": 50,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_functoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 18,
+        "construct_count": 18,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_inspect_args.py",
+        "success": true
+      },
+      {
+        "chunk_count": 55,
+        "construct_count": 55,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_itertoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_package.py",
+        "success": true
+      },
+      {
+        "chunk_count": 3,
+        "construct_count": 3,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 15,
+        "construct_count": 15,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_serialization.py",
+        "success": true
+      },
+      {
+        "chunk_count": 3,
+        "construct_count": 3,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_signatures.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_tlz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_utils.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/utils.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 31,
+    "repository_id": "toolz",
+    "success": true
+  },
+  {
+    "case_id": "toolz-drop-extra-item",
+    "chunk_count": 357,
+    "discovered_file_count": 31,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 17,
+        "construct_count": 17,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/_signatures.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/compatibility.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/exceptions.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/curried/operator.py",
+        "success": true
+      },
+      {
+        "chunk_count": 14,
+        "construct_count": 14,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/dicttoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 66,
+        "construct_count": 66,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/functoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 40,
+        "construct_count": 40,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/itertoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 8,
+        "construct_count": 8,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/core.py",
+        "success": true
+      },
+      {
+        "chunk_count": 2,
+        "construct_count": 2,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/parallel.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 4,
+        "construct_count": 4,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/test_core.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/sandbox/tests/test_parallel.py",
+        "success": true
+      },
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_compatibility.py",
+        "success": true
+      },
+      {
+        "chunk_count": 11,
+        "construct_count": 11,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_curried.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_curried_doctests.py",
+        "success": true
+      },
+      {
+        "chunk_count": 39,
+        "construct_count": 39,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_dicttoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 50,
+        "construct_count": 50,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_functoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 18,
+        "construct_count": 18,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_inspect_args.py",
+        "success": true
+      },
+      {
+        "chunk_count": 55,
+        "construct_count": 55,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_itertoolz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_package.py",
+        "success": true
+      },
+      {
+        "chunk_count": 3,
+        "construct_count": 3,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_recipes.py",
+        "success": true
+      },
+      {
+        "chunk_count": 15,
+        "construct_count": 15,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_serialization.py",
+        "success": true
+      },
+      {
+        "chunk_count": 3,
+        "construct_count": 3,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_signatures.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_tlz.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/tests/test_utils.py",
+        "success": true
+      },
+      {
+        "chunk_count": 1,
+        "construct_count": 1,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "toolz/utils.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 31,
+    "repository_id": "toolz",
+    "success": true
+  },
+  {
+    "case_id": "boltons-ceil-exact-option",
+    "chunk_count": 38,
+    "discovered_file_count": 3,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "boltons/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 24,
+        "construct_count": 24,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "boltons/mathutils.py",
+        "success": true
+      },
+      {
+        "chunk_count": 14,
+        "construct_count": 14,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "tests/test_mathutils.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 3,
+    "repository_id": "boltons",
+    "success": true
+  },
+  {
+    "case_id": "boltons-floor-upper-choice",
+    "chunk_count": 38,
+    "discovered_file_count": 3,
+    "error_message": null,
+    "error_type": null,
+    "failing_file": null,
+    "files": [
+      {
+        "chunk_count": 0,
+        "construct_count": 0,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "boltons/__init__.py",
+        "success": true
+      },
+      {
+        "chunk_count": 24,
+        "construct_count": 24,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "boltons/mathutils.py",
+        "success": true
+      },
+      {
+        "chunk_count": 14,
+        "construct_count": 14,
+        "error_message": null,
+        "error_type": null,
+        "process_terminated": false,
+        "relative_path": "tests/test_mathutils.py",
+        "success": true
+      }
+    ],
+    "process_terminated": false,
+    "python_file_count": 3,
+    "repository_id": "boltons",
+    "success": true
+  }
+]

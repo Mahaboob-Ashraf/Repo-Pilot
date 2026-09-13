@@ -26,6 +26,8 @@ the first bounded planning/approval segment:
 * immutable whole-chunk ContextPacks with hard estimated-token budgets;
 * a frozen 10-case/four-repository local retrieval suite and 33-scenario safety matrix;
 * machine-readable M8 artifacts plus a concise Markdown report;
+* a pinned 3-repository/6-case external controlled-defect M9 harness with
+  gold-isolated scoring and deterministic benchmark approval policies;
 * evidence-grounded structured repair plans with exact chunk citations;
 * a hash-bound LangGraph pause at the first human plan/file-scope approval;
 * restart-safe local SQLite checkpoints behind a start/resume service boundary;
@@ -44,13 +46,26 @@ the first bounded planning/approval segment:
 * a focused React review workspace for evidence, plans, diffs, tests, retry history, final approval, and export;
 * automated tests for repository discovery, parsing, chunking, retrieval, workflow safety, API behavior, and the review UI.
 
-The core bounded workflow, M7 review/control surface, and M8 frozen local
-evaluation are implemented. The
+The core bounded workflow, M7 review/control surface, M8 frozen local
+evaluation, and M9 external/system evaluation harness are implemented. The
 backend remains authoritative for state, scope, approvals, retries, testing,
 and export; browser refresh uses read-only checkpoint retrieval and does not
 repeat expensive stages. A real Docker-backed end-to-end smoke still requires
 an already-running daemon and suitable local image; RepoPilot never pulls one
 automatically.
+
+The historical M9 v1 run reached the planner on 5 controlled-defect cases, but
+Task 019C tied all five generation requests to Vulkan device loss and HTTP 500;
+its 0/5 count is therefore infrastructure-invalid rather than repair-quality
+evidence. A sixth v1 case remains preserved as invalid because its pre-repair
+selector passed. M9 v2 replaces only that case identity/selector and its
+corrected test fails before repair. The final CPU-only frozen v2 run attempted
+all six cases once and repaired 0/6: three planner outputs failed structured
+parsing, two failed grounding, and the one grounded plan produced a patch that
+failed deterministic validation. Retrieval Hit@1/Hit@5/MRR was
+0.8333/1.0000/0.9167 with full gold file/symbol ContextPack coverage; four
+cases used the existing lexical fallback. No provider/infrastructure or critical
+safety failure occurred. See `evaluation/results/m9-v2/m9-report.md`.
 
 The current frozen M8 run measured BM25 and real `embeddinggemma:latest`
 dense/hybrid retrieval on 10 synthetic cases. BM25 and dense each measured file

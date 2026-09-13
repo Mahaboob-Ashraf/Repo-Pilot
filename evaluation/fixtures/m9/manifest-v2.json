@@ -1,0 +1,188 @@
+{
+  "schema_version": "repopilot.m9.manifest.v2",
+  "benchmark_id": "m9-external-controlled-v2",
+  "repositories": [
+    {
+      "repository_id": "more-itertools",
+      "name": "more-itertools",
+      "upstream_url": "https://github.com/more-itertools/more-itertools.git",
+      "commit_sha": "9ed3dbb0ae527230cd156d91d0af305478558fba",
+      "license_identifier": "MIT",
+      "fixture_paths": ["LICENSE", "more_itertools", "tests/test_recipes.py"],
+      "source_fingerprint": "66b72900cf4d06885282dc0adf820e16f8f87c3d71b2311fdd78400f4a660d94",
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary."
+    },
+    {
+      "repository_id": "toolz",
+      "name": "toolz",
+      "upstream_url": "https://github.com/pytoolz/toolz.git",
+      "commit_sha": "568c2b8393973cd172a466546c9d95779c452438",
+      "license_identifier": "BSD-3-Clause",
+      "fixture_paths": ["LICENSE.txt", "toolz"],
+      "source_fingerprint": "40407038e4ed3ffd982e0428c30b041d0f818df14307c91c594536477aa20f8a",
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary."
+    },
+    {
+      "repository_id": "boltons",
+      "name": "boltons",
+      "upstream_url": "https://github.com/mahmoud/boltons.git",
+      "commit_sha": "961dcff3f42e73b245aef65e377fe82763b257bb",
+      "license_identifier": "BSD-3-Clause",
+      "fixture_paths": ["LICENSE", "boltons/__init__.py", "boltons/mathutils.py", "tests/test_mathutils.py"],
+      "source_fingerprint": "7cd4c8d9476a58b02ee0b4cdbdb3c08b802640235f97d4048f438014fe7dc9a5",
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary."
+    }
+  ],
+  "cases": [
+    {
+      "case_id": "more-take-off-by-one",
+      "repository_id": "more-itertools",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "take returns one fewer item than requested for ordinary positive counts.",
+      "expected_failing_tests": ["tests/test_recipes.py::TakeTests::test_simple_take"],
+      "required_test_selectors": ["tests/test_recipes.py::TakeTests::test_simple_take"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "fixture_fingerprint": "03438c9aa655630829decbe1331677207f4d77b9ea27e7c472404dc1aef2afd2",
+      "controlled_mutation": {
+        "path": "more_itertools/recipes.py",
+        "expected_old_text": "    return list(islice(iterable, n))",
+        "replacement_text": "    return list(islice(iterable, max(0, n - 1)))"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["more_itertools/recipes.py"],
+        "gold_symbols": ["take"],
+        "repair": {
+          "path": "more_itertools/recipes.py",
+          "expected_old_text": "    return list(islice(iterable, max(0, n - 1)))",
+          "replacement_text": "    return list(islice(iterable, n))"
+        }
+      }
+    },
+    {
+      "case_id": "more-quantify-inverted",
+      "repository_id": "more-itertools",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "quantify reports the non-matching population instead of the number of matching items.",
+      "expected_failing_tests": ["tests/test_recipes.py::QuantifyTests::test_happy_path"],
+      "required_test_selectors": ["tests/test_recipes.py::QuantifyTests::test_happy_path"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "fixture_fingerprint": "42aa8b9955fc8056f6c37784d633e0202fd5dad0c50ac6c719cef6a2f07abaef",
+      "controlled_mutation": {
+        "path": "more_itertools/recipes.py",
+        "expected_old_text": "    return sum(map(pred, iterable))",
+        "replacement_text": "    return sum(not pred(item) for item in iterable)"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["more_itertools/recipes.py"],
+        "gold_symbols": ["quantify"],
+        "repair": {
+          "path": "more_itertools/recipes.py",
+          "expected_old_text": "    return sum(not pred(item) for item in iterable)",
+          "replacement_text": "    return sum(map(pred, iterable))"
+        }
+      }
+    },
+    {
+      "case_id": "toolz-take-off-by-one",
+      "repository_id": "toolz",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "take truncates positive requests and omits the final requested element.",
+      "expected_failing_tests": ["toolz/tests/test_itertoolz.py::test_take"],
+      "required_test_selectors": ["toolz/tests/test_itertoolz.py::test_take"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "fixture_fingerprint": "17dc037efcaed5cf45d8c63da208d5fec8565835c3ef0dea137570a6043d5e39",
+      "controlled_mutation": {
+        "path": "toolz/itertoolz.py",
+        "expected_old_text": "    return itertools.islice(seq, n)",
+        "replacement_text": "    return itertools.islice(seq, max(0, n - 1))"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["toolz/itertoolz.py"],
+        "gold_symbols": ["take"],
+        "repair": {
+          "path": "toolz/itertoolz.py",
+          "expected_old_text": "    return itertools.islice(seq, max(0, n - 1))",
+          "replacement_text": "    return itertools.islice(seq, n)"
+        }
+      }
+    },
+    {
+      "case_id": "toolz-drop-extra-item",
+      "repository_id": "toolz",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "drop skips an additional element beyond the requested count.",
+      "expected_failing_tests": ["toolz/tests/test_itertoolz.py::test_drop"],
+      "required_test_selectors": ["toolz/tests/test_itertoolz.py::test_drop"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "fixture_fingerprint": "5617ca779eaab02cbbd4b4f46d18e6baa3d296698d65783e0b8d11b890a2f006",
+      "controlled_mutation": {
+        "path": "toolz/itertoolz.py",
+        "expected_old_text": "    return itertools.islice(seq, n, None)",
+        "replacement_text": "    return itertools.islice(seq, n + 1, None)"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["toolz/itertoolz.py"],
+        "gold_symbols": ["drop"],
+        "repair": {
+          "path": "toolz/itertoolz.py",
+          "expected_old_text": "    return itertools.islice(seq, n + 1, None)",
+          "replacement_text": "    return itertools.islice(seq, n, None)"
+        }
+      }
+    },
+    {
+      "case_id": "boltons-ceil-exact-option",
+      "repository_id": "boltons",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "ceil with discrete options advances past a value that exactly matches an available option.",
+      "expected_failing_tests": ["tests/test_mathutils.py::test_ceil_basic"],
+      "required_test_selectors": ["tests/test_mathutils.py::test_ceil_basic"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "fixture_fingerprint": "ea41393def7a05480ac357d16803abbbc661fe7e68b42c4939671fe0c5b9a265",
+      "controlled_mutation": {
+        "path": "boltons/mathutils.py",
+        "expected_old_text": "    i = bisect.bisect_left(options, x)",
+        "replacement_text": "    i = bisect.bisect_right(options, x)"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["boltons/mathutils.py"],
+        "gold_symbols": ["ceil"],
+        "repair": {
+          "path": "boltons/mathutils.py",
+          "expected_old_text": "    i = bisect.bisect_right(options, x)",
+          "replacement_text": "    i = bisect.bisect_left(options, x)"
+        }
+      }
+    },
+    {
+      "case_id": "boltons-floor-exact-option",
+      "repository_id": "boltons",
+      "case_type": "external-repository controlled-defect case",
+      "issue_description": "floor with discrete options can select the value above the requested input.",
+      "expected_failing_tests": ["tests/test_mathutils.py::test_floor_basic"],
+      "required_test_selectors": ["tests/test_mathutils.py::test_floor_basic"],
+      "evaluation_mode": "targeted",
+      "acquisition_provenance": "M9 v2 benchmark-data repair: the pinned v1 source and controlled mutation are unchanged; the non-discriminating selector is replaced under a new case identity.",
+      "fixture_fingerprint": "c1d17a8368d5db8878f302ed70cb665e9f6fa8d84f0898908f60694195d6590a",
+      "controlled_mutation": {
+        "path": "boltons/mathutils.py",
+        "expected_old_text": "    return options[i - 1]",
+        "replacement_text": "    return options[i]"
+      },
+      "evaluation_oracle": {
+        "gold_changed_files": ["boltons/mathutils.py"],
+        "gold_symbols": ["floor"],
+        "repair": {
+          "path": "boltons/mathutils.py",
+          "expected_old_text": "    return options[i]",
+          "replacement_text": "    return options[i - 1]"
+        }
+      }
+    }
+  ]
+}

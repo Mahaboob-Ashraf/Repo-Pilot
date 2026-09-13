@@ -1,0 +1,81 @@
+{
+  "schema_version": "repopilot.m9.task-019c-diagnosis.v1",
+  "diagnosis_date": "2026-09-13",
+  "source_artifacts": {
+    "m9_results_sha256": "47854189921d5dd594a45763bd19513fa99d1880d3f6559c1569bdef7caaac0e",
+    "planner_initial_sha256": "ef9d6f1486186c3f4dfdecb17c71149a0cb13cae3e6b1d74ec286f579ce6067f",
+    "planner_confirmation_sha256": "67da8ac8f4b8f4b219a2b825429296f6ecc801e2074746b33858f5879e9b5451"
+  },
+  "current_preflight": {
+    "ollama_api_reachable": true,
+    "ollama_version": "0.34.0",
+    "generation_model": "gemma4:e4b-it-qat",
+    "generation_model_digest": "ee665637121887cf3befff38abbb1be4ee117c7db867d97a67e29049ecd7e15f",
+    "generation_timeout_seconds": 120.0,
+    "api_ps_loaded_models": [],
+    "generation_model_processor_placement": "unavailable because the model was not loaded",
+    "active_server_configured_compute": "Vulkan0 / GeForce GT 730",
+    "active_log_contains_device_loss": false,
+    "rotated_log_contains_prior_device_loss": true
+  },
+  "representative_case": "boltons-ceil-exact-option",
+  "initial_diagnostic": {
+    "classification": "infrastructure_invalid",
+    "generation_attempts": 1,
+    "retrieval_mode": "hybrid",
+    "context_status": "partial_budget",
+    "context_total_token_cost": 16247,
+    "context_configured_budget": 16384,
+    "planner_latency_ms": 50629.2954999999,
+    "workflow_status": "planner_failed",
+    "failure_error_type": "PlannerInferenceError",
+    "provider_error_type": "InferenceResponseError",
+    "provider_error_classification": "response_error",
+    "provider_error_message": "Ollama returned HTTP 500",
+    "parser_error_type": null,
+    "grounding_error_type": null,
+    "raw_model_response": null,
+    "runtime_log_cause": "ggml_vulkan: device lost on Vulkan0"
+  },
+  "confirmation_diagnostic": {
+    "classification": "planner_grounding_failure",
+    "generation_attempts": 1,
+    "retrieval_mode": "hybrid",
+    "context_status": "partial_budget",
+    "context_total_token_cost": 16247,
+    "context_configured_budget": 16384,
+    "planner_latency_ms": 219060.6775999995,
+    "workflow_status": "planner_failed",
+    "failure_error_type": "PlanValidationError",
+    "failure_message": "repair step 1 cites an unknown chunk: N/A",
+    "provider_error_type": null,
+    "provider_error_classification": null,
+    "provider_error_message": null,
+    "parser_error_type": null,
+    "grounding_error_type": "PlanValidationError",
+    "raw_model_response": null,
+    "raw_response_retention_reason": "Raw output is retained only for PlannerOutputError; this response parsed and then failed grounding.",
+    "processor_placement": "not recorded in the diagnostic artifact"
+  },
+  "original_five_attempts": {
+    "post_hoc_classification": "infrastructure_invalid",
+    "reason": "The retained Ollama server log records five consecutive M9 generation requests; each was preceded by Vulkan0 device loss and returned HTTP 500.",
+    "generation_http_statuses": [500, 500, 500, 500, 500],
+    "generation_durations_seconds": [
+      50.1695958,
+      54.078414,
+      54.9142417,
+      54.1467289,
+      53.6417303
+    ],
+    "prompt_truncation_observed": true,
+    "prompt_token_counts": [5823, 5786, 7038, 6815, 6445],
+    "provider_prompt_limit": 2051,
+    "benchmark_interpretation": "The original 0/5 repair count remains historical output but is not valid model repair-quality evidence."
+  },
+  "full_m9_rerun": {
+    "scientifically_justified": true,
+    "performed_in_task_019c": false,
+    "reason": "The five original attempts were invalidated by one repeated runtime failure. The single confirmation is diagnostic, not a clean six-case benchmark rerun."
+  }
+}

@@ -142,7 +142,9 @@ SWE-bench or public benchmark results.
 - M6 — Critic + one retry + final review — Complete
 - M7 — React review workspace — Complete
 - M8 — Retrieval + safety evaluation — Complete
-- M9 — External + system evaluation
+- M9 — External + system evaluation — Complete; v1 remains historical and
+  infrastructure-invalid, while the clean frozen v2 run measured 0/6 repairs
+  with no provider/infrastructure or critical safety failure
 - M10 — Measured optimization + polish
 
 ## Explicit V1 non-goals

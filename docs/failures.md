@@ -290,3 +290,178 @@ frozen production path after the exact already-local model became reachable.
 The current M8 artifacts contain real dense/hybrid measurements and the model
 digest; no model download, retrieval tuning, Docker, or Gemma generation was
 used.
+
+## 2026-09-13 - M9 real repair evaluation blocked at Docker preflight
+
+### Context and expected behavior
+
+The frozen M9 set requires the existing M5 sandbox and already-local
+`repopilot-python-test:3.11-pytest9` image before any case can count as an
+attempted repair.
+
+### Observed behavior
+
+The explicit materializer and fixture checker verified three pinned public
+repositories and six controlled-defect fixtures. Ollama HTTP exposed both
+locked models and exact digests. The installed Docker CLI could not reach its
+daemon, so local image identity could not be inspected. The canonical M9
+artifact records 0 attempted repairs, 0 completed repairs, and 6 infrastructure-
+blocked cases; every rate and latency for an unexecuted stage remains null.
+
+### Safe outcome and remaining risk
+
+No image pull/build, Docker configuration change, host test, Gemma generation,
+workflow approval, patch, export, or fake repair result occurred. The M9
+production executor and offline harness exist, but real two-checkpoint repair
+behavior remains unmeasured until a running daemon and exact local image are
+provided through a separately authorized setup action.
+
+## 2026-09-13 - External more-itertools ingestion terminated the process
+
+### Context and expected behavior
+
+With Docker repair already blocked but Ollama available, M9 permits a separately
+labeled partial ingestion/retrieval diagnostic. `build_repository_chunks`
+should return a complete chunk set or a typed Python exception.
+
+### Observed behavior
+
+The first more-itertools case terminated the Python process with exit code 1
+inside `build_repository_chunks`, before the post-chunking progress boundary and
+without stderr or a Python traceback. The behavior repeated after replacing the
+full checkout with a pinned minimal fixture containing the license, package,
+and upstream test file. BM25, embeddings, retrieval, ContextPack, planning, and
+all repair stages were not reached.
+
+### Why existing controls missed it
+
+The current M1 pipeline is in-process and fail-fast. Automated fixtures cover
+typed malformed-Python failures but not a native/process-level parser exit on
+an unfamiliar larger source set. The evaluation runner cannot classify an
+exit that terminates its own process.
+
+### Safe outcome and remaining risk
+
+Diagnostic reruns stopped after localization, no retrieval metric was recorded,
+and at that point the canonical artifact remained Docker-blocked rather than
+partially fabricated. Robust per-case subprocess isolation and identification
+of the specific parser input were left for follow-up. M9 parser, chunking,
+retrieval, or context policies were not tuned around the case.
+
+### Task 019B resolution
+
+After Docker was started and the local image build was explicitly approved,
+per-file subprocess isolation reproduced Windows access violation
+`0xC0000005`. The failing inputs included `more_itertools/more.py`,
+`tests/test_recipes.py`, and several large toolz files. Faulthandler localized
+the corruption to node/line metadata access during construct creation.
+
+The parser read `span.start_point.row` and `span.end_point.row` from temporary
+native Tree-sitter `Point` wrappers. Repeated reads on large Windows trees
+corrupted later node/Python-object state. Computing the same 1-based line
+ranges from stable node byte offsets removed the native failure. A 500-function
+regression and the focused M1 suite pass; all six external cases now complete
+chunk construction independently. No retrieval behavior or ranking parameter
+changed.
+
+## 2026-09-13 - One frozen M9 selector was not a genuine failing test
+
+### Observed behavior
+
+The controlled mutation for `boltons-floor-upper-choice` was present and its
+fixture fingerprint matched, but the configured
+`tests/test_mathutils.py::test_floor_sorted` selector passed. The test compares
+the mutated function on unsorted and sorted versions of the same values, so the
+wrong upper-choice behavior remains equal on both sides.
+
+### Safe outcome
+
+The frozen case and gold labels were not rewritten. The case is recorded as
+`benchmark_fixture_invalid` and was not sent to retrieval or generation. M9 v2
+now replaces it under a new case identity; this v1 result remains intact.
+
+## 2026-09-13 - Real M9 attempts stopped at planning and exposed an evidence gap
+
+### Observed behavior
+
+Five valid frozen cases completed ingestion and retrieval, then failed at the
+planner boundary before approval #1. Four larger cases also reached the normal
+lexical-only fallback after the unchanged 60-second embedding setup timeout.
+The initial M9 observation kept the failure stage but failed to copy the
+workflow's typed planner error record, so output parsing versus grounding
+failure cannot be distinguished post-hoc without impermissibly rerunning cases.
+
+### Safe outcome
+
+No cases were rerun, no generated output was manually repaired, and no M9
+parameter was tuned. Subsequent observations now retain the workflow error
+type, safe message, and provider classification. The canonical artifact states
+the missing detail explicitly. All five attempts remain terminal planner
+failures with zero repair success.
+
+### Task 019C corrected interpretation
+
+The retained Ollama log closes the evidence gap: each of the five original
+generation calls was preceded by `ggml_vulkan: device lost on Vulkan0` and
+returned HTTP 500. Those attempts are infrastructure-invalid, not valid planner
+or repair-quality failures. The old JSON remains preserved as the output of its
+then-incomplete observation schema; `m9-task-019c-diagnosis.json` records the
+post-hoc classification and hashes the source artifacts.
+
+The representative initial diagnostic reproduced the same provider/runtime
+failure once. The one justified confirmation then received model output, parsed
+it as a `RepairPlan`, and rejected it during deterministic grounding because
+step 1 cited unknown chunk `N/A`. That confirmation exposes one genuine
+model/system weakness but cannot retroactively turn the original five failed
+HTTP requests into valid benchmark samples. No prompt, schema, grounding,
+retrieval, context, model, or retry behavior changed.
+
+## 2026-09-13 - M9 v1 floor selector compared wrong behavior with itself
+
+### Root cause
+
+`test_floor_sorted` checks `floor(x, OPTIONS) == floor(x, OPTIONS_SORTED)`.
+Production `floor` sorts either input internally, so replacing
+`return options[i - 1]` with `return options[i]` returns the same incorrect
+upper choice on both sides. The selector therefore tests order invariance, not
+the claimed floor value, and cannot discriminate this mutation.
+
+### Benchmark-data repair
+
+M9 v1, case `boltons-floor-upper-choice`, its passing pre-repair result, and its
+fingerprint remain intact. The new v2 manifest uses case identity
+`boltons-floor-exact-option` and existing upstream selector `test_floor_basic`,
+whose literal expectations detect the upper-choice defect. Mutation and fixture
+bytes are unchanged, so the fixture fingerprint remains the same while schema,
+benchmark ID, case ID, selector, provenance, and overall manifest fingerprint
+change.
+
+### Verification
+
+The corrected case materialized from the existing pinned cache, matched its
+fingerprint, contained the controlled defect, and failed before repair in the
+locked M5 Docker sandbox with exit code 1 and
+`pytest_assertion_failure`. The fixture hash was unchanged after execution.
+This is benchmark-data correction, not tuning of RepoPilot or exposure of gold
+repair data to production workflow services.
+
+## 2026-09-13 - Clean M9 v2 exposed planner and patch-output weaknesses
+
+### Observed behavior
+
+The CPU-only frozen v2 run avoided the previously proven Vulkan failure and
+recorded zero provider/infrastructure failures. Three of six planner responses
+could not be parsed as `RepairPlan`; two parsed responses cited unknown chunks
+(`Snippet 1` and `12`) and failed grounding. The only valid grounded plan
+reached patch generation, but its proposal failed deterministic validation.
+The workflow retained typed errors and bounded messages and stopped before any
+unsafe application or repair-test execution.
+
+### Safe outcome
+
+No prompt, schema, grounding rule, model, retrieval, context budget, or retry
+policy was changed. No output was regenerated or manually repaired. The final
+repair score is honestly 0/6. There were no scope, stale/hash, canonical-
+mutation, retry-limit, or export-order violations. These measured failures are
+M10 candidates; deterministic validation and grounding must not be weakened to
+improve the score.

@@ -1,0 +1,53 @@
+{
+  "benchmark_id": "m9-external-controlled-v2",
+  "benchmark_runs_per_case": 1,
+  "docker": {
+    "daemon_reachable": true,
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "image_reference": "repopilot-python-test:3.11-pytest9",
+    "server_version": "29.7.2"
+  },
+  "generation_timeout_seconds": 600,
+  "manifest_fingerprint": "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b",
+  "no_repopilot_tuning_before_or_during_run": true,
+  "ollama": {
+    "api_reachable": true,
+    "cli_available_on_path": false,
+    "locked_models": [
+      {
+        "digest": "ee665637121887cf3befff38abbb1be4ee117c7db867d97a67e29049ecd7e15f",
+        "name": "gemma4:e4b-it-qat"
+      },
+      {
+        "digest": "85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1",
+        "name": "embeddinggemma:latest"
+      }
+    ],
+    "processor_observations": [
+      {
+        "generation_model_size_vram_bytes": 0,
+        "phase": "preflight"
+      },
+      {
+        "embedding_model_size_vram_bytes": 0,
+        "generation_model_size_vram_bytes": 0,
+        "observed_at_local": "2026-09-13T22:25:03.7727704+05:30",
+        "phase": "during_run"
+      },
+      {
+        "embedding_model_size_vram_bytes": 0,
+        "generation_model_size_vram_bytes": 0,
+        "observed_at_local": "2026-09-13T22:38:36.3604743+05:30",
+        "phase": "during_run"
+      },
+      {
+        "generation_model_size_vram_bytes": 0,
+        "phase": "post_run"
+      }
+    ],
+    "processor_placement": "100% CPU",
+    "version": "0.34.0",
+    "vulkan_or_gpu_offload_active": false
+  },
+  "schema_version": "repopilot.m9.run-preflight.v1"
+}

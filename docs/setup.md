@@ -218,6 +218,20 @@ Do not pull/build an image or change Docker installation/configuration as part
 of a repair run. Missing daemon/image state is reported as infrastructure
 failure and requires a separate explicitly approved setup action.
 
+The separately approved RepoPilot-controlled image is defined at
+`docker/test-runner/Dockerfile`. Its base is pinned to
+`python:3.11-slim-bookworm@sha256:528257d48c1da0dcecc2e725d1ae34498d60c965f1241e39cd6a85a8859bdf84`.
+It installs only pytest 9.1.1 and its pinned runtime dependencies. Task 019B
+used these explicit setup commands; do not run them as part of repair execution:
+
+```powershell
+docker pull python:3.11-slim-bookworm
+docker build --pull=false --tag repopilot-python-test:3.11-pytest9 --file docker/test-runner/Dockerfile docker/test-runner
+```
+
+The resulting local image is never pushed. Runtime remains `--pull never` and
+`--network none`.
+
 ## M6 critic, final review, and export configuration
 
 Construct `StructuredCritic` with the existing `InferenceProvider`, then wrap
@@ -288,6 +302,66 @@ is unavailable, dense-dependent variants are recorded as blocked and no fake
 embedding is substituted. A blocked real dense variant does not make the
 deterministic safety suite fail. Invalid fixtures/configuration or any failed
 safety invariant returns a non-zero exit code.
+
+## M9 frozen external/system evaluation
+
+M9 uses an ignored `evaluation/cache/` boundary for pinned external material
+and writes canonical artifacts under `evaluation/results/m9/`. Manifest
+validation, fixture checks, fake harness tests, report generation, and ordinary
+real evaluation do not acquire network data:
+
+```powershell
+Set-Location backend
+uv run --locked --offline python -m app.evaluation.m9 validate
+uv run --locked --offline python -m app.evaluation.m9 check-fixtures
+uv run --locked --offline python -m app.evaluation.m9 diagnose-ingestion
+uv run --locked --offline python -m app.evaluation.m9 diagnose-planner --case-id boltons-ceil-exact-option --diagnostic-label initial
+uv run --locked --offline python -m app.evaluation.m9 verify-fixture-tests
+uv run --locked --offline python -m app.evaluation.m9 dry-run
+uv run --locked --offline python -m app.evaluation.m9 real
+uv run --locked --offline python -m app.evaluation.m9 report
+uv run --locked --offline pytest -q tests/test_m9_evaluation.py
+```
+
+The corrected M9 v2 fixture can be materialized from already-cached pinned
+commits and verified alone without running the rest of M9:
+
+```powershell
+uv run --locked --offline python -m app.evaluation.m9 materialize --manifest ../evaluation/fixtures/m9/manifest-v2.json
+uv run --locked --offline python -m app.evaluation.m9 verify-fixture-tests --manifest ../evaluation/fixtures/m9/manifest-v2.json --case-id boltons-floor-exact-option --output-dir ../evaluation/results/m9-v2
+```
+
+The second command executes external test code only through the existing M5
+Docker sandbox. It writes a separate v2 proof and does not overwrite the v1
+fixture-test history.
+
+External Git acquisition is a separate explicit operation:
+
+```powershell
+uv run --locked --offline python -m app.evaluation.m9 materialize --allow-network
+```
+
+That command may clone/fetch only the manifest's HTTPS GitHub repositories at
+their full pinned SHAs. It selects the recorded minimal fixture paths, applies
+one exact controlled defect per case, and verifies repository/case SHA-256
+fingerprints. It never installs dependencies, invokes repository setup scripts,
+downloads models/tools, or pulls/builds container images. Remove a mismatched
+generated case cache explicitly before rematerializing; the runner never
+silently overwrites it.
+
+`real` checks every fixture fingerprint and then performs Docker/Ollama
+preflight. Full repair requires both locked models plus an already-running
+Docker daemon and already-local `repopilot-python-test:3.11-pytest9`. Missing
+daemon/image/model state produces infrastructure-blocked cases before workflow
+execution. No alternative provider, host pytest, image pull/build, or model
+download is permitted. A CPU-only generation run may use the existing
+process-scoped override without changing defaults:
+
+```powershell
+$env:REPOPILOT_OLLAMA_TIMEOUT_SECONDS = "600"
+$env:REPOPILOT_OLLAMA_EMBEDDING_MODEL = "embeddinggemma:latest"
+uv run --locked --offline python -m app.evaluation.m9 real
+```
 
 ## Verified Windows commands
 
@@ -559,3 +633,96 @@ The run recorded model digest
 `85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`.
 It invoked neither Docker nor a generation model, performed no download, and
 did not change retrieval parameters, prompts, budget, fixture labels, or policy.
+
+## Task 019 verification
+
+Verified on 2026-09-13 without running external repository code on the host:
+
+| Action | Command | Observed result |
+|---|---|---|
+| M9 harness tests | `uv run --locked --offline pytest -q tests/test_m9_evaluation.py` | 25 passed in 1.22 seconds |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 312 passed in 7.47 seconds |
+| Manifest validation | `uv run --locked --offline python -m app.evaluation.m9 validate` | Valid; fingerprint `ed61951d87f38c50f86028346d6f68359c99049f804ced8d1a7417c31ba2c76c` |
+| Fixture verification | `uv run --locked --offline python -m app.evaluation.m9 check-fixtures` | 3 source selections and 6 case fixtures matched |
+| Real M9 run | `uv run --locked --offline python -m app.evaluation.m9 real` | 6 infrastructure-blocked; Docker daemon unreachable |
+
+Ollama HTTP exposed both exact locked model digests. Docker image inventory was
+unavailable because the daemon could not be reached. No image/model/tool pull,
+dependency installation, host pytest against external code, generation call,
+patch, export, commit, push, or public post occurred.
+
+## Task 019B verification
+
+Verified on 2026-09-13 after the user explicitly approved the one local image
+build. External repository tests ran only in restricted Docker containers.
+
+| Action | Command | Observed result |
+|---|---|---|
+| Image build | `docker build --pull=false --tag repopilot-python-test:3.11-pytest9 --file docker/test-runner/Dockerfile docker/test-runner` | Image `sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`; 55,741,891 bytes |
+| Image versions | Restricted `python --version` and `python -m pytest --version` | Python 3.11.16; pytest 9.1.1 |
+| M5 policy smoke | Fixed `docker run` with the production security flags | 1 passed; non-root/read-only/network/capability/tmpfs/resource assertions verified |
+| Ingestion diagnosis | `uv run --locked --offline python -m app.evaluation.m9 diagnose-ingestion` | 6/6 cases succeeded after the byte-offset line-range fix |
+| Pre-repair fixture tests | `uv run --locked --offline python -m app.evaluation.m9 verify-fixture-tests` | 5 expected failures; 1 invalid passing selector |
+| Frozen real M9 | `uv run --locked --offline python -m app.evaluation.m9 real` | 5 attempts; 0 repairs; 5 planner failures; 1 fixture-invalid; 0 infrastructure failures |
+| M1 regressions | Focused parser/discovery/chunk/pipeline files | 36 passed in 0.43 seconds |
+| M8 regressions | `uv run --locked --offline pytest -q tests/test_m8_evaluation.py` | 12 passed in 2.44 seconds |
+| M9 regressions | `uv run --locked --offline pytest -q tests/test_m9_evaluation.py` | 27 passed in 1.17 seconds |
+| M3-M6 regressions | Focused planning, patching, Docker, critic, and export files | 126 passed in 3.87 seconds |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 315 passed in 6.99 seconds |
+
+The real run was executed once. No LLM case was regenerated, no repair was
+manually edited, and no retrieval/model/prompt/budget/approval/retry parameter
+was tuned.
+
+## Task 019C verification
+
+Task 019C preserved the historical v1 result and ran only the permitted
+representative initial/confirmation planner diagnostics. The current Ollama
+API was reachable at preflight on version 0.34.0 and exposed the locked
+`gemma4:e4b-it-qat` digest. `/api/ps` was empty, so current processor placement
+was unavailable; the active server was configured for Vulkan0, and its new
+active log had no device-loss line. The rotated log retains the earlier device
+loss evidence.
+
+The initial `boltons-ceil-exact-option` diagnostic failed once as HTTP 500 with
+Vulkan device loss. The one justified confirmation parsed a plan, then failed
+grounding on unknown chunk `N/A`. No patch/retry executed. Retained logs also
+show all five original v1 generation calls failed the same Vulkan/HTTP-500 way,
+so those attempts are infrastructure-invalid and a clean full rerun is
+scientifically justified but was not performed.
+
+M9 v2 has manifest fingerprint
+`e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b`.
+The one-case Docker proof for `boltons-floor-exact-option` failed before repair
+with exit code 1 / `pytest_assertion_failure`, using image
+`sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`.
+Focused planner/Python-parser regressions passed 18/18, M9 passed 30/30, M8
+passed 12/12, and the complete backend suite passed 318/318 in 8.26 seconds.
+The first sandboxed test attempt could not access the user temp root; repository-
+local base-temp then correctly failed three checkpoint tests because durable
+checkpoints must live outside source. The final unchanged suite used approved
+external temp access and passed. No frontend run was required.
+
+## Task 019D final M9 v2 verification
+
+The final benchmark command used
+`REPOPILOT_OLLAMA_TIMEOUT_SECONDS=600` and
+`REPOPILOT_OLLAMA_EMBEDDING_MODEL=embeddinggemma:latest` with the existing
+documented `real --manifest ../evaluation/fixtures/m9/manifest-v2.json
+--output-dir ../evaluation/results/m9-v2` entry point. It ran once. Ollama's CLI
+was not on this shell's PATH, so HTTP `/api/ps` was used as the equivalent; it
+reported Gemma and EmbeddingGemma with `size_vram=0` during execution.
+
+| Action | Observed result |
+|---|---|
+| Docker preflight | Server 29.7.2; locked image ID `sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7` |
+| Ollama preflight | API 0.34.0; both locked model digests present; 100% CPU placement |
+| M9 v2 fixture proof | 6/6 selectors failed before repair; 6/6 canonical fixtures unchanged |
+| Final M9 v2 | 6 attempted, 0 repaired, 0 provider/infrastructure failures, 0 critical safety failures |
+| M9 regressions | 31 passed in 1.35 seconds |
+| M8 regressions | 12 passed in 2.37 seconds |
+| Parser/chunking regressions | 35 passed, 1 skipped in 0.16 seconds |
+| M3-M6 safety/workflow regressions | 126 passed in 4.59 seconds |
+| Complete backend suite | 319 passed in 8.18 seconds |
+
+No frontend run was needed because no shared API or UI contract changed.

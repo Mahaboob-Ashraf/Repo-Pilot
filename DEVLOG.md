@@ -154,6 +154,76 @@ final approval, export a patch, or create a PR.
 
 None queued. The user explicitly requested no public post.
 
+## 2026-09-13 - Final frozen M9 v2 measured current system honestly
+
+### What we were trying to do
+
+Run the corrected six-case external benchmark exactly once after establishing
+CPU-only Ollama placement, without tuning or resampling model output.
+
+### Final result
+
+Docker and both locked Ollama models passed preflight; repeated `/api/ps`
+snapshots reported zero VRAM. All six controlled defects failed before repair
+and their canonical fixtures stayed unchanged. The final run repaired 0/6:
+three planners failed structured parsing, two failed citation grounding, and
+the sole grounded plan produced a patch proposal rejected by deterministic
+validation. There were no provider/infrastructure failures, repair retries,
+exports, or critical safety violations.
+
+Retrieval still measured file Hit@1/Hit@5/MRR
+0.8333/1.0000/0.9167 and full gold file/symbol ContextPack coverage. Two cases
+used hybrid retrieval; four used the existing lexical fallback after the
+unchanged dense setup timeout. Focused M9, M8, parser/chunking, and M3-M6 suites
+passed 31, 12, 35 (with one skip), and 126 tests. The complete backend suite
+passed 319 tests in 8.18 seconds.
+
+### Evidence and limits
+
+Artifacts live under `evaluation/results/m9-v2/`. Historical v1 and Task 019C
+diagnostics remain intact. This is a frozen controlled external evaluation
+across 3 public Python repositories, not SWE-bench or production accuracy.
+
+## 2026-09-13 - Task 019C separated runtime failure from planner weakness
+
+### What we were trying to do
+
+Recover the exact typed cause behind M9's five planner-stage stops without
+tuning or rerunning the full benchmark, and repair the one invalid fixture as
+benchmark data rather than changing v1 history.
+
+### Final solution
+
+The representative boltons diagnostic first reproduced an Ollama HTTP 500.
+The server log identified Vulkan0 device loss, so that attempt was marked
+infrastructure-invalid. The one justified confirmation received structured
+model output but deterministic grounding rejected the unknown citation `N/A`.
+No patch or retry executed.
+
+The retained log also tied each original M9 generation request to the same
+Vulkan device loss and HTTP 500. The old 0/5 artifact remains historical, but a
+source-hashed diagnosis addendum now classifies those five attempts as runtime-
+invalid. A regenerated report shows the addendum without mutating the original
+case observations.
+
+M9 v2 replaces the invalid floor case under a new identity and uses the existing
+`test_floor_basic` selector. The mutation and repository bytes remain frozen;
+only benchmark identity/provenance changes. The new selector failed before
+repair in the locked M5 Docker sandbox.
+
+### Evidence and limits
+
+The v2 manifest fingerprint is
+`e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b`.
+The corrected one-case Docker proof returned exit code 1 with
+`pytest_assertion_failure` and left the fixture unchanged. The single `N/A`
+grounding result is diagnostic evidence, not a five-case quality score. A clean
+full v2 rerun is justified but was not performed.
+
+### Public-content angle
+
+None queued. The user requested no commit or push, and no public post was made.
+
 ## 2026-09-13 - M8 real dense and hybrid evidence completed
 
 ### What we were trying to do
@@ -372,6 +442,96 @@ minutes. There is no editor, terminal, arbitrary command/file browser, model
 switcher, Git operation, PR creation, background job system, or WebSocket
 stream. M8 evaluation remains separate. A real functional smoke was not run
 because Ollama and Docker executables were unavailable on this session's PATH.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.
+
+## 2026-09-13 - M9 froze an external system-evaluation boundary
+
+### What we were trying to do
+
+Evaluate complete repair behavior on unfamiliar public Python repository
+structure without leaking gold repairs, turning approvals into an oracle, or
+tuning the frozen M1–M7 system against the evaluation set.
+
+### Final solution
+
+M9 now has six controlled-defect cases across pinned commits of
+more-itertools, toolz, and boltons. An explicit Git-only materializer copies
+minimal licensed package/test fixtures into an ignored cache and verifies
+source/case fingerprints. Gold mutation/repair data is stripped into a
+gold-free execution input before production services run. Procedural approval
+functions inspect only normal grounded plan and passing patch/test artifacts.
+
+The real executor composes the existing retrieval, LangGraph, patch workspace,
+Docker, critic/retry, and exact exporter boundaries. The result schema records
+post-hoc retrieval/patch diagnostics, strict repair success, attempt history,
+stage failures, non-averaged safety evidence, and stage latency. A deterministic
+fake path tests the harness without Docker, Ollama, or network.
+
+### How it was verified
+
+The focused M9 harness passed 25 tests. All three source selections and six
+controlled fixtures matched frozen fingerprints after explicit materialization.
+The real run found both locked Ollama models but stopped at an unreachable
+Docker daemon, recording six infrastructure blocks and no attempted repairs.
+The final complete backend suite passed 312 tests in 7.47 seconds.
+
+### Failure evidence and limitations
+
+A separately labeled partial diagnostic terminated during more-itertools
+chunking before Python could return a typed error. No retrieval result was
+claimed. The dataset is small, all cases are controlled mutations, and the
+Docker-blocked run provides no repair-success or SWE-bench evidence. Per-case
+process isolation and parser-input localization are M10 candidates.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.
+
+## 2026-09-13 - M9 ran against the approved local Docker sandbox
+
+### What we were trying to do
+
+Remove the recorded Docker prerequisite, diagnose the unfamiliar-repository
+parser exit, validate every frozen defect, and run M9 once without tuning or
+gold-assisted decisions.
+
+### Final solution
+
+The repository now owns a digest-pinned Python 3.11/pytest 9 test image. A real
+smoke passed under the complete M5 non-root, read-only, networkless, capability,
+tmpfs, and resource policy. Per-file subprocess diagnosis localized Windows
+Tree-sitter corruption to temporary point-wrapper line reads; byte-offset line
+accounting fixed it while preserving the semantic chunk policy.
+
+Five of six frozen selectors genuinely failed before repair. The remaining
+boltons selector passed and was retained as an invalid frozen case rather than
+silently relabeled. The single real run attempted the five valid cases. Four
+used normal lexical degradation after dense setup timed out; one used hybrid
+retrieval. All five stopped at planning, so no repair stages or approvals ran.
+
+### How it was verified
+
+The image reports Python 3.11.16 and pytest 9.1.1. All six isolated ingestion
+checks passed after the fix. Focused M1, M8, M9, and M3-M6 suites passed 36,
+12, 27, and 126 tests respectively; the complete backend suite passed 315
+tests in 6.99 seconds.
+
+### Metrics / evidence
+
+M9 attempted 5 valid cases and repaired 0. Gold-file Hit@1/Hit@5/MRR was
+0.80/1.00/0.90, and gold file/symbol ContextPack coverage was 1.00/1.00.
+Median planner and total workflow latency were 54.092 and 114.240 seconds.
+No infrastructure or critical safety violation occurred.
+
+### Remaining limitations
+
+The set contains only six controlled defects across three repositories. One
+case is invalid, all valid cases failed before approval, and the initial
+observation omitted typed planner detail. These are M10 evidence, not claims of
+broad repair quality. This is not SWE-bench.
 
 ### Public-content angle
 

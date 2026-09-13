@@ -593,3 +593,114 @@ math, structural accounting, budget exclusions, provider blocking, safe JSON,
 and scorecard failure propagation. The completed real M8 run records measured
 BM25, `embeddinggemma:latest` dense/hybrid, structure/ContextPack, and all safety
 categories without parameter tuning.
+
+## ADR-017 - Pinned minimal external fixtures and non-oracular M9 approvals
+
+**Status:** Accepted
+
+**Decision:** M9 uses a frozen manifest of six controlled-defect cases derived
+from full pinned commits of three real permissively licensed Python
+repositories. Acquisition copies only recorded minimal license/package/test
+paths into an ignored cache, applies one exact evaluation-only mutation, and
+verifies source/case fingerprints. Network access exists only in the explicit
+materialization mode.
+
+Gold files, symbols, and reverse-replacement repair oracles remain in the
+evaluation manifest but are converted to a gold-free `ProductionCaseInput`
+before any production service call. Benchmark approval #1 accepts a normally
+validated grounded plan and matching payload scope; approval #2 accepts only a
+current in-scope patch bound to passing configured tests. Neither approval
+function accepts gold data. Post-hoc scoring alone uses the oracle.
+
+The real executor composes existing M1–M6 components and observes their stage
+latencies with wrappers. Repair success requires patch production, passing
+configured tests, final approval, exact export, unchanged canonical input, and
+no authority breach. Missing Docker/Ollama/image/fixture prerequisites remain
+infrastructure-blocked and are never converted into fake repair success.
+
+**Why:** Full upstream checkouts contain substantial unrelated material and may
+be impractical for a six-case offline V1 benchmark. Minimal pinned selections
+preserve real repository structure and upstream tests while making acquisition
+licensing, dependency, and fingerprint boundaries explicit. Procedural
+approvals exercise the real checkpoints without making a human click every
+case and without turning evaluation labels into repair authority.
+
+**Alternatives considered:** Mutable default branches; committing nested Git
+repositories; installing repository dependencies on demand; approving by gold
+file or diff similarity; bypassing LangGraph with evaluation-only repair logic;
+counting retrieval/planning as repair success; tuning M9 configuration.
+
+**Tradeoffs:** All six initial cases are controlled mutations rather than
+historical bugs, and minimal fixtures provide less repository breadth than full
+checkouts. Real end-to-end evidence remains unavailable when the fixed Docker
+prerequisite is missing. A process-level unfamiliar-repository ingestion exit
+also shows that later per-case worker isolation is desirable.
+
+**Testing/benchmark impact:** Offline tests prove manifest validation,
+contamination boundaries, non-oracular approvals, classifications, aggregate
+and latency math, behavioral success without textual gold equality, critical
+scope failure propagation, path-free deterministic artifact identity, and the
+absence of model/image/tool download operations. Real results must retain
+blocked cases and exact model/fixture provenance.
+
+## ADR-018 - Repository-controlled digest-pinned pytest image
+
+**Status:** Accepted
+
+**Decision:** The M5/M9 runtime image is built from
+`docker/test-runner/Dockerfile` and tagged
+`repopilot-python-test:3.11-pytest9`. The Python 3.11 slim base is pinned by
+digest, and pytest plus each runtime dependency is version-pinned. Image build
+and any required base-layer acquisition are explicit setup operations requiring
+separate user approval. Production repair execution continues to resolve a
+local image ID, use `--pull never`, disable networking, and run under all M5
+restrictions.
+
+**Why:** A repository-owned definition makes the formerly external M5 image
+prerequisite reproducible and auditable without allowing repair-time dependency
+installation or mutable image acquisition.
+
+**Alternatives considered:** Installing dependencies from each evaluated
+repository; using an unpinned base tag; silently pulling during repair runs;
+adding broad benchmark dependencies to the image.
+
+**Tradeoffs:** Updating Python or pytest requires an intentional image rebuild
+and recorded digest change. The image supports only repositories whose selected
+tests need the standard library and its controlled pytest runtime.
+
+**Testing/benchmark impact:** Task 019B built image
+`sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`
+and passed a real smoke at UID/GID 65532 with read-only root/source, tmpfs,
+network none, zero capabilities, no-new-privileges, and fixed CPU/memory/PID
+limits. No image is pulled or built by automated backend tests.
+
+## ADR-019 - Version benchmark-data repairs and preserve post-run diagnosis
+
+**Status:** Accepted
+
+**Decision:** A frozen M9 fixture is never silently relabeled or overwritten.
+The invalid v1 floor case and its result remain intact. Its unambiguous selector
+repair is represented by manifest v2 and a new case identity. Because mutation
+and selected repository bytes do not change, their fixture SHA-256 may remain
+the same; schema version, benchmark ID, case ID, selector, provenance, and full
+manifest fingerprint carry the data-repair identity.
+
+Runtime evidence discovered after an observation is stored in a separate,
+source-hashed diagnosis artifact. Report regeneration may present that
+addendum, but it does not rewrite historical per-case JSON. A runtime-invalid
+attempt remains visible while being excluded from repair-quality interpretation.
+
+**Why:** Changing v1 in place would erase the invalid-fixture and incomplete-
+schema history. Retrofitting inferred provider fields into old observations
+would blur measured data and later diagnosis. Versioning and a separate
+addendum preserve both auditability and truthful interpretation.
+
+**Alternatives considered:** Rewrite the v1 selector/result; change only the
+selector without a case/version change; retrofit typed errors into the old case
+records; discard the failed run; count five Vulkan HTTP failures as planner
+quality failures.
+
+**Testing/benchmark impact:** Automated tests load both manifests and assert
+the exact v1/v2 identity boundary. The corrected v2 case was separately proven
+to fail before repair in the locked Docker sandbox. A clean full v2 run is
+scientifically justified but remains a separate operation.

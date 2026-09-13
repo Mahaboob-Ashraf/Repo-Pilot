@@ -1,0 +1,104 @@
+[
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "more-take-off-by-one",
+    "controlled_defect_present": true,
+    "duration_ms": 891,
+    "exit_code": 1,
+    "expected_failure_observed": true,
+    "failure_classification": "pytest_assertion_failure",
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "more-itertools",
+    "selector": [
+      "tests/test_recipes.py::TakeTests::test_simple_take"
+    ],
+    "test_status": "failed",
+    "valid": true
+  },
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "more-quantify-inverted",
+    "controlled_defect_present": true,
+    "duration_ms": 782,
+    "exit_code": 1,
+    "expected_failure_observed": true,
+    "failure_classification": "pytest_assertion_failure",
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "more-itertools",
+    "selector": [
+      "tests/test_recipes.py::QuantifyTests::test_happy_path"
+    ],
+    "test_status": "failed",
+    "valid": true
+  },
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "toolz-take-off-by-one",
+    "controlled_defect_present": true,
+    "duration_ms": 1047,
+    "exit_code": 1,
+    "expected_failure_observed": true,
+    "failure_classification": "pytest_assertion_failure",
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "toolz",
+    "selector": [
+      "toolz/tests/test_itertoolz.py::test_take"
+    ],
+    "test_status": "failed",
+    "valid": true
+  },
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "toolz-drop-extra-item",
+    "controlled_defect_present": true,
+    "duration_ms": 1016,
+    "exit_code": 1,
+    "expected_failure_observed": true,
+    "failure_classification": "pytest_assertion_failure",
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "toolz",
+    "selector": [
+      "toolz/tests/test_itertoolz.py::test_drop"
+    ],
+    "test_status": "failed",
+    "valid": true
+  },
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "boltons-ceil-exact-option",
+    "controlled_defect_present": true,
+    "duration_ms": 687,
+    "exit_code": 1,
+    "expected_failure_observed": true,
+    "failure_classification": "pytest_assertion_failure",
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "boltons",
+    "selector": [
+      "tests/test_mathutils.py::test_ceil_basic"
+    ],
+    "test_status": "failed",
+    "valid": false
+  },
+  {
+    "canonical_fixture_unchanged": true,
+    "case_id": "boltons-floor-upper-choice",
+    "controlled_defect_present": true,
+    "duration_ms": 625,
+    "exit_code": 0,
+    "expected_failure_observed": false,
+    "failure_classification": null,
+    "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+    "manifest_fingerprint_valid": true,
+    "repository_id": "boltons",
+    "selector": [
+      "tests/test_mathutils.py::test_floor_sorted"
+    ],
+    "test_status": "passed",
+    "valid": false
+  }
+]

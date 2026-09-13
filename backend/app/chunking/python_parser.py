@@ -245,13 +245,15 @@ def _build_construct(
     relative_path: str,
     parent_class: str | None = None,
 ) -> PythonConstruct:
+    start_byte = span.start_byte
+    end_byte = span.end_byte
     return PythonConstruct(
         construct_type=construct_type,
         symbol=symbol,
         relative_path=relative_path,
-        start_line=span.start_point.row + 1,
-        end_line=span.end_point.row + 1,
-        source_text=source_bytes[span.start_byte : span.end_byte].decode("utf-8"),
+        start_line=source_bytes.count(b"\n", 0, start_byte) + 1,
+        end_line=source_bytes.count(b"\n", 0, end_byte) + 1,
+        source_text=source_bytes[start_byte:end_byte].decode("utf-8"),
         parent_class=parent_class,
     )
 
@@ -287,8 +289,6 @@ def _extract_top_level_imports(
             imported_modules.add("__future__")
 
     return tuple(sorted(imported_modules))
-
-
 def _node_text(node: Node, source_bytes: bytes) -> str:
     return source_bytes[node.start_byte : node.end_byte].decode("utf-8")
 

@@ -1,0 +1,72 @@
+{
+  "approval_checkpoint_reached": false,
+  "benchmark_id": "m9-external-controlled-v1",
+  "canonical_fixture_unchanged": true,
+  "case_id": "boltons-ceil-exact-option",
+  "context_pack": {
+    "configured_budget": 16384,
+    "excluded_candidate_count": 21,
+    "files": [
+      "boltons/mathutils.py",
+      "tests/test_mathutils.py"
+    ],
+    "included_chunk_count": 17,
+    "status": "partial_budget",
+    "total_token_cost": 16247
+  },
+  "diagnostic_label": "confirmation",
+  "failure_error_type": "PlanValidationError",
+  "failure_message": "repair step 1 cites an unknown chunk: N/A",
+  "generation_attempts": 1,
+  "generation_model": "gemma4:e4b-it-qat",
+  "generation_timeout_seconds": 600.0,
+  "grounding_error_type": "PlanValidationError",
+  "latency_ms": {
+    "embedding_index_setup": 6136.795299999903,
+    "planner_generation": 219060.6775999995,
+    "repository_indexing": 6.7957000001115375,
+    "retrieval": 64.6418000005724,
+    "total_to_planner_boundary": 225298.22299999977
+  },
+  "manifest_fingerprint": "ed61951d87f38c50f86028346d6f68359c99049f804ced8d1a7417c31ba2c76c",
+  "parser_error_type": null,
+  "patch_or_retry_executed": false,
+  "plan_generated": false,
+  "provider_error_classification": null,
+  "provider_error_message": null,
+  "provider_error_type": null,
+  "raw_model_response": null,
+  "raw_model_response_sha256": null,
+  "raw_model_response_truncated": false,
+  "retrieval": {
+    "degradation_reason": null,
+    "degraded": false,
+    "mode": "hybrid",
+    "ranked_files": [
+      "boltons/mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py",
+      "boltons/mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py",
+      "tests/test_mathutils.py"
+    ],
+    "ranked_symbols": [
+      "ceil",
+      "test_ceil_oor_upper",
+      "test_ceil_basic",
+      "test_ceil_oor_lower",
+      "test_ceil_sorted",
+      "floor",
+      "test_bits_len_bound",
+      "test_floor_oor_lower",
+      "test_floor_oor_upper",
+      "test_floor_sorted"
+    ]
+  },
+  "schema_version": "repopilot.m9.planner-diagnostic.v1",
+  "workflow_status": "planner_failed"
+}

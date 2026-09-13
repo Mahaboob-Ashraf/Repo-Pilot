@@ -93,6 +93,32 @@ def test_extracts_class_and_nested_method_with_parent_context(tmp_path: Path) ->
     assert method_construct.source_text == expected_method_source
 
 
+def test_large_tree_line_ranges_do_not_depend_on_native_point_wrappers(
+    tmp_path: Path,
+) -> None:
+    repository = tmp_path / "repository"
+    repository.mkdir()
+    source_path = repository / "large_module.py"
+    function_count = 500
+    source_path.write_text(
+        "\n\n".join(
+            f"def function_{index}():\n    return {index}"
+            for index in range(function_count)
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    constructs = extract_python_constructs(repository, source_path)
+
+    assert len(constructs) == function_count
+    assert (constructs[0].start_line, constructs[0].end_line) == (1, 2)
+    assert (constructs[-1].start_line, constructs[-1].end_line) == (
+        (function_count - 1) * 3 + 1,
+        (function_count - 1) * 3 + 2,
+    )
+
+
 def test_rejects_source_path_outside_repository_root(tmp_path: Path) -> None:
     repository = tmp_path / "repository"
     repository.mkdir()

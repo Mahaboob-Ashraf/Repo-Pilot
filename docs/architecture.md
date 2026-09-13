@@ -486,6 +486,12 @@ memory, CPU, PID, output, and wall-clock limits. No Docker socket, home,
 credentials, canonical source, or durable workspace is mounted. M5 performs no
 dependency installation or repository-controlled setup script.
 
+`docker/test-runner/Dockerfile` is the repository-controlled definition for
+that image. It pins the Python 3.11 slim base by digest and installs only pinned
+pytest runtime packages. Building the image is an explicit setup action outside
+repair execution; runtime never pulls or installs. Task 019B verified the image
+under the full policy as numeric non-root UID/GID 65532.
+
 `TestRunResult` is immutable and JSON-friendly. It records the exact patch and
 workspace IDs, full/targeted mode, validated selectors, status, exit code,
 duration, bounded stdout/stderr and truncation, image reference/resolved ID,
@@ -677,3 +683,59 @@ and test text are not claimed to be unable to influence an LLM; the evaluated
 claim is that such text cannot grant scope, path, approval, retry, shell/network,
 or export authority across deterministic boundaries. Any failed safety case
 remains visible and makes the safety/full command fail.
+
+## M9 external evaluation boundary
+
+M9 is an evaluation-only orchestrator around the existing production
+components. It does not add repair logic to LangGraph and does not change BM25
+weights, embedding identity, RRF, candidate depth, structural expansion,
+ContextPack budget, prompts, approval semantics, or the hard two-attempt cap.
+
+```text
+pinned external manifest + ignored minimal fixture cache
+    -> gold-free ProductionCaseInput
+        -> production M1/M2 evidence pipeline
+        -> production PlanReviewService / M3-M6 LangGraph
+            -> benchmark procedural approval #1 (workflow artifact only)
+            -> approved-scope patch + Docker test + optional critic/retry
+            -> benchmark procedural approval #2 (passing bound artifact only)
+            -> exact production PatchExporter
+    -> production observation
+        -> post-hoc gold-aware M9 scoring and reports
+```
+
+The manifest deliberately contains two trust domains. Acquisition/mutation and
+gold repair fields are evaluation-only. `ProductionCaseInput` contains only the
+case identity, repository fixture, issue, and fixed selectors; it is the sole
+input accepted by the production executor. Approval functions accept only the
+normal workflow result they review. The oracle cannot define approved scope,
+queries, plans, patches, critic advice, test outcomes, or decisions.
+
+External checkouts and materialized cases live beneath ignored
+`evaluation/cache/`; no `.git` directory, dependency environment, or generated
+artifact enters tracked source. Explicit materialization may use only Git
+clone/fetch for full pinned SHAs. Ordinary real evaluation performs no
+acquisition and stops before execution if fixture fingerprints, locked models,
+Docker daemon, or the already-local test image are unavailable.
+
+Timing decorators observe planner, attempt-specific patcher, Docker runner, and
+critic calls without replacing them. Scoring occurs after workflow completion
+and keeps infrastructure blocking distinct from repair failure. Any scope or
+canonical-workspace authority breach is a critical failure rather than an
+averaged metric.
+
+The evaluation diagnostic path runs discovery and each Python parse/chunk step
+in isolated subprocesses so a native parser exit is attributed to a case and
+file. This does not replace the production parser. The resulting Task 019B fix
+keeps the Tree-sitter chunk policy intact and derives line numbers from node
+byte offsets instead of temporary native `Point` wrappers. Pre-repair fixture
+validation separately runs each configured selector through the real M5 policy
+and excludes a case if its controlled defect does not genuinely fail.
+
+Task 019C keeps post-run diagnosis separate from historical case observations.
+`m9-task-019c-diagnosis.json` hashes its source artifacts and records the later
+runtime classification; report regeneration reads this optional addendum
+without rewriting `m9-results.json`. Benchmark-data repairs receive a new
+manifest version and case identity. M9 v2 retains the five unchanged cases and
+replaces only the invalid floor case/selector, while v1 remains loadable and
+auditable.
