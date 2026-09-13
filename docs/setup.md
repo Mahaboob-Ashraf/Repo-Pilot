@@ -13,8 +13,9 @@ proposals, durable isolated workspaces, transactional exact replacements, and
 RepoPilot-generated unified diffs/hashes. M5 adds patch-bound, restricted
 Docker pytest through disposable execution snapshots and bounded structured
 results. M6 adds the bounded critic, one clean-baseline retry maximum, the
-second hash-bound approval, and exact patch export. The frontend review
-workflow is not yet implemented.
+second hash-bound approval, and exact patch export. M7 adds the typed workflow
+API and focused React evidence/plan/diff/test/final-review workspace. The
+backend remains authoritative; the UI is not an IDE or workflow engine.
 
 ## Prerequisites
 
@@ -73,6 +74,7 @@ not invoke `ollama run` as a subprocess.
 | `REPOPILOT_OLLAMA_EMBEDDING_BASE_URL` | `http://127.0.0.1:11434` | Separate embedding HTTP server |
 | `REPOPILOT_OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Local embedding model identity |
 | `REPOPILOT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS` | `60` | Per-embedding-request timeout |
+| `REPOPILOT_DATA_DIR` | `%LOCALAPPDATA%\RepoPilot` on Windows | Durable workflow data outside reviewed repositories |
 
 Example override for the current PowerShell session:
 
@@ -121,6 +123,12 @@ Focused M6 critic/retry/final/export command:
 
 ```powershell
 uv run --locked --offline pytest -q tests/test_critic.py tests/test_patcher.py tests/test_patch_export.py tests/test_m6_workflow.py
+```
+
+Focused M7 workflow API command:
+
+```powershell
+uv run --locked --offline pytest -q tests/test_workflow_api.py tests/test_api.py
 ```
 
 ## M3 checkpoint persistence
@@ -233,6 +241,33 @@ Approval re-verifies the workspace and matching successful test result before
 writing `<patch_hash>.patch`; rejection writes nothing. The export file is the
 exact existing canonical unified diff. RepoPilot never applies it to the
 canonical repository and never commits, pushes, merges, or creates a PR.
+
+## M7 workflow API and refresh behavior
+
+The React workspace calls these local FastAPI routes:
+
+- `POST /api/workflows` with `repository_path`, `issue`, and optional stable
+  `thread_id`;
+- `GET /api/workflows/{thread_id}` to read the checkpoint without running
+  planner, patcher, tests, critic, or export;
+- `POST /api/workflows/{thread_id}/plan-decision` with `approve|reject` and the
+  exact displayed `plan_hash`;
+- `POST /api/workflows/{thread_id}/final-decision` with `approve|reject` and
+  the exact displayed `patch_hash`.
+
+The browser keeps only the active thread ID in its URL, so reopen/refresh uses
+the read-only GET. State-changing requests are never automatically retried.
+The create screen supplies that ID before its POST; an ambiguous network
+failure retains it for recovery by a later read-only refresh.
+Local inference may take minutes; the UI describes the bounded operation
+without fake percentages. Repository source, diffs, issues, and logs render as
+escaped text only.
+
+`REPOPILOT_DATA_DIR` holds the durable LangGraph checkpoints, a minimal
+thread-to-repository locator needed to reconstruct repository-specific
+services after restart, and isolated patch/test/critic/export artifacts. These
+implementation paths are not returned by the API; export responses expose only
+the safe content-addressed `.patch` filename and identifier.
 
 ## Verified Windows commands
 
@@ -448,3 +483,22 @@ previous `gemma4:e4b-it-qat` CPU generations took minutes. A complete real M6
 smoke remains blocked at the already-recorded unavailable Docker daemon/image
 boundary. No image pull/build, machine change, source mutation, commit, push,
 merge, or PR action occurred.
+
+## Task 017 verification
+
+Verified on 2026-09-13 without requiring Docker or Ollama:
+
+| Action | Command | Observed result |
+|---|---|---|
+| Pre-change backend baseline | `uv run --locked --offline pytest -q` | 266 passed in 5.81 seconds |
+| Pre-change frontend tests | `npm test` | 4 passed |
+| Focused workflow API + legacy API | Documented M7 focused command | 17 passed |
+| Broader API/M3/M6 focused set | Workflow API, API, plan review, and M6 files | 42 passed |
+| Complete backend suite | `uv run --locked --offline pytest -q` | 275 passed in 5.18 seconds |
+| Frontend tests | `npm test` | 18 passed |
+| Frontend typecheck/build | `npm run build` | TypeScript passed; Vite 7.3.6 built 32 modules |
+
+The optional functional UI smoke did not run because `ollama` and `docker`
+were not available on the current command PATH. No installation, daemon start,
+image pull/build, model download, or machine configuration change was
+attempted. No benchmark claim is made.

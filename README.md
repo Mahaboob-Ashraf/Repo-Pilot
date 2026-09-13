@@ -3,7 +3,7 @@
 **A local-first, human-controlled coding agent for Python repositories, built
 to understand evidence before changing code.**
 
-RepoPilot is an experimental developer tool that takes a software repository and an issue, builds a structure-aware representation of the codebase, retrieves the most relevant code, and is being developed toward a bounded repair workflow with human approval before changes are exported.
+RepoPilot is an experimental developer tool that takes a software repository and an issue, builds a structure-aware representation of the codebase, retrieves the most relevant code, and runs a bounded repair workflow with human approval before changes are exported.
 
 The project is designed around a simple principle:
 
@@ -39,13 +39,16 @@ the first bounded planning/approval segment:
 * a second durable human interrupt bound to exact passing patch/test evidence;
 * idempotent export of the exact canonical diff after final approval only;
 * local Ollama model integration through a provider boundary;
-* FastAPI application foundation;
-* automated tests for repository discovery, parsing, chunking, retrieval, and API behavior.
+* a typed FastAPI workflow API with read-only refresh and exact-hash decisions;
+* a focused React review workspace for evidence, plans, diffs, tests, retry history, final approval, and export;
+* automated tests for repository discovery, parsing, chunking, retrieval, workflow safety, API behavior, and the review UI.
 
-The core bounded workflow through critique/retry, final approval, and patch
-export is implemented. A real M5/M6 Docker smoke remains
-blocked until the already-installed Docker daemon and a suitable local image
-are available; RepoPilot does not pull images automatically.
+The core bounded workflow and M7 review/control surface are implemented. The
+backend remains authoritative for state, scope, approvals, retries, testing,
+and export; browser refresh uses read-only checkpoint retrieval and does not
+repeat expensive stages. A real Docker-backed end-to-end smoke still requires
+an already-running daemon and suitable local image; RepoPilot never pulls one
+automatically.
 
 ## Why RepoPilot?
 
@@ -235,7 +238,6 @@ final human-approved patch export. Remaining planned components include:
 * structured execution traces;
 * retrieval benchmarks;
 * feasible frozen external/system evaluation;
-* a React review interface.
 
 These are roadmap items rather than claims about the current implementation.
 
@@ -274,7 +276,7 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 | Evaluation harness       | Frozen BM25/dense/hybrid cases |
 | Current orchestration    | LangGraph + selective LangChain |
 | Current sandbox boundary | Restricted Docker pytest |
-| Planned frontend         | React, TypeScript |
+| Current frontend         | React, Vite, TypeScript review workspace |
 
 ## Roadmap
 
@@ -298,6 +300,8 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Durable isolated workspace application and rollback
 * [x] Canonical unified diff and deterministic patch hash
 * [x] Patch-bound restricted Docker test runner and structured evidence
+* [x] Typed workflow API and read-only durable refresh
+* [x] React evidence/plan/diff/test/final review workspace
 * [x] Ollama provider boundary
 * [x] Automated tests for the implemented foundation
 
@@ -307,7 +311,6 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 * [x] Second/final approval and patch export
 * [ ] Retrieval and safety evaluation
 * [ ] External and system evaluation
-* [ ] React review studio
 
 ## Project Direction
 

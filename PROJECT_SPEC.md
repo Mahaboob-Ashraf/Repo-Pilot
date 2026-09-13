@@ -140,7 +140,7 @@ SWE-bench or public benchmark results.
 - M4 — Scoped patch workspace — Complete
 - M5 — Docker test runner — Complete
 - M6 — Critic + one retry + final review — Complete
-- M7 — React review workspace
+- M7 — React review workspace — Complete
 - M8 — Retrieval + safety evaluation
 - M9 — External + system evaluation
 - M10 — Measured optimization + polish

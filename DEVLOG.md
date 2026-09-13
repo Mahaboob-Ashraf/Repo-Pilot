@@ -245,3 +245,53 @@ environment.
 ### Public-content angle
 
 None queued. The user explicitly requested no public post.
+
+## 2026-09-13 - The bounded workflow gained a human review surface
+
+### What we were trying to do
+
+Expose the completed M3–M6 workflow to a local human without turning React into
+an IDE, workflow engine, or source of approval authority.
+
+### Final solution
+
+FastAPI now projects the existing workflow through typed create/read/decision
+routes. The GET path only reconstructs checkpoint state. Both POST decisions
+carry the exact displayed content hash and call the existing service checks.
+The React workspace shows repository evidence, plan diagnosis and scope,
+canonical diff, patch-bound test evidence, optional critic/one-retry history,
+the final export checkpoint, bounded failures, and export-only completion.
+
+The active thread ID lives in the URL for refresh/reopen. A minimal durable
+locator maps that ID to the canonical repository so M4–M6 services can be
+reconstructed after restart; LangGraph remains the workflow-state authority.
+Repository content and model/test output render as text only, and the client
+does not automatically retry state-changing requests.
+
+### How it was verified
+
+Deterministic API tests cover invalid input, unknown workflows, exact plan and
+patch hashes, terminal rejection, final export, safe internal errors, omitted
+runtime details, and read-only GET behavior. Frontend tests cover forms,
+evidence/plan/diff/test/critic/final/completion rendering, XSS-safe text,
+status distinctions, exact-hash submissions, terminal action removal, refresh,
+and pending-button guards.
+
+### Metrics / evidence
+
+The complete backend suite passed 275/275 in 5.18 seconds. The frontend passed
+18/18 tests; TypeScript and the Vite 7.3.6 production build also succeeded.
+These are functional verification results, not performance or repair-quality
+benchmarks.
+
+### Remaining limitations
+
+Requests that invoke local inference/tests remain synchronous and may take
+minutes. There is no editor, terminal, arbitrary command/file browser, model
+switcher, Git operation, PR creation, background job system, or WebSocket
+stream. M8 evaluation remains separate. A real functional smoke was not run
+because Ollama and Docker executables were unavailable on this session's PATH.
+
+### Public-content angle
+
+None queued. The user explicitly requested no public post.

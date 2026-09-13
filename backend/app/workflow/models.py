@@ -93,6 +93,12 @@ class PlanReviewResult(WorkflowModel):
 
     thread_id: str = Field(min_length=1)
     status: WorkflowStatus
+    issue_text: str | None = None
+    evidence: tuple[PlanningEvidence, ...] = ()
+    context_status: str | None = None
+    retrieval_mode: str | None = None
+    retrieval_degraded: bool = False
+    degradation_reason: str | None = None
     plan: RepairPlan | None = None
     plan_hash: str | None = None
     approval_payload: ApprovalPayload | None = None

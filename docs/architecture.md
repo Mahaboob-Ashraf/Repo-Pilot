@@ -534,11 +534,54 @@ is reused; conflicting bytes are never overwritten. Durable patch/test/critic
 records plus checkpoint state prevent identical replay from repeating expensive
 work. A changed request or artifact identity fails closed.
 
+## Implemented M7 workflow API and human review workspace
+
+M7 adds a thin local HTTP composition boundary without moving workflow logic
+into routes. `LocalWorkflowApplication` validates and chunks the selected local
+Python repository, builds the existing BM25/Chroma/RRF/structural ContextPack,
+and opens the same durable M3–M6 `PlanReviewService`. Route handlers only parse
+strict requests, call that boundary, and project results into API-specific
+review models.
+
+```text
+React review workspace
+    -> typed workflow API client (no automatic POST retry)
+        -> FastAPI workflow routes
+            -> LocalWorkflowApplication composition
+                -> existing M1/M2 evidence pipeline
+                -> existing persisted M3–M6 PlanReviewService
+```
+
+The public routes are `POST /api/workflows`, read-only
+`GET /api/workflows/{thread_id}`, and exact-hash-bound plan/final decision
+POSTs. GET calls `PlanReviewService.get_plan_review()`, which uses only
+LangGraph `aget_state`; it invokes no node. The API exposes reviewable plan,
+scope, evidence, canonical diff, bounded test output, critic assessment,
+attempt history, and export identity. Provider objects, workspace IDs and
+paths, checkpoint paths, Docker resource internals, host environment, and
+arbitrary exceptions are not serialized.
+
+LangGraph checkpoints remain authoritative. A separate minimal SQLite locator
+stores only thread ID to canonical repository path so the repository-specific
+patch/test/export services can be reconstructed after a backend restart. It is
+not a second workflow state machine. The browser stores only the thread ID in
+the URL and derives visual progress from the returned workflow status.
+
+The React application is a control/review surface. It has no code editor,
+terminal, arbitrary command execution, filesystem browser, Docker controls,
+provider selector, Git apply/commit/push, or PR behavior. All repository text,
+diffs, issues, and logs remain escaped React text; no HTML interpretation is
+used. Buttons disable during active requests, long local work is described
+without percentages, and a network error never triggers automatic replay of a
+state-changing request. The create screen supplies a stable thread ID before
+the POST; if the response is lost to a network failure, that known ID remains
+in the URL so a later read-only refresh can recover checkpoint state.
+
 ## Scoped V1 system boundary
 
 ```text
-React Studio
-    -> FastAPI API and event stream
+React review workspace
+    -> FastAPI request/response API
         -> one persisted LangGraph repair workflow (M3+)
             -> tree-sitter Python semantic chunks
             -> SQLite FTS5 + Chroma + RRF
@@ -558,13 +601,13 @@ use is limited to planner/patcher/critic prompt templating and
 Pydantic output parsing. Neither framework replaces RepoPilot's custom
 retrieval or patch-validation boundaries.
 
-The frontend review UI is not yet implemented. The optional real M5/M6 smoke is
-currently blocked by an unavailable local Docker daemon; automated boundary
-tests do not require Docker or Ollama.
+The M7 frontend and API boundary are implemented. The optional real end-to-end
+smoke was not run during Task 017 because `ollama` and `docker` were unavailable
+on that session's command PATH; automated boundary tests require neither.
 
 ## End-to-end flow
 
-1. A user supplies a Python repository and issue.
+1. A user supplies a Python repository and issue through the local review workspace.
 2. Tree-sitter builds cited AST-aware chunks.
 3. BM25 and dense retrieval run independently; RRF fuses their ranks.
 4. One-hop import/parent-child/related-test evidence is added and packed under a fixed token budget.
@@ -573,7 +616,8 @@ tests do not require Docker or Ollama.
 7. The patcher proposes and applies a dry-run-validated edit only to approved files.
 8. The test runner executes allowlisted commands in restricted Docker and captures evidence.
 9. On failure, an optional critic may guide one retry; there are at most two repair attempts total.
-10. Human checkpoint two reviews the final diff/test evidence and may approve patch export.
+10. Human checkpoint two reviews the exact final diff/hash/test evidence and may approve patch export.
+11. The UI reports the exported patch artifact without implying application, commit, merge, or PR creation.
 
 ## One-workflow stages and failure behavior
 

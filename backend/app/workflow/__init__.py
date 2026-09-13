@@ -16,6 +16,13 @@ from app.workflow.service import (
     PlanReviewService,
     open_sqlite_plan_review_service,
 )
+from app.workflow.application import (
+    LocalWorkflowApplication,
+    WorkflowApplication,
+    WorkflowApplicationError,
+    WorkflowMetadata,
+    WorkflowReview,
+)
 
 __all__ = [
     "ApprovalDecision",
@@ -31,4 +38,9 @@ __all__ = [
     "MAX_PATCH_ATTEMPTS",
     "build_plan_review_graph",
     "open_sqlite_plan_review_service",
+    "LocalWorkflowApplication",
+    "WorkflowApplication",
+    "WorkflowApplicationError",
+    "WorkflowMetadata",
+    "WorkflowReview",
 ]

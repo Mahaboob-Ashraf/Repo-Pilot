@@ -508,3 +508,47 @@ parsing and grounding, pass/infra routing, clean retry workspaces, the exact
 two-attempt ceiling, second interrupt durability, stale hash/workspace rejection,
 export identity/conflicts, replay, and thread isolation. These are functional
 safety tests, not repair-quality or performance benchmarks.
+
+## ADR-015 - Backend-authoritative review API with read-only refresh
+
+**Status:** Accepted
+
+**Decision:** M7 exposes the existing M3–M6 `PlanReviewService` through four
+typed FastAPI operations: create, read, plan decision, and final decision.
+Routes do not reproduce graph transitions. Public response models project only
+review-relevant evidence, plan/scope, canonical diff, tests, critic history,
+decisions, safe failures, and export identity. Provider/checkpointer objects,
+workspace implementation identity, Docker policy internals, host environment,
+and arbitrary exceptions remain private.
+
+`GET` reads `aget_state` through `PlanReviewService.get_plan_review()` and can
+never execute a graph node. The browser retains only a thread ID in the URL and
+derives presentation from backend status. It never automatically retries a
+state-changing POST. Both decision routes repeat the exact displayed hash and
+delegate validation to the existing approval services.
+
+Because patch/test/export composition depends on the canonical repository,
+one minimal SQLite locator stores only thread ID to canonical repository path.
+All workflow state remains in the durable LangGraph checkpoint; the locator is
+not a second workflow state machine.
+
+**Why:** Refresh and backend restart must preserve human review without
+replaying expensive or state-changing work. A narrow API prevents the browser
+from becoming an authority or receiving internal runtime capabilities.
+
+**Alternatives considered:** Serializing raw graph state; rebuilding approval
+checks in routes; browser-owned state transitions; GET that resumes the graph;
+automatic POST retry; an in-memory-only thread map; a second full workflow
+database; WebSockets/background jobs; editor, terminal, Git, Docker, or model
+controls in the review UI.
+
+**Tradeoffs:** Create and approval requests remain synchronous and may stay open
+for minutes during local inference/tests. The locator duplicates only the
+minimum repository association needed for restart reconstruction. Lifecycle
+management for durable local artifacts remains a later concern.
+
+**Testing/benchmark impact:** Offline API tests inject the application boundary
+and cover exact hashes, transitions, refresh, safe failures, and serialization.
+Frontend tests mock only the typed API client and cover text-safe rendering,
+decisions, test classifications, retry display, completion, and pending-state
+guards. These are functional UI/API results, not M8 evaluation evidence.

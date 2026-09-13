@@ -234,3 +234,26 @@ is made.
 The combined real Docker test-to-final-review path remains unverified on this
 machine until an already-local compatible image and running daemon are
 available through a separately authorized setup action.
+
+## 2026-09-13 - Task 017 real UI smoke prerequisites were unavailable
+
+### Context and expected behavior
+
+After automated M7 API/UI verification, an optional functional smoke could run
+only if the existing local Ollama and Docker prerequisites were already
+available. No installation, daemon start, model download, image pull/build, or
+machine change was authorized.
+
+### Observed behavior
+
+The established read-only `ollama ps`, `docker version`, `docker info`, and
+`docker image ls --no-trunc` preflight commands could not resolve either
+executable on the current command PATH. The functional UI smoke did not start.
+
+### Safe outcome and remaining risk
+
+No real inference, container, workflow POST, repository mutation, or export was
+attempted. The 275-test backend suite, 18 frontend tests, TypeScript check, and
+production build passed with deterministic boundaries, but the real M7
+browser-to-Gemma path and Docker continuation remain unverified in this
+session. This is an environment limitation, not benchmark evidence.

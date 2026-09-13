@@ -21,7 +21,12 @@ from app.exporting import (
     PatchExporter,
 )
 from app.patching import ApprovedPatchService, PatchArtifact
-from app.planning import PlanningContextSnapshot, RepairPlan, StructuredPlanner
+from app.planning import (
+    PlanningContextSnapshot,
+    PlanningEvidence,
+    RepairPlan,
+    StructuredPlanner,
+)
 from app.sandbox import ApprovedPatchTestService, TestRunRequest, TestRunResult
 from app.workflow.graph import build_plan_review_graph
 from app.workflow.models import (
@@ -122,6 +127,15 @@ class PlanReviewService:
         }
         output = await self._graph.ainvoke(initial_state, config=config)
         return _result_from_output(thread_id, output)
+
+    async def get_plan_review(self, *, thread_id: str) -> PlanReviewResult | None:
+        """Return checkpointed review state without executing any graph node."""
+
+        thread_id = _validate_thread_id(thread_id)
+        snapshot = await self._graph.aget_state(_config(thread_id))
+        if not snapshot.values:
+            return None
+        return _result_from_output(thread_id, snapshot.values)
 
     async def resume_final_review(
         self,
@@ -289,16 +303,17 @@ def _result_from_output(
         if isinstance(state.get("plan"), dict)
         else None
     )
-    interrupt_payload = None
-    final_interrupt_payload = None
-    interrupts = state.get("__interrupt__", ())
-    if interrupts:
-        if status is WorkflowStatus.AWAITING_FINAL_APPROVAL:
-            final_interrupt_payload = FinalReviewPayload.model_validate(
-                interrupts[0].value
-            )
-        else:
-            interrupt_payload = ApprovalPayload.model_validate(interrupts[0].value)
+    interrupt_payload = (
+        build_approval_payload(state)
+        if status is WorkflowStatus.AWAITING_APPROVAL
+        else None
+    )
+    if status is WorkflowStatus.AWAITING_FINAL_APPROVAL:
+        from app.workflow.models import build_final_review_payload
+
+        final_interrupt_payload = build_final_review_payload(state)
+    else:
+        final_interrupt_payload = None
     decision = (
         ApprovalDecision.model_validate(state["approval_decision"])
         if isinstance(state.get("approval_decision"), dict)
@@ -341,6 +356,15 @@ def _result_from_output(
     return PlanReviewResult(
         thread_id=thread_id,
         status=status,
+        issue_text=state.get("issue_text"),
+        evidence=tuple(
+            PlanningEvidence.model_validate(item)
+            for item in state.get("evidence", [])
+        ),
+        context_status=state.get("context_status"),
+        retrieval_mode=state.get("retrieval_mode"),
+        retrieval_degraded=bool(state.get("retrieval_degraded", False)),
+        degradation_reason=state.get("degradation_reason"),
         plan=plan,
         plan_hash=state.get("plan_hash"),
         approval_payload=interrupt_payload,
@@ -383,6 +407,15 @@ def _validation_failure(
     return PlanReviewResult(
         thread_id=thread_id,
         status=WorkflowStatus.VALIDATION_FAILED,
+        issue_text=state.get("issue_text"),
+        evidence=tuple(
+            PlanningEvidence.model_validate(item)
+            for item in state.get("evidence", [])
+        ),
+        context_status=state.get("context_status"),
+        retrieval_mode=state.get("retrieval_mode"),
+        retrieval_degraded=bool(state.get("retrieval_degraded", False)),
+        degradation_reason=state.get("degradation_reason"),
         plan=plan,
         plan_hash=state.get("plan_hash"),
         approval_payload=payload,
