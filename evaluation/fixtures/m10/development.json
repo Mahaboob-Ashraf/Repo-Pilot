@@ -1,0 +1,44 @@
+{
+  "embedding_case": {
+    "chunk_count": 96,
+    "source_payload_characters": 256
+  },
+  "patch_case": {
+    "case_id": "exact-replacement-rounding",
+    "expected_old_text": "return value + 1",
+    "issue": "round_down incorrectly increments the value. Replace only the faulty return expression.",
+    "replacement_text": "return value",
+    "target_path": "calibration/rounding.py",
+    "target_source": "def round_down(value: int) -> int:\n    return value + 1\n",
+    "target_symbol": "round_down"
+  },
+  "planner_cases": [
+    {
+      "case_id": "structured-simple-discount",
+      "issue": "discount_total increases the total instead of subtracting the percentage discount. Produce a plan for the named function.",
+      "noise_count": 1,
+      "target_path": "calibration/pricing.py",
+      "target_source": "def discount_total(total: float, percent: float) -> float:\n    return total * (1 + percent / 100)\n",
+      "target_symbol": "discount_total"
+    },
+    {
+      "case_id": "similar-evidence-identifiers",
+      "issue": "normalize_product_code incorrectly preserves surrounding whitespace. Plan a correction only for normalize_product_code.",
+      "noise_count": 5,
+      "similar_identifiers": true,
+      "target_path": "calibration/normalizers.py",
+      "target_source": "def normalize_product_code(value: str) -> str:\n    return value.upper()\n",
+      "target_symbol": "normalize_product_code"
+    },
+    {
+      "case_id": "medium-context-limit",
+      "issue": "clamp_limit permits max_value + 1. Plan an exact correction while preserving the lower bound.",
+      "noise_count": 14,
+      "noise_source_characters": 420,
+      "target_path": "calibration/limits.py",
+      "target_source": "def clamp_limit(value: int, min_value: int, max_value: int) -> int:\n    return min(max(value, min_value), max_value + 1)\n",
+      "target_symbol": "clamp_limit"
+    }
+  ],
+  "suite_id": "m10-development-v1"
+}

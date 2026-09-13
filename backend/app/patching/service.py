@@ -413,12 +413,16 @@ def _evidence_range(
         raise StaleApprovalError("approved evidence line range is no longer valid")
     if sha256(evidence.source_text.encode("utf-8")).hexdigest() != evidence.content_hash:
         raise StaleApprovalError("approved evidence fingerprint is inconsistent")
-    start = sum(len(line) for line in lines[: evidence.start_line - 1])
-    end = start + len(evidence.source_text)
-    if text[start:end] != evidence.source_text:
+    line_range_start = sum(len(line) for line in lines[: evidence.start_line - 1])
+    line_range_end = sum(len(line) for line in lines[: evidence.end_line])
+    line_range = text[line_range_start:line_range_end]
+    matches = _exact_match_ranges(line_range, evidence.source_text)
+    if len(matches) != 1:
         raise StaleApprovalError(
             "approved evidence no longer matches repository content"
         )
+    start = line_range_start + matches[0][0]
+    end = line_range_start + matches[0][1]
     observed_end_line = evidence.start_line + evidence.source_text.count("\n")
     if observed_end_line != evidence.end_line:
         raise StaleApprovalError("approved evidence line range is inconsistent")

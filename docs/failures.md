@@ -465,3 +465,43 @@ repair score is honestly 0/6. There were no scope, stale/hash, canonical-
 mutation, retry-limit, or export-order violations. These measured failures are
 M10 candidates; deterministic validation and grounding must not be weakened to
 improve the score.
+
+## 2026-09-14 - Explicit citation lists exhausted the runtime context
+
+### Observed behavior
+
+Native JSON Schema produced 3/3 valid grounded development plans. Appending a
+separate list of every allowed chunk ID/path regressed the medium case to a
+15-token truncated JSON response.
+
+### Root cause and safe outcome
+
+The added list raised prompt evaluation from 3,467 to 4,081 tokens against the
+loaded model's 4,096-token context. The list change was reverted. Native schema
+was kept because it achieved 3/3 without removing Pydantic parsing or grounding;
+invented identifiers are still rejected, never mapped.
+
+## 2026-09-14 - Indented methods triggered false stale-evidence failures
+
+### Observed behavior
+
+M9-v3 safely rejected two approved plans as `StaleApprovalError`. A deterministic
+scan reproduced mismatches for method chunks whose Tree-sitter source begins at
+`def` while the declared line begins with indentation.
+
+### Root cause and fix
+
+Freshness validation assumed source text began at column zero. It now requires
+one exact source match within the declared line range while preserving the
+content hash, line bounds, and all exact-edit checks. A regression covers an
+indented method. M9-v3 was not rerun, so both safe failures remain in evidence.
+
+## 2026-09-14 - Dense setup changed from timeout to transient HTTP 400
+
+Bounded batches removed the prior single 60-second request. Four M9-v3 larger
+cases instead degraded after `EmbeddingResponseError` / HTTP 400. An embedding-
+only replay of all fifteen 32-item batches for the 474-chunk repository then
+succeeded, including an 8,681-byte chunk, so no deterministic size limit was
+proven. Retry policy, timeout, and fallback were left unchanged. Future work
+should retain a bounded allowlisted Ollama error code/body classification and
+investigate model-residency pressure.

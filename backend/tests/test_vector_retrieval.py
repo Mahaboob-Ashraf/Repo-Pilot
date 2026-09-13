@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import Sequence
+from dataclasses import replace
 from pathlib import Path
 
 import chromadb
@@ -292,3 +293,46 @@ def test_chroma_query_failure_surfaces_as_vector_retrieval_error(
         asyncio.run(index.search_vector("discount"))
 
     assert isinstance(exc.value.__cause__, InternalError)
+
+
+def test_rebuild_uses_bounded_embedding_batches_and_records_timings(
+    tmp_path: Path,
+) -> None:
+    base = _toy_chunks()[0]
+    chunks = tuple(
+        replace(
+            base,
+            chunk_id=f"pricing.py::function::synthetic_{index}::{index}-{index}",
+            symbol=f"synthetic_{index}",
+            qualified_symbol=f"synthetic_{index}",
+            start_line=index,
+            end_line=index,
+        )
+        for index in range(1, 66)
+    )
+    provider = FakeSemanticEmbeddingProvider()
+    index = ChromaVectorIndex(provider, client=_client(tmp_path / "chroma"))
+
+    assert asyncio.run(index.rebuild(chunks)) == 65
+
+    assert [len(batch) for batch in provider.batch_inputs] == [32, 32, 1]
+    metrics = index.last_rebuild_metrics
+    assert metrics is not None
+    assert metrics.chunk_count == 65
+    assert metrics.embedding_batch_size == 32
+    assert len(metrics.embedding_batch_durations_ms) == 3
+    assert metrics.embedding_total_ms >= 0
+    assert metrics.chroma_write_ms >= 0
+    assert metrics.total_ms >= metrics.chroma_write_ms
+
+
+@pytest.mark.parametrize("batch_size", [0, -1, True])
+def test_embedding_batch_size_must_be_positive_integer(
+    tmp_path: Path, batch_size
+) -> None:
+    with pytest.raises(ValueError, match="positive integer"):
+        ChromaVectorIndex(
+            FakeSemanticEmbeddingProvider(),
+            client=_client(tmp_path / f"chroma-{batch_size}"),
+            embedding_batch_size=batch_size,
+        )

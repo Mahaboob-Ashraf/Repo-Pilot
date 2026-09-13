@@ -739,3 +739,22 @@ without rewriting `m9-results.json`. Benchmark-data repairs receive a new
 manifest version and case identity. M9 v2 retains the five unchanged cases and
 replaces only the invalid floor case/selector, while v1 remains loadable and
 auditable.
+
+## Implemented M10 measured optimization boundary
+
+Ollama providers may optionally expose native JSON-schema generation. Planner,
+patcher, and critic prefer that capability, then still parse into strict
+Pydantic models and run the existing deterministic grounding, authority, and
+exact-edit validators. Providers without the capability retain plain text
+generation.
+
+The production retrieval depth is five before one-hop expansion and fixed-
+budget packing. Chroma index construction embeds canonical source documents in
+deterministic batches of 32 and records batch, Chroma-write, and total setup
+timings. Dense failure still degrades explicitly to lexical retrieval.
+
+Freshness checks bind the exact source hash and require one exact source match
+within the declared line range. This supports indented method chunks without
+assuming column zero; it does not introduce fuzzy matching. Patch failure
+records retain only allowlisted first-party validation messages. All approval,
+scope, stale-hash, two-attempt, Docker, and export boundaries are unchanged.

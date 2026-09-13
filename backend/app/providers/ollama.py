@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from typing import Any
 
 import httpx
@@ -27,6 +28,30 @@ class OllamaProvider:
         return self._model
 
     async def generate(self, prompt: str) -> str:
+        return await self._generate(prompt, response_schema=None)
+
+    async def generate_structured(
+        self,
+        prompt: str,
+        response_schema: Mapping[str, Any],
+    ) -> str:
+        """Use Ollama's native JSON-schema response-format capability."""
+
+        return await self._generate(prompt, response_schema=response_schema)
+
+    async def _generate(
+        self,
+        prompt: str,
+        *,
+        response_schema: Mapping[str, Any] | None,
+    ) -> str:
+        request_body: dict[str, Any] = {
+            "model": self._model,
+            "prompt": prompt,
+            "stream": False,
+        }
+        if response_schema is not None:
+            request_body["format"] = dict(response_schema)
         try:
             async with httpx.AsyncClient(
                 base_url=self._base_url,
@@ -35,7 +60,7 @@ class OllamaProvider:
             ) as client:
                 response = await client.post(
                     "/api/generate",
-                    json={"model": self._model, "prompt": prompt, "stream": False},
+                    json=request_body,
                 )
                 response.raise_for_status()
         except (httpx.NetworkError, httpx.TimeoutException) as exc:
@@ -67,4 +92,3 @@ class OllamaProvider:
         if not isinstance(payload, dict):
             raise InferenceResponseError("Ollama returned an invalid response object")
         return payload
-

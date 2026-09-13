@@ -1,0 +1,140 @@
+{
+  "development_suite": "m10-development-v1",
+  "development_suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "generated_at_utc": "2026-09-13T18:37:26.362297+00:00",
+  "gold_independence": "Synthetic/development cases only; no M9 gold patches were used for optimization.",
+  "optimizations": [
+    {
+      "after": {
+        "case_count": 3,
+        "citation_validity_rate": 1.0,
+        "grounded_plan_rate": 1.0,
+        "mean_latency_ms": 38370.002633334174,
+        "parse_success_rate": 1.0
+      },
+      "baseline": {
+        "case_count": 3,
+        "citation_validity_rate": 0.6666666666666666,
+        "grounded_plan_rate": 0.6666666666666666,
+        "mean_latency_ms": 174610.93726666635,
+        "parse_success_rate": 0.6666666666666666
+      },
+      "change": "Optional provider-native JSON Schema for planner, patcher, and critic; deterministic parsing and validation retained.",
+      "decision": "kept",
+      "id": "native-json-schema",
+      "problem": "Planner structured-output reliability",
+      "safety_gate": "Pydantic and grounding/patch/critic validators remain authoritative."
+    },
+    {
+      "after": {
+        "case_count": 3,
+        "citation_validity_rate": 0.6666666666666666,
+        "grounded_plan_rate": 0.6666666666666666,
+        "mean_latency_ms": 51548.96613333161,
+        "parse_success_rate": 0.6666666666666666
+      },
+      "baseline": {
+        "case_count": 3,
+        "citation_validity_rate": 1.0,
+        "grounded_plan_rate": 1.0,
+        "mean_latency_ms": 38370.002633334174,
+        "parse_success_rate": 1.0
+      },
+      "change": "Append a compact authoritative list of real chunk IDs and paths.",
+      "decision": "reverted",
+      "diagnosis": "The medium prompt reached 4,081 prompt tokens in a 4,096-token runtime context and left only 15 response tokens.",
+      "id": "explicit-allowed-id-list",
+      "problem": "Invented evidence citations"
+    },
+    {
+      "after": {
+        "coverage_rate": 1.0,
+        "mean_precision": 0.2,
+        "mean_prompt_bytes": 5188,
+        "mean_token_waste": 0.7916883116883117
+      },
+      "baseline": {
+        "coverage_rate": 1.0,
+        "mean_precision": 0.1,
+        "mean_prompt_bytes": 7102,
+        "mean_token_waste": 0.8955457150299557
+      },
+      "change": "Reduce returned retrieval depth from 10 to 5 before structural expansion and packing.",
+      "decision": "kept",
+      "id": "retrieval-depth-five",
+      "problem": "Context precision and token waste",
+      "rejected_alternative": {
+        "coverage_rate": 0.6666666666666666,
+        "mean_precision": 0.2222222222222222,
+        "mean_prompt_bytes": 4419.333333333333,
+        "mean_token_waste": 0.7701347090856979
+      }
+    },
+    {
+      "after": {
+        "batch_size": 32,
+        "maximum_request_ms": 2161.7132000028505,
+        "request_count": 3,
+        "total_embedding_ms": 6149.759000003542
+      },
+      "baseline": {
+        "batch_size": 96,
+        "maximum_request_ms": 7938.560000002326,
+        "request_count": 1,
+        "total_embedding_ms": 7938.5707000001275
+      },
+      "change": "Embed index documents in deterministic batches of 32 and retain setup timings.",
+      "decision": "kept",
+      "id": "bounded-embedding-batches",
+      "index_setup": {
+        "batch_cardinalities": [
+          32,
+          32,
+          32
+        ],
+        "chroma_write_ms": 81.63559999957215,
+        "chunk_count": 96,
+        "embedding_batch_durations_ms": [
+          3648.862799997005,
+          2249.5296000015514,
+          2173.497399999178
+        ],
+        "embedding_total_ms": 8071.889799997734,
+        "total_setup_ms": 8153.565900000103
+      },
+      "problem": "Single oversized dense-index embedding request and 60-second exposure"
+    },
+    {
+      "after": {
+        "case_count": 1,
+        "exact_replacement_contract_rate": 1.0,
+        "mean_latency_ms": 18229.74450000038,
+        "parse_success_rate": 1.0
+      },
+      "baseline": {
+        "case_count": 1,
+        "exact_replacement_contract_rate": 1.0,
+        "mean_latency_ms": 141947.4072999983,
+        "parse_success_rate": 1.0
+      },
+      "change": "No prompt change; the development patch already satisfied exact replacement.",
+      "decision": "not_needed",
+      "id": "patch-prompt-change",
+      "problem": "Historical toolz patch validation failure"
+    },
+    {
+      "change": "Retain only an allowlist of static first-party exact validation messages.",
+      "decision": "kept",
+      "id": "patch-validation-diagnostics",
+      "problem": "Historical M9-v2 artifact discarded the exact PatchValidationError reason"
+    },
+    {
+      "change": "Require a unique exact source match within the declared line range instead of assuming column zero.",
+      "decision": "kept_correctness_fix_after_evaluation",
+      "id": "indented-method-freshness",
+      "problem": "M9-v3 exposed two false stale-evidence failures for indented method chunks.",
+      "safety_gate": "Content hash, line bounds, unique exact match, and exact edit validation remain required."
+    }
+  ],
+  "schema_version": "repopilot.m10.optimization-log.v1"
+}

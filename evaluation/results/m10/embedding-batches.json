@@ -1,0 +1,59 @@
+{
+  "configuration": {
+    "chunk_count": 96,
+    "model": "embeddinggemma:latest"
+  },
+  "experiment": "embedding_batches",
+  "generated_at_utc": "2026-09-13T18:00:04.344666+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "batch_cardinalities": [
+        96
+      ],
+      "batch_durations_ms": [
+        7938.560000002326
+      ],
+      "batch_size": 96,
+      "embedding_count": 96,
+      "total_embedding_ms": 7938.5707000001275
+    },
+    {
+      "batch_cardinalities": [
+        32,
+        32,
+        32
+      ],
+      "batch_durations_ms": [
+        1948.7408999993932,
+        2038.6899000004632,
+        2161.7132000028505
+      ],
+      "batch_size": 32,
+      "embedding_count": 96,
+      "total_embedding_ms": 6149.759000003542
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "summary": {
+    "strategies": [
+      {
+        "batch_size": 96,
+        "maximum_request_ms": 7938.560000002326,
+        "request_count": 1,
+        "total_embedding_ms": 7938.5707000001275
+      },
+      {
+        "batch_size": 32,
+        "maximum_request_ms": 2161.7132000028505,
+        "request_count": 3,
+        "total_embedding_ms": 6149.759000003542
+      }
+    ]
+  }
+}

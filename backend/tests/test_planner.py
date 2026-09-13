@@ -54,6 +54,30 @@ def test_valid_structured_output_becomes_immutable_repair_plan() -> None:
         actual.summary = "mutated"  # type: ignore[misc]
 
 
+def test_planner_uses_optional_native_schema_capability() -> None:
+    pack = make_context_pack()
+    expected = make_valid_plan(pack)
+
+    class StructuredProvider:
+        model = "structured-fake"
+
+        def __init__(self) -> None:
+            self.schemas = []
+
+        async def generate(self, prompt: str) -> str:
+            raise AssertionError("plain generation must not be used")
+
+        async def generate_structured(self, prompt: str, response_schema) -> str:
+            self.schemas.append(response_schema)
+            return expected.model_dump_json()
+
+    provider = StructuredProvider()
+    actual = asyncio.run(StructuredPlanner(provider).create_plan(pack))
+
+    assert actual == expected
+    assert provider.schemas == [RepairPlan.model_json_schema()]
+
+
 def test_malformed_model_output_fails_without_fabricating_a_plan() -> None:
     provider = FakeInferenceProvider("this is not structured JSON")
 

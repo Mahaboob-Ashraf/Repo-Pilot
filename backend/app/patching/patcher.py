@@ -20,6 +20,7 @@ from app.providers.base import (
     InferenceProviderError,
     InferenceResponseError,
     InferenceUnavailableError,
+    generate_with_optional_schema,
 )
 
 
@@ -163,7 +164,11 @@ class StructuredPatcher:
             approved_files=approved_files,
         )
         try:
-            raw_output = await self._provider.generate(prompt)
+            raw_output = await generate_with_optional_schema(
+                self._provider,
+                prompt,
+                PatchProposal.model_json_schema(),
+            )
         except InferenceProviderError as exc:
             raise PatchInferenceError(
                 model=self.model,
@@ -226,7 +231,11 @@ class StructuredPatcher:
             retry_context=retry_context,
         )
         try:
-            raw_output = await self._provider.generate(prompt)
+            raw_output = await generate_with_optional_schema(
+                self._provider,
+                prompt,
+                PatchProposal.model_json_schema(),
+            )
         except InferenceProviderError as exc:
             raise PatchInferenceError(
                 model=self.model,

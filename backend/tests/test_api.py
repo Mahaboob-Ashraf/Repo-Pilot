@@ -106,6 +106,36 @@ def test_inference_returns_only_generated_response(client: TestClient) -> None:
     }
 
 
+def test_ollama_native_structured_generation_sends_json_schema() -> None:
+    schema = {
+        "type": "object",
+        "properties": {"answer": {"type": "string"}},
+        "required": ["answer"],
+    }
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert json.loads(request.content) == {
+            "model": "gemma4:e4b-it-qat",
+            "prompt": "Return structured data.",
+            "stream": False,
+            "format": schema,
+        }
+        return httpx.Response(200, json={"response": '{"answer":"ok"}'})
+
+    settings = Settings(
+        ollama_base_url="http://ollama.test",
+        ollama_model="gemma4:e4b-it-qat",
+        ollama_timeout_seconds=1.0,
+    )
+    provider = OllamaProvider(settings, transport=httpx.MockTransport(handler))
+
+    response = __import__("asyncio").run(
+        provider.generate_structured("Return structured data.", schema)
+    )
+
+    assert response == '{"answer":"ok"}'
+
+
 def test_inference_reports_ollama_unavailable(client: TestClient) -> None:
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused", request=request)

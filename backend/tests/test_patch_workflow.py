@@ -143,6 +143,33 @@ def test_model_cannot_expand_checkpointed_approved_scope(tmp_path) -> None:
     assert result.error.message == "patch proposal exceeded approved authority"
 
 
+def test_exact_patch_validation_reason_is_retained_safely(tmp_path) -> None:
+    service, _checkpointer, _planner, patcher, pack, _plan, proposal = _workflow(
+        tmp_path
+    )
+    invalid_edit = proposal.edits[0].model_copy(
+        update={"expected_old_text": "return price * (1 + missing / 100)"}
+    )
+    patcher.response = proposal.model_copy(
+        update={"edits": (invalid_edit,)}
+    ).model_dump_json()
+
+    async def scenario():
+        pending = await service.start_plan_review(
+            thread_id="specific-patch-failure", context_pack=pack
+        )
+        return await service.resume_plan_review(
+            thread_id="specific-patch-failure",
+            decision={"decision": "approve", "plan_hash": pending.plan_hash},
+        )
+
+    result = asyncio.run(scenario())
+
+    assert result.status is WorkflowStatus.PATCH_FAILED
+    assert result.error.error_type == "PatchValidationError"
+    assert result.error.message == "expected_old_text was not found exactly"
+
+
 def test_malformed_patch_output_fails_without_patch_ready(tmp_path) -> None:
     repository = copy_toy_repository(tmp_path / "inputs")
     pack, plan, _proposal = patch_inputs(repository)

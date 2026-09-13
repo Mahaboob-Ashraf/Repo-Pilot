@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from app.evaluation.m9 import (
+    _CapturingGenerationProvider,
     DEFAULT_MANIFEST,
     REPOSITORY_ROOT,
     build_artifact,
@@ -41,6 +42,27 @@ from app.sandbox import (
     TestStatus as SandboxTestStatus,
 )
 from app.workflow import ApprovalPayload, PlanReviewResult, WorkflowStatus
+
+
+def test_diagnostic_capture_preserves_native_structured_capability() -> None:
+    class Provider:
+        model = "structured-test"
+
+        async def generate(self, prompt: str) -> str:
+            return "plain"
+
+        async def generate_structured(self, prompt: str, schema) -> str:
+            assert schema == {"type": "object"}
+            return '{"answer":"ok"}'
+
+    capture = _CapturingGenerationProvider(Provider())  # type: ignore[arg-type]
+
+    output = asyncio.run(
+        capture.generate_structured("prompt", {"type": "object"})
+    )
+
+    assert output == '{"answer":"ok"}'
+    assert capture.last_output == output
 
 
 @pytest.fixture(scope="module")

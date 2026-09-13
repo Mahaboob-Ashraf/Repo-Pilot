@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import json
 import math
 from pathlib import Path
+from time import perf_counter
 from typing import Any, Mapping
 
 import chromadb
@@ -24,6 +25,7 @@ from app.providers.embeddings import (
 
 
 DEFAULT_VECTOR_COLLECTION_NAME = "repopilot_code_chunks"
+DEFAULT_EMBEDDING_BATCH_SIZE = 32
 EMBEDDING_DOCUMENT_FORMAT = "codechunk-source-text-v1"
 VECTOR_DISTANCE_SPACE = "cosine"
 
@@ -69,6 +71,18 @@ class VectorSearchResult:
         return self.chunk.qualified_symbol
 
 
+@dataclass(frozen=True, slots=True)
+class VectorRebuildMetrics:
+    """Bounded setup timings retained for evaluation diagnostics."""
+
+    chunk_count: int
+    embedding_batch_size: int
+    embedding_batch_durations_ms: tuple[float, ...]
+    embedding_total_ms: float
+    chroma_write_ms: float
+    total_ms: float
+
+
 class ChromaVectorIndex:
     """A local cosine collection using only RepoPilot-supplied embeddings."""
 
@@ -79,12 +93,21 @@ class ChromaVectorIndex:
         client: ClientAPI | None = None,
         persist_directory: str | Path | None = None,
         collection_name: str = DEFAULT_VECTOR_COLLECTION_NAME,
+        embedding_batch_size: int = DEFAULT_EMBEDDING_BATCH_SIZE,
     ) -> None:
         if client is not None and persist_directory is not None:
             raise ValueError("Provide either a Chroma client or persist_directory")
+        if (
+            isinstance(embedding_batch_size, bool)
+            or not isinstance(embedding_batch_size, int)
+            or embedding_batch_size <= 0
+        ):
+            raise ValueError("embedding_batch_size must be a positive integer")
 
         self._embedding_provider = embedding_provider
+        self._embedding_batch_size = embedding_batch_size
         self._collection_name = collection_name
+        self._last_rebuild_metrics: VectorRebuildMetrics | None = None
         chroma_settings = ChromaSettings(anonymized_telemetry=False)
         if client is not None:
             self._client = client
@@ -115,6 +138,10 @@ class ChromaVectorIndex:
             "embedding_function": vector_config.embedding_function,
         }
 
+    @property
+    def last_rebuild_metrics(self) -> VectorRebuildMetrics | None:
+        return self._last_rebuild_metrics
+
     def indexed_chunk_ids(self) -> tuple[str, ...]:
         records = self._collection.get(include=[])
         return tuple(sorted(str(record_id) for record_id in records["ids"]))
@@ -125,15 +152,28 @@ class ChromaVectorIndex:
         ordered_chunks = sorted(chunks, key=lambda chunk: chunk.chunk_id)
         _reject_duplicate_chunk_ids(ordered_chunks)
         documents = tuple(chunk_to_embedding_document(chunk) for chunk in ordered_chunks)
+        rebuild_started = perf_counter()
+        embedding_durations: list[float] = []
 
         if documents:
-            embeddings = validate_embedding_batch(
-                await self._embedding_provider.embed_batch(documents),
-                expected_count=len(documents),
-            )
+            collected_embeddings = []
+            for offset in range(0, len(documents), self._embedding_batch_size):
+                batch = documents[offset : offset + self._embedding_batch_size]
+                embedding_started = perf_counter()
+                collected_embeddings.extend(
+                    validate_embedding_batch(
+                        await self._embedding_provider.embed_batch(batch),
+                        expected_count=len(batch),
+                    )
+                )
+                embedding_durations.append(
+                    (perf_counter() - embedding_started) * 1000
+                )
+            embeddings = tuple(collected_embeddings)
         else:
             embeddings = ()
 
+        write_started = perf_counter()
         self._client.delete_collection(self._collection_name)
         self._collection = self._create_collection()
 
@@ -144,6 +184,16 @@ class ChromaVectorIndex:
                 documents=list(documents),
                 metadatas=[_chunk_metadata(chunk) for chunk in ordered_chunks],
             )
+
+        write_ms = (perf_counter() - write_started) * 1000
+        self._last_rebuild_metrics = VectorRebuildMetrics(
+            chunk_count=len(ordered_chunks),
+            embedding_batch_size=self._embedding_batch_size,
+            embedding_batch_durations_ms=tuple(embedding_durations),
+            embedding_total_ms=sum(embedding_durations),
+            chroma_write_ms=write_ms,
+            total_ms=(perf_counter() - rebuild_started) * 1000,
+        )
 
         return len(ordered_chunks)
 

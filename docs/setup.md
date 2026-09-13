@@ -726,3 +726,32 @@ reported Gemma and EmbeddingGemma with `size_vram=0` during execution.
 | Complete backend suite | 319 passed in 8.18 seconds |
 
 No frontend run was needed because no shared API or UI contract changed.
+
+## Task 020 M10 calibration and final artifacts
+
+Run development-only experiments from `backend/`; they write only under the
+new M10 result directory:
+
+```powershell
+uv run --locked --offline python -m app.evaluation.m10 context
+uv run --locked --offline python -m app.evaluation.m10 embedding
+uv run --locked --offline python -m app.evaluation.m10 embedding_index
+$env:REPOPILOT_OLLAMA_TIMEOUT_SECONDS = "600"
+uv run --locked --offline python -m app.evaluation.m10 planner --phase plain
+uv run --locked --offline python -m app.evaluation.m10 planner --phase native_schema
+uv run --locked --offline python -m app.evaluation.m10 patcher --phase native_schema
+uv run --locked --offline python -m app.evaluation.m10_report
+```
+
+The completed post-optimization runs used fresh output directories:
+
+```powershell
+uv run --locked --offline python -m app.evaluation.m8 --mode full --output-dir ../evaluation/results/m8-v2
+uv run --locked --offline python -m app.evaluation.m9 real --manifest ../evaluation/fixtures/m9/manifest-v2.json --output-dir ../evaluation/results/m9-v3
+```
+
+M9-v3 is a completed one-shot measurement and must not be casually rerun or
+overwritten. It used Docker 29.7.2, image
+`sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`,
+the locked model digests, a 600-second generation timeout, and Gemma with
+`size_vram=0`. Use a new result version for any later experiment.

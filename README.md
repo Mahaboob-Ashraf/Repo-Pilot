@@ -11,10 +11,12 @@ The project is designed around a simple principle:
 
 ## Current Status
 
-RepoPilot is **actively under development**.
+RepoPilot's scoped V1 milestones are complete and the repository is ready for
+manual portfolio review. It remains an experimental local tool, not a
+production-ready autonomous coding service.
 
-The current implementation includes the retrieval/evaluation foundation and
-the first bounded planning/approval segment:
+The current implementation includes the complete bounded V1 workflow and its
+versioned evaluation evidence:
 
 * repository discovery and source-file ingestion;
 * Python structure-aware parsing;
@@ -41,13 +43,15 @@ the first bounded planning/approval segment:
 * a deterministic maximum of two clean-baseline patch attempts;
 * a second durable human interrupt bound to exact passing patch/test evidence;
 * idempotent export of the exact canonical diff after final approval only;
-* local Ollama model integration through a provider boundary;
+* local Ollama model integration through a provider boundary, with optional
+  native JSON-schema output followed by unchanged deterministic validation;
 * a typed FastAPI workflow API with read-only refresh and exact-hash decisions;
 * a focused React review workspace for evidence, plans, diffs, tests, retry history, final approval, and export;
 * automated tests for repository discovery, parsing, chunking, retrieval, workflow safety, API behavior, and the review UI.
 
 The core bounded workflow, M7 review/control surface, M8 frozen local
-evaluation, and M9 external/system evaluation harness are implemented. The
+evaluation, M9 external/system evaluation, and measured M10 optimization are
+implemented. The
 backend remains authoritative for state, scope, approvals, retries, testing,
 and export; browser refresh uses read-only checkpoint retrieval and does not
 repeat expensive stages. A real Docker-backed end-to-end smoke still requires
@@ -65,7 +69,13 @@ parsing, two failed grounding, and the one grounded plan produced a patch that
 failed deterministic validation. Retrieval Hit@1/Hit@5/MRR was
 0.8333/1.0000/0.9167 with full gold file/symbol ContextPack coverage; four
 cases used the existing lexical fallback. No provider/infrastructure or critical
-safety failure occurred. See `evaluation/results/m9-v2/m9-report.md`.
+safety failure occurred. M10 preserved that baseline and ran M9-v3 once after
+development-only calibration. M9-v3 repaired 1/6: 3/6 plans were grounded,
+zero outputs failed parsing, three plans failed grounding, one patch passed
+Docker, and two cases safely stopped on a method-freshness bug fixed after
+measurement. Four cases used lexical fallback after transient Ollama HTTP 400
+embedding responses. No critical safety failure occurred. See
+`evaluation/results/m10/final-report.md`.
 
 The current frozen M8 run measured BM25 and real `embeddinggemma:latest`
 dense/hybrid retrieval on 10 synthetic cases. BM25 and dense each measured file
@@ -73,6 +83,12 @@ Hit@1 `0.90`, while hybrid RRF measured `1.00`; all three measured file Hit@5
 `1.00`. These are controlled local results, not SWE-bench or broad production
 claims. See `evaluation/results/m8/m8-report.md` for the complete metrics,
 limitations, ContextPack evidence, and safety category scorecard.
+
+The post-optimization M8-v2 run kept hybrid Hit@1/Hit@5/MRR at
+`1.00/1.00/1.00` and gold file/symbol coverage at `1.00/1.00`. Reducing
+returned retrieval depth from 10 to 5 improved mean file chunk precision from
+`0.3750` to `0.4145` and reduced mean file token waste from `0.6195` to
+`0.5837`; all 33 deterministic safety scenarios still passed.
 
 ## Why RepoPilot?
 
@@ -194,7 +210,19 @@ instructions.
 
 RepoPilot uses an explicit model-provider boundary with **Ollama** as the local inference path.
 
-The long-term goal is for the core workflow to remain usable without requiring a paid model API and to make model choice measurable rather than tightly coupled to the application.
+The default path requires no paid model API. Ollama's native JSON-schema output
+is used when the provider supports it, but Pydantic parsing, citation grounding,
+approved scope, and exact patch validation remain authoritative.
+
+## Local Setup
+
+Use Python 3.11+, `uv`, Node.js/npm, Ollama, and Docker Desktop. From
+`backend`, install with `uv sync --locked`, run with `uv run uvicorn app.main:app
+--reload`, and test with `uv run --locked --offline pytest -q`. From `frontend`,
+use `npm ci`, `npm run dev`, `npm test -- --run`, and `npm run build`. The
+Docker test image is built explicitly and is never pulled during repair. Exact
+commands, environment variables, and benchmark entry points are documented in
+`docs/setup.md`.
 
 ## Testing
 
@@ -265,6 +293,15 @@ final human-approved patch export. Remaining planned components include:
 
 These are roadmap items rather than claims about the current implementation.
 
+## Explicit Limitations
+
+RepoPilot supports Python repositories only. M8 is a small synthetic suite and
+M9 is six controlled defects across three public projects; neither estimates
+production accuracy or corresponds to SWE-bench. CPU-local generation is slow,
+Ollama model residency can degrade dense setup, the system does not create or
+merge pull requests, and every proposed plan/patch still requires the defined
+human checkpoints.
+
 ## Engineering Principles
 
 ### Local first
@@ -333,8 +370,9 @@ The eventual system will be evaluated on retrieval quality and repair behavior r
 
 * [x] Optional critic / maximum-one-retry branch
 * [x] Second/final approval and patch export
-* [ ] Retrieval and safety evaluation
-* [ ] External and system evaluation
+* [x] Retrieval and safety evaluation
+* [x] External and system evaluation
+* [x] Measured M10 optimization and final validation
 
 ## Project Direction
 

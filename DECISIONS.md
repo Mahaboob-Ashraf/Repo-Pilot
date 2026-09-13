@@ -704,3 +704,33 @@ quality failures.
 the exact v1/v2 identity boundary. The corrected v2 case was separately proven
 to fail before repair in the locked Docker sandbox. A clean full v2 run is
 scientifically justified but remains a separate operation.
+
+## ADR-020 - Optional native schemas and measured bounded setup
+
+**Status:** Accepted
+
+**Decision:** Structured generation is an optional `InferenceProvider`
+capability. Supporting providers send the strict Pydantic JSON Schema natively;
+plain providers remain compatible. Native constraints never replace Pydantic,
+grounding, scope, evidence, exact-match, or authority validation.
+
+Dense index documents are embedded in ordered batches of 32 with retained
+setup timings. Production retrieval returns five fused candidates before the
+existing one-hop expansion and fixed-budget pack. These values were selected
+on the separate M10 development suite, then evaluated on frozen M8/M9 data.
+
+Freshness validation accepts an exact uniquely matched chunk within its
+declared line range so indented method source remains provable. No fuzzy match,
+automatic citation mapping, broader edit scope, extra retry, or autonomous Git
+operation is permitted.
+
+**Why:** M9-v2 measured structured-output failure as the dominant weakness,
+M8 measured context waste, and larger M9 cases timed out during one oversized
+embedding request. Calibration supported native schemas, depth five, and
+bounded batches; an explicit allowed-ID list was rejected after truncation.
+
+**Testing/benchmark impact:** M8-v2 retained full retrieval/context coverage
+and 33/33 safety scenarios while reducing file-token waste. One-shot M9-v3
+repaired 1/6 with zero parse failures and no critical safety failure. The two
+false stale failures discovered in that run were fixed afterward and were not
+retroactively rescored.

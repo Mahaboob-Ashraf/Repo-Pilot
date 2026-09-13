@@ -1,0 +1,36 @@
+{
+  "configuration": {
+    "model": "gemma4:e4b-it-qat",
+    "phase": "plain"
+  },
+  "experiment": "patcher",
+  "generated_at_utc": "2026-09-13T18:07:12.958917+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "case_id": "exact-replacement-rounding",
+      "error_message": null,
+      "error_type": null,
+      "exact_replacement_contract_valid": true,
+      "latency_ms": 141947.4072999983,
+      "parse_succeeded": true,
+      "prompt_bytes": 4928,
+      "prompt_eval_count": 1352,
+      "raw_output": "```json\n{\n  \"summary\": \"Correct the named rounding helper.\",\n  \"edits\": [\n    {\n      \"path\": \"calibration/rounding.py\",\n      \"expected_old_text\": \"return value + 1\",\n      \"replacement_text\": \"return value\",\n      \"evidence_chunk_ids\": [\n        \"calibration/rounding.py::function::round_down::1-2\"\n      ],\n      \"rationale\": \"The function `round_down` was incorrectly implementing an increment (`value + 1`) instead of returning the input value as required for rounding down.\"\n    }\n  ]\n}\n```",
+      "raw_output_sha256": "78b832229ca22ca5f743521b49418ab61fbd31d4a754e4d471d0fd3477b7b218",
+      "response_eval_count": 730
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "c5d37755c4ebf6610a1e5bc2fb0f6da8a5cc84c7e161e19aa24f02e146eb8b49",
+  "summary": {
+    "case_count": 1,
+    "exact_replacement_contract_rate": 1.0,
+    "mean_latency_ms": 141947.4072999983,
+    "parse_success_rate": 1.0
+  }
+}

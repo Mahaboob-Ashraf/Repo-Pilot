@@ -1,0 +1,529 @@
+{
+  "evaluation_scope": "frozen controlled external evaluation across 3 public Python repositories",
+  "generated_at_utc": "2026-09-13T18:37:26.362297+00:00",
+  "limitations": [
+    "M8 is a small synthetic frozen suite; M9 contains six controlled defects and is not SWE-bench or production accuracy.",
+    "Model calibration and M9 use one sample per case; results do not estimate stochastic variance.",
+    "M9-v3 retained four lexical fallbacks after transient Ollama HTTP 400 embedding responses; an embedding-only replay later succeeded.",
+    "Two M9-v3 cases hit a real indented-method freshness bug fixed only after measurement; M9-v3 was not rerun.",
+    "The historical M9-v2 toolz PatchValidationError subtype is unknowable because the old workflow stored only a generic message."
+  ],
+  "locked_models": {
+    "embedding": "embeddinggemma:latest",
+    "embedding_digest": "85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1",
+    "generation": "gemma4:e4b-it-qat",
+    "generation_digest": "ee665637121887cf3befff38abbb1be4ee117c7db867d97a67e29049ecd7e15f"
+  },
+  "m8_baseline": {
+    "artifact_identity": "2700e7ec1ef7e25d2d7e0a17dd389865f9a62b95cd25bc663013702ae9d1c77a",
+    "context": {
+      "case_count": 10,
+      "degraded_case_count": 0,
+      "file_context_coverage_rate": 1.0,
+      "mean_budget_utilization": 0.201165771484375,
+      "mean_file_context_chunk_precision": 0.375,
+      "mean_file_context_token_waste": 0.6194689743098819,
+      "mean_gold_file_coverage": 1.0,
+      "mean_gold_symbol_coverage": 1.0,
+      "mean_symbol_context_chunk_precision": 0.2988095238095238,
+      "mean_symbol_context_token_waste": 0.6978613372677043,
+      "pack_status_distribution": {
+        "complete": 10
+      },
+      "relevant_excluded_case_count": 0,
+      "symbol_case_count": 10,
+      "symbol_context_coverage_rate": 1.0,
+      "variant": "hybrid_structure"
+    },
+    "hybrid_file_hit_at_1": 1.0,
+    "hybrid_file_hit_at_5": 1.0,
+    "hybrid_file_mrr": 1.0,
+    "safety_passed": true,
+    "safety_scenario_count": 33,
+    "top_k": 10
+  },
+  "m8_v2": {
+    "artifact_identity": "42363b59802e56d930c7b370b8d5443164cbd409ccb593f67ccbb49efcd7a138",
+    "context": {
+      "case_count": 10,
+      "degraded_case_count": 0,
+      "file_context_coverage_rate": 1.0,
+      "mean_budget_utilization": 0.183843994140625,
+      "mean_file_context_chunk_precision": 0.41452380952380957,
+      "mean_file_context_token_waste": 0.5836555562360338,
+      "mean_gold_file_coverage": 1.0,
+      "mean_gold_symbol_coverage": 1.0,
+      "mean_symbol_context_chunk_precision": 0.32023809523809527,
+      "mean_symbol_context_token_waste": 0.6795002758421538,
+      "pack_status_distribution": {
+        "complete": 10
+      },
+      "relevant_excluded_case_count": 0,
+      "symbol_case_count": 10,
+      "symbol_context_coverage_rate": 1.0,
+      "variant": "hybrid_structure"
+    },
+    "hybrid_file_hit_at_1": 1.0,
+    "hybrid_file_hit_at_5": 1.0,
+    "hybrid_file_mrr": 1.0,
+    "safety_passed": true,
+    "safety_scenario_count": 33,
+    "top_k": 5
+  },
+  "m9_v2_baseline": {
+    "artifact_identity": "eac210ee5669cd70c4c98405ce887a360503fb3f16838626fcd888dc3de9c489",
+    "attempt_1_success_rate": 0.0,
+    "critical_safety_failure": false,
+    "latency_ms": {
+      "critic_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "docker_testing_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "embedding_index_setup_ms": {
+        "count": 6,
+        "median": 60022.98200000041,
+        "p95": 60207.13109999997
+      },
+      "patch_generation_ms": {
+        "count": 1,
+        "median": 312320.0977000015,
+        "p95": null
+      },
+      "planning_generation_ms": {
+        "count": 6,
+        "median": 254950.14580000134,
+        "p95": 331170.7461000006
+      },
+      "repository_indexing_ms": {
+        "count": 6,
+        "median": 82.03390000016952,
+        "p95": 125.98380000054021
+      },
+      "retrieval_ms": {
+        "count": 6,
+        "median": 4.53410000045551,
+        "p95": 82.3275000002468
+      },
+      "retry_patch_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "total_workflow_ms": {
+        "count": 6,
+        "median": 295313.597299999,
+        "p95": 627939.8700000001
+      }
+    },
+    "manifest_fingerprint": "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b",
+    "patch_test": {
+      "cases_producing_valid_patches": 0,
+      "cases_reaching_patch_generation": 1,
+      "docker_test_failures": 0,
+      "docker_test_passes": 0
+    },
+    "planner_outcomes": {
+      "grounding_failures": 2,
+      "output_parse_failures": 3,
+      "provider_failures": 0,
+      "valid_grounded_plans": 1
+    },
+    "repair_success_count": 0,
+    "repair_success_rate": 0.0,
+    "retrieval": {
+      "file_mrr": 0.9166666666666666,
+      "gold_file_context_coverage": 1.0,
+      "gold_file_hit_at_1": 0.8333333333333334,
+      "gold_file_hit_at_5": 1.0,
+      "gold_symbol_context_coverage": 1.0
+    },
+    "retrieval_mode_counts": {
+      "hybrid": 2,
+      "lexical_only_degraded": 4
+    },
+    "safety": {
+      "canonical_repository_mutation_count": 0,
+      "export_order_failure_count": 0,
+      "patch_validation_failures": 1,
+      "retry_limit_violation_count": 0,
+      "scope_violation_attempts": 0,
+      "stale_hash_failures": 0
+    }
+  },
+  "m9_v3": {
+    "artifact_identity": "cefc826057b67049e301b2bd1157f3837c25d71676c38a74a7738b49313de002",
+    "attempt_1_success_rate": 0.16666666666666666,
+    "critical_safety_failure": false,
+    "latency_ms": {
+      "critic_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "docker_testing_ms": {
+        "count": 1,
+        "median": 982.4380999998539,
+        "p95": null
+      },
+      "embedding_index_setup_ms": {
+        "count": 6,
+        "median": 15895.389299999806,
+        "p95": 36356.37979999956
+      },
+      "patch_generation_ms": {
+        "count": 3,
+        "median": 1.5854999983275775,
+        "p95": null
+      },
+      "planning_generation_ms": {
+        "count": 6,
+        "median": 85168.72299999886,
+        "p95": 133066.3994000024
+      },
+      "repository_indexing_ms": {
+        "count": 6,
+        "median": 72.02049999978044,
+        "p95": 105.8024000012665
+      },
+      "retrieval_ms": {
+        "count": 6,
+        "median": 2.0975000006728806,
+        "p95": 76.44939999954659
+      },
+      "retry_patch_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "total_workflow_ms": {
+        "count": 6,
+        "median": 110912.32229999878,
+        "p95": 255095.07999999914
+      }
+    },
+    "manifest_fingerprint": "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b",
+    "patch_test": {
+      "cases_producing_valid_patches": 1,
+      "cases_reaching_patch_generation": 3,
+      "docker_test_failures": 0,
+      "docker_test_passes": 1
+    },
+    "planner_outcomes": {
+      "grounding_failures": 3,
+      "output_parse_failures": 0,
+      "provider_failures": 0,
+      "valid_grounded_plans": 3
+    },
+    "repair_success_count": 1,
+    "repair_success_rate": 0.16666666666666666,
+    "retrieval": {
+      "file_mrr": 0.9166666666666666,
+      "gold_file_context_coverage": 1.0,
+      "gold_file_hit_at_1": 0.8333333333333334,
+      "gold_file_hit_at_5": 1.0,
+      "gold_symbol_context_coverage": 1.0
+    },
+    "retrieval_mode_counts": {
+      "hybrid": 2,
+      "lexical_only_degraded": 4
+    },
+    "safety": {
+      "canonical_repository_mutation_count": 0,
+      "export_order_failure_count": 0,
+      "patch_validation_failures": 0,
+      "retry_limit_violation_count": 0,
+      "scope_violation_attempts": 0,
+      "stale_hash_failures": 2
+    }
+  },
+  "m9_v3_cases": [
+    {
+      "case_id": "more-take-off-by-one",
+      "failure_error_type": "StaleApprovalError",
+      "failure_message": "approved evidence no longer matches source",
+      "failure_stage": "patch validation",
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": null,
+        "embedding_index_setup_ms": 17756.412799997634,
+        "patch_generation_ms": 1.5854999983275775,
+        "planning_generation_ms": 92986.9245000009,
+        "repository_indexing_ms": 105.8024000012665,
+        "retrieval_ms": 3.3177000004798174,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 110912.32229999878
+      },
+      "repair_success": false,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "patch_failed"
+    },
+    {
+      "case_id": "more-quantify-inverted",
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 982.4380999998539,
+        "embedding_index_setup_ms": 15895.389299999806,
+        "patch_generation_ms": 104992.92729999797,
+        "planning_generation_ms": 133066.3994000024,
+        "repository_indexing_ms": 92.00540000165347,
+        "retrieval_ms": 2.0975000006728806,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 255095.07999999914
+      },
+      "repair_success": true,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "completed"
+    },
+    {
+      "case_id": "toolz-take-off-by-one",
+      "failure_error_type": "PlanValidationError",
+      "failure_message": "repair step 1 cites an unknown chunk: toolz/tests/test_itertoolz.py::test::test_frequencies::312-322",
+      "failure_stage": "planner",
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": null,
+        "embedding_index_setup_ms": 36356.37979999956,
+        "patch_generation_ms": null,
+        "planning_generation_ms": 79752.18259999747,
+        "repository_indexing_ms": 72.02049999978044,
+        "retrieval_ms": 1.167800000985153,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 116704.09559999825
+      },
+      "repair_success": false,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "planner_failed"
+    },
+    {
+      "case_id": "toolz-drop-extra-item",
+      "failure_error_type": "PlanValidationError",
+      "failure_message": "repair step 1 cites an unknown chunk: toolz/tests/test_itertoolz.py::test::test_getter::0-6",
+      "failure_stage": "planner",
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": null,
+        "embedding_index_setup_ms": 36341.4374999993,
+        "patch_generation_ms": null,
+        "planning_generation_ms": 98370.1065000023,
+        "repository_indexing_ms": 82.70719999927678,
+        "retrieval_ms": 1.4967999995860737,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 135187.80630000037
+      },
+      "repair_success": false,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "planner_failed"
+    },
+    {
+      "case_id": "boltons-ceil-exact-option",
+      "failure_error_type": "StaleApprovalError",
+      "failure_message": "approved evidence no longer matches source",
+      "failure_stage": "patch validation",
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": null,
+        "embedding_index_setup_ms": 5297.182199999952,
+        "patch_generation_ms": 1.4817999981460162,
+        "planning_generation_ms": 85168.72299999886,
+        "repository_indexing_ms": 11.066300001402851,
+        "retrieval_ms": 76.44939999954659,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 90602.19599999982
+      },
+      "repair_success": false,
+      "retrieval_mode": "hybrid",
+      "terminal_status": "patch_failed"
+    },
+    {
+      "case_id": "boltons-floor-exact-option",
+      "failure_error_type": "PlanValidationError",
+      "failure_message": "repair step 1 cites an unknown chunk: Evidence 18",
+      "failure_stage": "planner",
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": null,
+        "embedding_index_setup_ms": 5022.669699999824,
+        "patch_generation_ms": null,
+        "planning_generation_ms": 80344.94740000082,
+        "repository_indexing_ms": 6.94620000285795,
+        "retrieval_ms": 75.08640000014566,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 85485.40940000021
+      },
+      "repair_success": false,
+      "retrieval_mode": "hybrid",
+      "terminal_status": "planner_failed"
+    }
+  ],
+  "optimizations": [
+    {
+      "after": {
+        "case_count": 3,
+        "citation_validity_rate": 1.0,
+        "grounded_plan_rate": 1.0,
+        "mean_latency_ms": 38370.002633334174,
+        "parse_success_rate": 1.0
+      },
+      "baseline": {
+        "case_count": 3,
+        "citation_validity_rate": 0.6666666666666666,
+        "grounded_plan_rate": 0.6666666666666666,
+        "mean_latency_ms": 174610.93726666635,
+        "parse_success_rate": 0.6666666666666666
+      },
+      "change": "Optional provider-native JSON Schema for planner, patcher, and critic; deterministic parsing and validation retained.",
+      "decision": "kept",
+      "id": "native-json-schema",
+      "problem": "Planner structured-output reliability",
+      "safety_gate": "Pydantic and grounding/patch/critic validators remain authoritative."
+    },
+    {
+      "after": {
+        "case_count": 3,
+        "citation_validity_rate": 0.6666666666666666,
+        "grounded_plan_rate": 0.6666666666666666,
+        "mean_latency_ms": 51548.96613333161,
+        "parse_success_rate": 0.6666666666666666
+      },
+      "baseline": {
+        "case_count": 3,
+        "citation_validity_rate": 1.0,
+        "grounded_plan_rate": 1.0,
+        "mean_latency_ms": 38370.002633334174,
+        "parse_success_rate": 1.0
+      },
+      "change": "Append a compact authoritative list of real chunk IDs and paths.",
+      "decision": "reverted",
+      "diagnosis": "The medium prompt reached 4,081 prompt tokens in a 4,096-token runtime context and left only 15 response tokens.",
+      "id": "explicit-allowed-id-list",
+      "problem": "Invented evidence citations"
+    },
+    {
+      "after": {
+        "coverage_rate": 1.0,
+        "mean_precision": 0.2,
+        "mean_prompt_bytes": 5188,
+        "mean_token_waste": 0.7916883116883117
+      },
+      "baseline": {
+        "coverage_rate": 1.0,
+        "mean_precision": 0.1,
+        "mean_prompt_bytes": 7102,
+        "mean_token_waste": 0.8955457150299557
+      },
+      "change": "Reduce returned retrieval depth from 10 to 5 before structural expansion and packing.",
+      "decision": "kept",
+      "id": "retrieval-depth-five",
+      "problem": "Context precision and token waste",
+      "rejected_alternative": {
+        "coverage_rate": 0.6666666666666666,
+        "mean_precision": 0.2222222222222222,
+        "mean_prompt_bytes": 4419.333333333333,
+        "mean_token_waste": 0.7701347090856979
+      }
+    },
+    {
+      "after": {
+        "batch_size": 32,
+        "maximum_request_ms": 2161.7132000028505,
+        "request_count": 3,
+        "total_embedding_ms": 6149.759000003542
+      },
+      "baseline": {
+        "batch_size": 96,
+        "maximum_request_ms": 7938.560000002326,
+        "request_count": 1,
+        "total_embedding_ms": 7938.5707000001275
+      },
+      "change": "Embed index documents in deterministic batches of 32 and retain setup timings.",
+      "decision": "kept",
+      "id": "bounded-embedding-batches",
+      "index_setup": {
+        "batch_cardinalities": [
+          32,
+          32,
+          32
+        ],
+        "chroma_write_ms": 81.63559999957215,
+        "chunk_count": 96,
+        "embedding_batch_durations_ms": [
+          3648.862799997005,
+          2249.5296000015514,
+          2173.497399999178
+        ],
+        "embedding_total_ms": 8071.889799997734,
+        "total_setup_ms": 8153.565900000103
+      },
+      "problem": "Single oversized dense-index embedding request and 60-second exposure"
+    },
+    {
+      "after": {
+        "case_count": 1,
+        "exact_replacement_contract_rate": 1.0,
+        "mean_latency_ms": 18229.74450000038,
+        "parse_success_rate": 1.0
+      },
+      "baseline": {
+        "case_count": 1,
+        "exact_replacement_contract_rate": 1.0,
+        "mean_latency_ms": 141947.4072999983,
+        "parse_success_rate": 1.0
+      },
+      "change": "No prompt change; the development patch already satisfied exact replacement.",
+      "decision": "not_needed",
+      "id": "patch-prompt-change",
+      "problem": "Historical toolz patch validation failure"
+    },
+    {
+      "change": "Retain only an allowlist of static first-party exact validation messages.",
+      "decision": "kept",
+      "id": "patch-validation-diagnostics",
+      "problem": "Historical M9-v2 artifact discarded the exact PatchValidationError reason"
+    },
+    {
+      "change": "Require a unique exact source match within the declared line range instead of assuming column zero.",
+      "decision": "kept_correctness_fix_after_evaluation",
+      "id": "indented-method-freshness",
+      "problem": "M9-v3 exposed two false stale-evidence failures for indented method chunks.",
+      "safety_gate": "Content hash, line bounds, unique exact match, and exact edit validation remain required."
+    }
+  ],
+  "safety": {
+    "m8_v2_all_33_scenarios_passed": true,
+    "m9_v3": {
+      "canonical_repository_mutation_count": 0,
+      "export_order_failure_count": 0,
+      "patch_validation_failures": 0,
+      "retry_limit_violation_count": 0,
+      "scope_violation_attempts": 0,
+      "stale_hash_failures": 2
+    },
+    "m9_v3_critical_safety_failure": false
+  },
+  "schema_version": "repopilot.m10.final-results.v1",
+  "verification": {
+    "complete_backend_suite": {
+      "duration_seconds": 7.58,
+      "passed": 332
+    },
+    "focused_optimization_gate": {
+      "passed": 130,
+      "skipped": 1
+    },
+    "frontend": {
+      "production_build": "passed",
+      "test_files_passed": 2,
+      "tests_passed": 18,
+      "typescript_check": "passed"
+    }
+  }
+}

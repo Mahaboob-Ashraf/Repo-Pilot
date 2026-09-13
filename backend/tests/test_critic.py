@@ -78,6 +78,40 @@ def test_valid_output_parses_and_is_grounded(tmp_path) -> None:
     assert provider.calls == 1
 
 
+def test_critic_uses_optional_native_schema_capability(tmp_path) -> None:
+    context, plan, patch, test = _inputs(tmp_path)
+    expected = _assessment(context)
+
+    class StructuredProvider:
+        model = "structured-fake"
+
+        def __init__(self) -> None:
+            self.schemas = []
+
+        async def generate(self, prompt: str) -> str:
+            raise AssertionError("plain generation must not be used")
+
+        async def generate_structured(self, prompt: str, response_schema) -> str:
+            self.schemas.append(response_schema)
+            return expected.model_dump_json()
+
+    provider = StructuredProvider()
+    actual = asyncio.run(
+        StructuredCritic(provider).assess(
+            context=context,
+            approved_plan=plan,
+            approved_plan_hash=repair_plan_hash(plan),
+            approved_files=plan.proposed_files,
+            patch=patch,
+            test_result=test,
+            attempt_number=1,
+        )
+    )
+
+    assert actual == expected
+    assert provider.schemas == [CriticAssessment.model_json_schema()]
+
+
 def test_malformed_critic_output_fails_explicitly(tmp_path) -> None:
     context, plan, patch, test = _inputs(tmp_path)
     with pytest.raises(CriticOutputError):

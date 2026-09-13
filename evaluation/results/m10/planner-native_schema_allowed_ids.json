@@ -1,0 +1,66 @@
+{
+  "configuration": {
+    "model": "gemma4:e4b-it-qat",
+    "phase": "native_schema_allowed_ids"
+  },
+  "experiment": "planner",
+  "generated_at_utc": "2026-09-13T17:59:34.484213+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "case_id": "structured-simple-discount",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 53755.443099998956,
+      "parse_succeeded": true,
+      "prompt_bytes": 4626,
+      "prompt_eval_count": 1234,
+      "raw_output": "{\"summary\": \"Correct the `discount_total` function to subtract the percentage discount from the total instead of increasing it.\", \"diagnosis\": \"The function `discount_total` in `calibration/pricing.py` currently calculates the total after increasing it by a percentage based on the formula `total * (1 + percent / 100)`. This should instead subtract the calculated discount to find the discounted price.\", \"proposed_files\": [\"calibration/pricing.py\"], \"steps\": [{\"description\": \"Modify the return statement in `calibration/pricing.py` for `discount_total` (Chunk ID: calibration/pricing.py::function::discount_total::1-2) to correctly calculate the discounted price. Change `return total * (1 + percent / 100)` to `return total * (1 - percent / 100)`.\", \"affected_files\": [\"calibration/pricing.py\"], \"evidence_chunk_ids\": [\"calibration/pricing.py::function::discount_total::1-2\"]}], \"suggested_tests\": [\"Test `discount_total(100, 10)` should return `90.0`\"]}",
+      "raw_output_sha256": "86d785f6ddd630c15b1771bed9e345246967db3d32ad2478e2af5705097ce863",
+      "response_eval_count": 248
+    },
+    {
+      "case_id": "similar-evidence-identifiers",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 66780.40919999694,
+      "parse_succeeded": true,
+      "prompt_bytes": 7024,
+      "prompt_eval_count": 1940,
+      "raw_output": "{\n  \"summary\": \"Normalize product code in `calibration/normalizers.py` by stripping whitespace after converting to uppercase.\",\n  \"diagnosis\": \"The function `normalize_product_code` in `calibration/normalizers.py` (Evidence 1) currently only calls `value.upper()` and does not handle surrounding whitespace, leading to incorrect product codes if whitespace is present.\",\n  \"proposed_files\": [\n    \"calibration/normalizers.py\"\n  ],\n  \"steps\": [\n    {\n      \"description\": \"Modify the implementation of `normalize_product_code` in `calibration/normalizers.py` to return `value.strip().upper()` instead of `value.upper()`, ensuring that surrounding whitespace is removed before converting to uppercase.\",\n      \"affected_files\": [\n        \"calibration/normalizers.py\"\n      ],\n      \"evidence_chunk_ids\": [\n        \"calibration/normalizers.py::function::normalize_product_code::1-2\"\n      ]\n    }\n  ],\n  \"suggested_tests\": [\n    \"Test `normalize_product_code` with string containing leading and trailing whitespace to ensure whitespace removal.\",\n    \"Test `normalize_product_code` with typical product code string to ensure correct uppercase transformation.\"\n  ]\n}",
+      "raw_output_sha256": "2f14043b9e5b4b0cbfbef93dc7decf9b1c86189d5236e628080410d38bf1e941",
+      "response_eval_count": 287
+    },
+    {
+      "case_id": "medium-context-limit",
+      "citation_ids_valid": false,
+      "error_message": "Failed to parse RepairPlan from completion {\"summary\": \"Correct the bug in `clamp_limit` where it\"}. Got: 4 validation errors for RepairPlan\ndiagnosis\n  Field required [type=missing, input_value={'summary': 'Correct the ...`clamp_limit` where it'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nproposed_files\n  Field required [type=missing, input_value={'summary': 'Correct the ...`clamp_limit` where it'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsteps\n  Field required [type=missing, input_value={'summary': 'Correct the ...`clamp_limit` where it'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsuggested_tests\n  Field required [type=missing, input_value={'summary': 'Correct the ...`clamp_limit` where it'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langchain/errors/OUTPUT_PARSING_FAILURE ",
+      "error_type": "OutputParserException",
+      "grounded_plan": false,
+      "latency_ms": 34111.04609999893,
+      "parse_succeeded": false,
+      "prompt_bytes": 16830,
+      "prompt_eval_count": 4081,
+      "raw_output": "{\"summary\": \"Correct the bug in `clamp_limit` where it",
+      "raw_output_sha256": "1bc6372d0dc7a392858bfcda964c2ef51abf6f0766d38e912df2210faff4355b",
+      "response_eval_count": 15
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "summary": {
+    "case_count": 3,
+    "citation_validity_rate": 0.6666666666666666,
+    "grounded_plan_rate": 0.6666666666666666,
+    "mean_latency_ms": 51548.96613333161,
+    "parse_success_rate": 0.6666666666666666
+  }
+}

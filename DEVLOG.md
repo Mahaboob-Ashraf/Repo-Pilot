@@ -154,6 +154,46 @@ final approval, export a patch, or create a PR.
 
 None queued. The user explicitly requested no public post.
 
+## 2026-09-14 - M10 improved measured structure without weakening authority
+
+### What we were trying to do
+
+Address the planner, context-waste, dense-setup, and patch-diagnostic weaknesses
+measured by M8/M9, using a separate development suite before one final frozen
+evaluation.
+
+### Final solution
+
+Ollama native JSON Schema is now an optional provider capability followed by
+the same Pydantic and deterministic validators. Chroma embeds in ordered
+32-document batches and records setup decomposition. Production retrieval
+depth is five. A proposed explicit allowed-ID list was reverted after it caused
+context-window truncation. The patch prompt and exact validator were not tuned.
+
+M9-v3 then exposed a real column-zero assumption in freshness checks for
+indented method chunks. The validator now finds one exact hashed source value
+within its declared line range; M9-v3 was not rerun or rescored.
+
+### Metrics / evidence
+
+Planner development parsing/grounding improved from 2/3 to 3/3; mean latency
+changed from 174.611 to 38.370 seconds. M8-v2 retained 1.0 hybrid retrieval and
+ContextPack coverage while file token waste fell from 0.6195 to 0.5837. All 33
+safety scenarios passed. M9-v3 repaired 1/6, with 3 grounded plans, no parser
+failures, 3 grounding failures, 1 valid Docker-tested patch, and no critical
+safety failure.
+
+### Remaining limitations
+
+M9 is six controlled defects, CPU generation remains slow, four M9-v3 cases
+fell back after transient embedding HTTP 400 responses, and the post-run method
+freshness fix has regression—not benchmark—evidence. These results are not
+SWE-bench or production accuracy.
+
+### Public-content angle
+
+None queued. Task 020 explicitly requested no public post.
+
 ## 2026-09-13 - Final frozen M9 v2 measured current system honestly
 
 ### What we were trying to do

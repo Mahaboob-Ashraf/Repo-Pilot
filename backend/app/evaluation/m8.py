@@ -55,7 +55,7 @@ from app.retrieval import (
 SCHEMA_VERSION = "repopilot.m8.v1"
 FIXTURE_SET_VERSION = "m8-frozen-local-v1"
 EMBEDDING_MODEL = "embeddinggemma:latest"
-TOP_K = 10
+TOP_K = 5
 CONTEXT_BUDGET = 16_384
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[3]

@@ -32,6 +32,7 @@ from app.providers.base import (
     InferenceProviderError,
     InferenceResponseError,
     InferenceUnavailableError,
+    generate_with_optional_schema,
 )
 from app.sandbox import TestRunResult, TestStatus
 
@@ -151,7 +152,11 @@ class StructuredCritic:
             attempt_number=attempt_number,
         )
         try:
-            raw = await self._provider.generate(prompt)
+            raw = await generate_with_optional_schema(
+                self._provider,
+                prompt,
+                CriticAssessment.model_json_schema(),
+            )
         except InferenceProviderError as exc:
             raise CriticInferenceError(
                 model=self.model,

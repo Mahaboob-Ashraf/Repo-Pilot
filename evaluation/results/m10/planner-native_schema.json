@@ -1,0 +1,66 @@
+{
+  "configuration": {
+    "model": "gemma4:e4b-it-qat",
+    "phase": "native_schema"
+  },
+  "experiment": "planner",
+  "generated_at_utc": "2026-09-13T17:56:53.715340+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "case_id": "structured-simple-discount",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 37274.170100001356,
+      "parse_succeeded": true,
+      "prompt_bytes": 4300,
+      "prompt_eval_count": 1128,
+      "raw_output": "{\n  \"summary\": \"Correct `discount_total` to subtract the discount percentage from the total instead of adding it.\",\n  \"diagnosis\": \"The function `discount_total` in `calibration/pricing.py` currently multiplies the total by `(1 + percent / 100)`, which increases the total amount rather than applying a percentage discount.\",\n  \"proposed_files\": [\n    \"calibration/pricing.py\"\n  ],\n  \"steps\": [\n    {\n      \"description\": \"Modify the calculation within `discount_total` to properly calculate a discounted total by multiplying the original total by (1 - percent / 100), using Evidence 1: calibration/pricing.py::function::discount_total::1-2.\",\n      \"affected_files\": [\n        \"calibration/pricing.py\"\n      ],\n      \"evidence_chunk_ids\": [\n        \"calibration/pricing.py::function::discount_total::1-2\"\n      ]\n    }\n  ],\n  \"suggested_tests\": [\n    \"Test `discount_total` with a positive percentage (e.g., 10%) to ensure the result is lower than the original total.\",\n    \"Test `discount_total` with a zero percentage (0%) to ensure the result is equal to the original total.\"\n  ]\n}",
+      "raw_output_sha256": "4dcf58b8ee54bfefa1cf6e3e26df1e3c21418dc4e5aca945af82ef863075d8b6",
+      "response_eval_count": 295
+    },
+    {
+      "case_id": "similar-evidence-identifiers",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 32535.34330000184,
+      "parse_succeeded": true,
+      "prompt_bytes": 6289,
+      "prompt_eval_count": 1678,
+      "raw_output": "{\"summary\": \"Fix `normalize_product_code` in `calibration/normalizers.py` to remove surrounding whitespace.\", \"diagnosis\": \"The function `normalize_product_code` in `calibration/normalizers.py` currently only converts the input string to uppercase (`return value.upper()`), but it fails to handle or remove surrounding whitespace, contrary to the requirement.\", \"proposed_files\": [\"calibration/normalizers.py\"], \"steps\": [{\"description\": \"Modify `calibration/normalizers.py` to call `.strip()` on the input `value` before calling `.upper()` to remove surrounding whitespace from the product code. (Cited: [Evidence 1])\", \"affected_files\": [\"calibration/normalizers.py\"], \"evidence_chunk_ids\": [\"calibration/normalizers.py::function::normalize_product_code::1-2\"]}], \"suggested_tests\": [\"Test `normalize_product_code` with input containing leading/trailing whitespace to ensure whitespace is removed before or during normalization.\"]}",
+      "raw_output_sha256": "21c6dcb0403ad0f66b0657a5a9c485a5545b2e9040ac78b806a8ad67f53e9587",
+      "response_eval_count": 216
+    },
+    {
+      "case_id": "medium-context-limit",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 45300.49449999933,
+      "parse_succeeded": true,
+      "prompt_bytes": 15299,
+      "prompt_eval_count": 3467,
+      "raw_output": "{\"summary\": \"Fix clamp_limit function to correctly implement upper bound clamping.\", \"diagnosis\": \"The function `clamp_limit` in `calibration/limits.py` incorrectly calculates the upper bound by using `max_value + 1` in the return statement `return min(max(value, min_value), max_value + 1)`, allowing values up to `max_value + 1`. This violates the expected behavior of a clamp function, which should restrict the value to be no greater than `max_value`.\", \"proposed_files\": [\"calibration/limits.py\"], \"steps\": [{\"description\": \"Change the upper bound calculation in `clamp_limit` from `max_value + 1` to `max_value` in `calibration/limits.py` to ensure the returned value does not exceed the specified maximum.\", \"affected_files\": [\"calibration/limits.py\"], \"evidence_chunk_ids\": [\"calibration/limits.py::function::clamp_limit::1-2\"]}], \"suggested_tests\": [\"Test `clamp_limit` with an input equal to `max_value` to ensure it returns `max_value`.\", \"Test `clamp_limit` with an input equal to `max_value + 1` to ensure it returns `max_value` (and not `max_value + 1`).\"]}",
+      "raw_output_sha256": "0a6b75266f19720f53ac7d638703c80d7d344a501a960de17be50a5f62d5fb24",
+      "response_eval_count": 288
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "summary": {
+    "case_count": 3,
+    "citation_validity_rate": 1.0,
+    "grounded_plan_rate": 1.0,
+    "mean_latency_ms": 38370.002633334174,
+    "parse_success_rate": 1.0
+  }
+}

@@ -78,7 +78,7 @@ SCHEMA_VERSION = "repopilot.m9.v1"
 GENERATION_MODEL = "gemma4:e4b-it-qat"
 EMBEDDING_MODEL = "embeddinggemma:latest"
 TEST_IMAGE = "repopilot-python-test:3.11-pytest9"
-TOP_K = 10
+TOP_K = 5
 CONTEXT_BUDGET = 16_384
 M9_V2_MANIFEST_FINGERPRINT = (
     "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b"
@@ -556,6 +556,15 @@ class _CapturingGenerationProvider:
 
     async def generate(self, prompt: str) -> str:
         output = await self._provider.generate(prompt)
+        self.last_output = output
+        return output
+
+    async def generate_structured(
+        self,
+        prompt: str,
+        response_schema: dict[str, Any],
+    ) -> str:
+        output = await self._provider.generate_structured(prompt, response_schema)
         self.last_output = output
         return output
 

@@ -1,0 +1,66 @@
+{
+  "configuration": {
+    "model": "gemma4:e4b-it-qat",
+    "phase": "plain"
+  },
+  "experiment": "planner",
+  "generated_at_utc": "2026-09-13T17:54:51.293046+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "case_id": "structured-simple-discount",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 175412.4571000011,
+      "parse_succeeded": true,
+      "prompt_bytes": 4300,
+      "prompt_eval_count": 1128,
+      "raw_output": "```json\n{\n  \"summary\": \"Correct the logic in `discount_total` to calculate and subtract the percentage discount from the total amount.\",\n  \"diagnosis\": \"The `discount_total` function in `calibration/pricing.py` currently calculates a markup by multiplying the total by `(1 + percent / 100)`. According to the user issue, it should be subtracting the percentage discount, which requires multiplying the total by `(1 - percent / 100)` to achieve the intended reduction.\",\n  \"proposed_files\": [\n    \"calibration/pricing.py\"\n  ],\n  \"steps\": [\n    {\n      \"description\": \"Update the return statement in `discount_total` from `total * (1 + percent / 100)` to `total * (1 - percent / 100)` to correctly apply a percentage discount.\",\n      \"affected_files\": [\n        \"calibration/pricing.py\"\n      ],\n      \"evidence_chunk_ids\": [\n        \"calibration/pricing.py::function::discount_total::1-2\"\n      ]\n    }\n  ],\n  \"suggested_tests\": [\n    \"Test `discount_total` with a 10% discount to verify the result is 90% of the original total.\",\n    \"Test `discount_total` with a 0% discount to ensure the total remains unchanged.\",\n    \"Test `discount_total` with a 100% discount to ensure the result is 0.0.\"\n  ]\n}\n```",
+      "raw_output_sha256": "74761e65e0197fdccc2de40c031184796bd7c7b65480216ed5bce53f60f2c8de",
+      "response_eval_count": 1070
+    },
+    {
+      "case_id": "similar-evidence-identifiers",
+      "citation_ids_valid": true,
+      "error_message": null,
+      "error_type": null,
+      "grounded_plan": true,
+      "latency_ms": 175907.13700000016,
+      "parse_succeeded": true,
+      "prompt_bytes": 6289,
+      "prompt_eval_count": 1678,
+      "raw_output": "```json\n{\n  \"summary\": \"Correct normalize_product_code to strip surrounding whitespace.\",\n  \"diagnosis\": \"The function `normalize_product_code` in `calibration/normalizers.py` currently only converts the input string to uppercase using `value.upper()`, failing to remove leading or trailing whitespace as required by the user issue. The implementation should be updated to call `.strip()` before calling `.upper()` to ensure whitespace normalization.\",\n  \"proposed_files\": [\n    \"calibration/normalizers.py\"\n  ],\n  \"steps\": [\n    {\n      \"description\": \"Modify the implementation of `normalize_product_code` in `calibration/normalizers.py` to strip surrounding whitespace using `.strip()` before applying `.upper()` to the input string, ensuring the output is consistently normalized without external whitespace.\",\n      \"affected_files\": [\n        \"calibration/normalizers.py\"\n      ],\n      \"evidence_chunk_ids\": [\n        \"calibration/normalizers.py::function::normalize_product_code::1-2\"\n      ]\n    }\n  ],\n  \"suggested_tests\": [\n    \"Test normalize_product_code with input '  test code  ' and assert the result is 'TEST CODE'.\"\n  ]\n}\n```",
+      "raw_output_sha256": "e7abe138f9e6db3a4055aa42ecb6852ef9941a9c272dcfc1c71dba20a2e56901",
+      "response_eval_count": 973
+    },
+    {
+      "case_id": "medium-context-limit",
+      "citation_ids_valid": false,
+      "error_message": "Failed to parse RepairPlan from completion {\"summary\": \"Correct `clamp_limit` function to enforce the strict maximum bound.\", \"diagnosis\": \"The `clamp_limit` function in `calibration/limits.py` currently allows the returned value to exceed `max_value` by one unit because it uses `max_value + 1` as the upper limit in the `min()` calculation (Evidence 1). This violates the intended behavior of clamping within defined limits.\", \"proposed_files\": [\"calibration/limits.py\"], \"steps\": [{\"description\": \"Modify the `clamp_limit` function in `calibration/limits.py` by changing the upper limit from `max_value + 1` to `max_value` to ensure the returned value never exceeds the specified maximum limit.\"}]}. Got: 3 validation errors for RepairPlan\nsteps.0.affected_files\n  Field required [type=missing, input_value={'description': 'Modify t...ecified maximum limit.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsteps.0.evidence_chunk_ids\n  Field required [type=missing, input_value={'description': 'Modify t...ecified maximum limit.'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nsuggested_tests\n  Field required [type=missing, input_value={'summary': 'Correct `cla...ified maximum limit.'}]}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/missing\nFor troubleshooting, visit: https://docs.langchain.com/oss/python/langchain/errors/OUTPUT_PARSING_FAILURE ",
+      "error_type": "OutputParserException",
+      "grounded_plan": false,
+      "latency_ms": 172513.21769999777,
+      "parse_succeeded": false,
+      "prompt_bytes": 15299,
+      "prompt_eval_count": 3467,
+      "raw_output": "```json\n{\n  \"summary\": \"Correct `clamp_limit` function to enforce the strict maximum bound.\",\n  \"diagnosis\": \"The `clamp_limit` function in `calibration/limits.py` currently allows the returned value to exceed `max_value` by one unit because it uses `max_value + 1` as the upper limit in the `min()` calculation (Evidence 1). This violates the intended behavior of clamping within defined limits.\",\n  \"proposed_files\": [\n    \"calibration/limits.py\"\n  ],\n  \"steps\": [\n    {\n      \"description\": \"Modify the `clamp_limit` function in `calibration/limits.py` by changing the upper limit from `max_value + 1` to `max_value` to ensure the returned value never exceeds the specified maximum limit.\",",
+      "raw_output_sha256": "b0da0527428b10c0c25b38bcba34671e05155ff00a929875dda35fe1f131c3a3",
+      "response_eval_count": 629
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "summary": {
+    "case_count": 3,
+    "citation_validity_rate": 0.6666666666666666,
+    "grounded_plan_rate": 0.6666666666666666,
+    "mean_latency_ms": 174610.93726666635,
+    "parse_success_rate": 0.6666666666666666
+  }
+}

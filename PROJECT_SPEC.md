@@ -145,7 +145,9 @@ SWE-bench or public benchmark results.
 - M9 — External + system evaluation — Complete; v1 remains historical and
   infrastructure-invalid, while the clean frozen v2 run measured 0/6 repairs
   with no provider/infrastructure or critical safety failure
-- M10 — Measured optimization + polish
+- M10 — Measured optimization + polish — Complete; native structured output,
+  bounded dense batches, depth-5 context selection, post-optimization M8/M9
+  evidence, and final documentation are recorded without weakening safety
 
 ## Explicit V1 non-goals
 

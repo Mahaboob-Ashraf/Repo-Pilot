@@ -1,0 +1,122 @@
+{
+  "configuration": {
+    "budget": 16384,
+    "top_k_values": [
+      10,
+      5,
+      3
+    ]
+  },
+  "experiment": "context_depth",
+  "generated_at_utc": "2026-09-13T17:46:00.212178+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "case_id": "relevant-rank-1",
+      "coverage": true,
+      "included_chunks": 10,
+      "precision": 0.1,
+      "prompt_bytes": 7102,
+      "token_waste": 0.8955457150299557,
+      "top_k": 10
+    },
+    {
+      "case_id": "relevant-rank-3",
+      "coverage": true,
+      "included_chunks": 10,
+      "precision": 0.1,
+      "prompt_bytes": 7102,
+      "token_waste": 0.8955457150299557,
+      "top_k": 10
+    },
+    {
+      "case_id": "relevant-rank-5",
+      "coverage": true,
+      "included_chunks": 10,
+      "precision": 0.1,
+      "prompt_bytes": 7102,
+      "token_waste": 0.8955457150299557,
+      "top_k": 10
+    },
+    {
+      "case_id": "relevant-rank-1",
+      "coverage": true,
+      "included_chunks": 5,
+      "precision": 0.2,
+      "prompt_bytes": 5188,
+      "token_waste": 0.7916883116883117,
+      "top_k": 5
+    },
+    {
+      "case_id": "relevant-rank-3",
+      "coverage": true,
+      "included_chunks": 5,
+      "precision": 0.2,
+      "prompt_bytes": 5188,
+      "token_waste": 0.7916883116883117,
+      "top_k": 5
+    },
+    {
+      "case_id": "relevant-rank-5",
+      "coverage": true,
+      "included_chunks": 5,
+      "precision": 0.2,
+      "prompt_bytes": 5188,
+      "token_waste": 0.7916883116883117,
+      "top_k": 5
+    },
+    {
+      "case_id": "relevant-rank-1",
+      "coverage": true,
+      "included_chunks": 3,
+      "precision": 0.3333333333333333,
+      "prompt_bytes": 4426,
+      "token_waste": 0.6552020636285468,
+      "top_k": 3
+    },
+    {
+      "case_id": "relevant-rank-3",
+      "coverage": true,
+      "included_chunks": 3,
+      "precision": 0.3333333333333333,
+      "prompt_bytes": 4426,
+      "token_waste": 0.6552020636285468,
+      "top_k": 3
+    },
+    {
+      "case_id": "relevant-rank-5",
+      "coverage": false,
+      "included_chunks": 3,
+      "precision": 0.0,
+      "prompt_bytes": 4406,
+      "token_waste": 1.0,
+      "top_k": 3
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "a8e0db99f36eb4d6ac0309d0f2d22cd3da0b965ec8941b88dd87c0f3d849c657",
+  "summary": {
+    "10": {
+      "coverage_rate": 1.0,
+      "mean_precision": 0.1,
+      "mean_prompt_bytes": 7102,
+      "mean_token_waste": 0.8955457150299557
+    },
+    "3": {
+      "coverage_rate": 0.6666666666666666,
+      "mean_precision": 0.2222222222222222,
+      "mean_prompt_bytes": 4419.333333333333,
+      "mean_token_waste": 0.7701347090856979
+    },
+    "5": {
+      "coverage_rate": 1.0,
+      "mean_precision": 0.2,
+      "mean_prompt_bytes": 5188,
+      "mean_token_waste": 0.7916883116883117
+    }
+  }
+}

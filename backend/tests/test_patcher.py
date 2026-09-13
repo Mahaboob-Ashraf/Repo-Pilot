@@ -7,7 +7,12 @@ import json
 
 import pytest
 
-from app.patching import PatchInferenceError, PatchOutputError, StructuredPatcher
+from app.patching import (
+    PatchInferenceError,
+    PatchOutputError,
+    PatchProposal,
+    StructuredPatcher,
+)
 from app.planning import PlanningContextSnapshot, repair_plan_hash
 from app.providers.base import InferenceUnavailableError
 from tests.patching_fakes import copy_toy_repository, patch_inputs
@@ -83,6 +88,37 @@ def test_valid_structured_patch_output_parses_to_frozen_schema(tmp_path) -> None
     assert parsed == proposal
     with pytest.raises(Exception):
         parsed.summary = "changed"  # type: ignore[misc]
+
+
+def test_patcher_uses_optional_native_schema_capability(tmp_path) -> None:
+    repository = copy_toy_repository(tmp_path)
+    pack, plan, proposal = patch_inputs(repository)
+
+    class StructuredProvider:
+        model = "structured-fake"
+
+        def __init__(self) -> None:
+            self.schemas = []
+
+        async def generate(self, prompt: str) -> str:
+            raise AssertionError("plain generation must not be used")
+
+        async def generate_structured(self, prompt: str, response_schema) -> str:
+            self.schemas.append(response_schema)
+            return proposal.model_dump_json()
+
+    provider = StructuredProvider()
+    parsed = asyncio.run(
+        StructuredPatcher(provider).create_patch(
+            context=PlanningContextSnapshot.from_context_pack(pack),
+            approved_plan=plan,
+            approved_plan_hash=repair_plan_hash(plan),
+            approved_files=plan.proposed_files,
+        )
+    )
+
+    assert parsed == proposal
+    assert provider.schemas == [PatchProposal.model_json_schema()]
 
 
 def test_malformed_patch_output_fails_explicitly(tmp_path) -> None:

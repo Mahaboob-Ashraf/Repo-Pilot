@@ -1,0 +1,50 @@
+{
+  "configuration": {
+    "batch_size": 32,
+    "chunk_count": 96,
+    "model": "embeddinggemma:latest"
+  },
+  "experiment": "embedding_index_setup",
+  "generated_at_utc": "2026-09-13T18:08:16.117189+00:00",
+  "limitations": [
+    "Synthetic development cases only; frozen M8/M9 labels were not used.",
+    "Model measurements are single samples and not broad reliability claims."
+  ],
+  "records": [
+    {
+      "batch_cardinalities": [
+        32,
+        32,
+        32
+      ],
+      "chroma_write_ms": 81.63559999957215,
+      "chunk_count": 96,
+      "embedding_batch_durations_ms": [
+        3648.862799997005,
+        2249.5296000015514,
+        2173.497399999178
+      ],
+      "embedding_total_ms": 8071.889799997734,
+      "total_setup_ms": 8153.565900000103
+    }
+  ],
+  "schema_version": "repopilot.m10.development.v1",
+  "suite_id": "m10-development-v1",
+  "suite_sha256": "c5d37755c4ebf6610a1e5bc2fb0f6da8a5cc84c7e161e19aa24f02e146eb8b49",
+  "summary": {
+    "batch_cardinalities": [
+      32,
+      32,
+      32
+    ],
+    "chroma_write_ms": 81.63559999957215,
+    "chunk_count": 96,
+    "embedding_batch_durations_ms": [
+      3648.862799997005,
+      2249.5296000015514,
+      2173.497399999178
+    ],
+    "embedding_total_ms": 8071.889799997734,
+    "total_setup_ms": 8153.565900000103
+  }
+}

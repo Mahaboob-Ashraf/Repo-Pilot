@@ -12,7 +12,13 @@ from pydantic import ValidationError
 
 from app.critic import CriticError, CriticInferenceError, CriticService
 from app.exporting import FinalReviewDecision, PatchExportError, PatchExporter
-from app.patching import ApprovedPatchService, PatchArtifact, PatchError, PatchInferenceError
+from app.patching import (
+    ApprovedPatchService,
+    PatchArtifact,
+    PatchError,
+    PatchInferenceError,
+    PatchValidationError,
+)
 from app.planning import (
     PlanningContextSnapshot,
     PlanValidationError,
@@ -32,6 +38,25 @@ from app.workflow.models import (
 )
 
 MAX_PATCH_ATTEMPTS = 2
+
+_SAFE_PATCH_VALIDATION_MESSAGES = frozenset(
+    {
+        "patch edits must contain UTF-8 text, not NUL data",
+        "patch edit must change source text",
+        "patch proposal contains an unapproved file",
+        "patch edit cites evidence outside the approved ContextPack",
+        "patch edit lacks a same-file ContextPack citation",
+        "expected_old_text was not found exactly",
+        "expected_old_text matched ambiguously",
+        "expected_old_text is outside its cited same-file evidence",
+        "patch proposal contains overlapping edits",
+        "patch proposal produces no file change",
+        "patch proposal contains no applicable edits",
+        "patch target must not be a symlink",
+        "patch target must be an existing workspace file",
+        "patch target must be an existing regular file",
+    }
+)
 
 
 def build_plan_review_graph(
@@ -444,7 +469,10 @@ def _planner_error_record(error: PlannerError | PlanValidationError) -> dict[str
 
 def _patch_failure(error: Exception) -> PlanReviewState:
     messages = {"PatchOutputError": "patch output was not valid structured data", "PatchScopeError": "patch proposal exceeded approved authority", "PatchValidationError": "patch proposal failed deterministic validation", "StaleApprovalError": "approved evidence no longer matches source", "PatchConflictError": "workspace state conflicts with the approved patch", "PatchApplicationError": "workspace patch application failed safely", "WorkspaceError": "isolated workspace could not be prepared", "PatchInferenceError": "patch inference failed"}
-    record = _error_record(type(error).__name__, messages.get(type(error).__name__, "patch stage failed safely"))
+    safe_message = messages.get(type(error).__name__, "patch stage failed safely")
+    if type(error) is PatchValidationError and str(error) in _SAFE_PATCH_VALIDATION_MESSAGES:
+        safe_message = str(error)
+    record = _error_record(type(error).__name__, safe_message)
     if isinstance(error, PatchInferenceError):
         record.update({"provider_error_type": error.provider_error_type, "provider_error_classification": error.provider_error_classification, "provider_error_message": error.provider_error_message, "model": error.model})
     return {"workspace_id": None, "source_plan_hash": None, "changed_files": None, "unified_diff": None, "patch_hash": None, "patch_error": record, "status": WorkflowStatus.PATCH_FAILED.value}

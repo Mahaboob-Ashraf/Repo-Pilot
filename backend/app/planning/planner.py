@@ -22,6 +22,7 @@ from app.providers.base import (
     InferenceProviderError,
     InferenceResponseError,
     InferenceUnavailableError,
+    generate_with_optional_schema,
 )
 
 
@@ -122,7 +123,11 @@ class StructuredPlanner:
     ) -> RepairPlan:
         prompt = self.render_prompt(context)
         try:
-            raw_output = await self._provider.generate(prompt)
+            raw_output = await generate_with_optional_schema(
+                self._provider,
+                prompt,
+                RepairPlan.model_json_schema(),
+            )
         except InferenceProviderError as exc:
             raise PlannerInferenceError(
                 model=self.model,

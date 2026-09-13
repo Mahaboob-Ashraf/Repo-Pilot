@@ -45,7 +45,7 @@ from app.config import OllamaEmbeddingSettings, Settings
 
 
 DEFAULT_CONTEXT_BUDGET = 16_384
-DEFAULT_RETRIEVAL_TOP_K = 10
+DEFAULT_RETRIEVAL_TOP_K = 5
 
 
 class WorkflowApplicationError(RuntimeError):

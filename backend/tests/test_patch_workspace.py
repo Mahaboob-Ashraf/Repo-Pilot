@@ -23,7 +23,8 @@ from app.patching import (
     WorkspaceManager,
     canonical_patch_hash,
 )
-from app.planning import PlanningContextSnapshot, repair_plan_hash
+from app.patching.service import _evidence_range
+from app.planning import PlanningContextSnapshot, PlanningEvidence, repair_plan_hash
 from tests.patching_fakes import (
     NEW_CALCULATION,
     OLD_CALCULATION,
@@ -32,6 +33,27 @@ from tests.patching_fakes import (
     two_file_plan,
 )
 from tests.planning_fakes import FakeInferenceProvider
+
+
+def test_freshness_accepts_exact_indented_method_source_within_line_range() -> None:
+    text = "class Counter:\n    def increment(self):\n        return self.value + 1\n"
+    source = "def increment(self):\n        return self.value + 1"
+    evidence = PlanningEvidence(
+        chunk_id="counter.py::method::Counter.increment::2-3",
+        path="counter.py",
+        qualified_symbol="Counter.increment",
+        chunk_type="method",
+        start_line=2,
+        end_line=3,
+        content_hash=sha256(source.encode("utf-8")).hexdigest(),
+        source_text=source,
+        origin="retrieved",
+        source_retrieval_rank=1,
+    )
+
+    start, end = _evidence_range(text, evidence)
+
+    assert text[start:end] == source
 
 
 def _execute(

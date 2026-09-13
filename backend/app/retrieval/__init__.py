@@ -20,6 +20,7 @@ from app.retrieval.hybrid import (
     reciprocal_rank_fusion,
 )
 from app.retrieval.vector import (
+    DEFAULT_EMBEDDING_BATCH_SIZE,
     DEFAULT_VECTOR_COLLECTION_NAME,
     EMBEDDING_DOCUMENT_FORMAT,
     VECTOR_DISTANCE_SPACE,
@@ -28,6 +29,7 @@ from app.retrieval.vector import (
     EmbeddingModelMismatchError,
     VectorCollectionError,
     VectorQueryError,
+    VectorRebuildMetrics,
     VectorRetrievalError,
     VectorSearchResult,
     chunk_to_embedding_document,
@@ -74,9 +76,11 @@ __all__ = [
     "StructuralRelation",
     "RetrievalSource",
     "ChromaVectorIndex",
+    "DEFAULT_EMBEDDING_BATCH_SIZE",
     "VECTOR_DISTANCE_SPACE",
     "VectorCollectionError",
     "VectorQueryError",
+    "VectorRebuildMetrics",
     "VectorRetrievalError",
     "VectorSearchResult",
     "chunk_to_embedding_document",

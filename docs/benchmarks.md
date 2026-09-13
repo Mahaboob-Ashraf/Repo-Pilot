@@ -520,3 +520,42 @@ This is a frozen controlled external evaluation across 3 public Python
 repositories, not SWE-bench or production accuracy. Final artifacts are under
 `evaluation/results/m9-v2/`; M9 v1 and Task 019C diagnostic evidence remain
 unchanged under `evaluation/results/m9/`.
+
+## M10 development calibration and post-optimization evaluation
+
+M10 used `m10-development-v1`, a separate synthetic suite covering structured
+plans, similar chunk identifiers, medium context, exact patch replacement, and
+a 96-chunk embedding index. No M9 gold patch entered calibration or production.
+
+Planner calibration changed from 2/3 parse/citation/grounding success at mean
+174.611 seconds to 3/3 at 38.370 seconds with native JSON Schema. Adding an
+explicit ID/path list regressed to 2/3 because the medium prompt reached 4,081
+tokens in the runtime's 4,096-token context and left only 15 response tokens;
+that prompt change was reverted. Patcher exact-replacement validity remained
+1/1 while latency changed from 141.947 to 18.230 seconds. These are single
+synthetic samples, not reliability estimates.
+
+Depth 5 preserved 3/3 development coverage, doubled mean precision from 0.10
+to 0.20 versus depth 10, and reduced mean prompt bytes from 7,102 to 5,188;
+depth 3 lost coverage and was rejected. Three 32-item embedding requests took
+6.150 seconds versus 7.939 seconds for one 96-item request. Production index
+decomposition measured 8.072 seconds embedding, 81.6 ms Chroma write, and
+8.154 seconds total.
+
+M8-v2 retained hybrid file Hit@1/Hit@5/MRR and gold file/symbol ContextPack
+coverage at 1.0. File chunk precision improved from 0.3750 to 0.4145 and file
+token waste fell from 0.6195 to 0.5837. All 33 deterministic safety scenarios
+passed in both runs.
+
+The one-shot M9-v3 run used unchanged v2 fixtures, CPU-only Gemma, and the
+locked Docker image. It repaired 1/6 on attempt one, produced 3/6 grounded
+plans, 0 parse failures, 3 grounding failures, 1 valid patch, and 1 Docker test
+pass. Retrieval remained Hit@1/Hit@5/MRR 0.8333/1.0000/0.9167 with full
+ContextPack gold coverage. Four cases used lexical fallback after transient
+Ollama HTTP 400 embedding responses. Median planner/total latency was
+85.169/110.912 seconds. No retry recovery or critical safety failure occurred.
+
+Two M9-v3 cases safely stopped on a real indented-method freshness bug fixed
+after measurement; the run was not repeated. M9-v2 remains the 0/6 baseline,
+and M9-v3 remains 1/6 measured evidence rather than a replacement. Final
+artifacts are under `evaluation/results/m10/`, `m8-v2/`, and `m9-v3/`.
