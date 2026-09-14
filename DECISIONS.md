@@ -772,3 +772,26 @@ patcher calibration passed. The one-shot frozen six-case comparison repaired
 6/6 with Gemini versus the frozen 1/6 CPU-local Gemma M9-v3 baseline, with no
 provider failure or critical safety failure. This small controlled result is
 not generalized beyond its six defects and three repositories.
+
+## ADR-022 - Graphite presentation and read-only stage navigation
+
+**Status:** Implemented; browser visual review and controlled UI smoke pending.
+
+**Decision:** Keep the existing workflow client and backend contract unchanged.
+The frontend owns theme preference, viewed stage, source selection, and console
+presentation only. The server owns workflow transitions, grounding, scope,
+hashes, retries, Docker policy, and export. Selecting a stage never requests a
+mutation. Evidence source is rendered as text; a native dialog supplies modal
+focus containment on narrow screens. A small unified-diff presentation parser
+retains the unmodified canonical diff in a raw view. No split editor, new
+endpoint, provider selector, or download control is introduced.
+
+**Why:** Review density and navigation can improve independently of repair
+authority. Explicit labels and local identity consistency checks make both
+checkpoints clearer without replacing backend validation.
+
+**Testing impact:** Frontend tests cover theme persistence/System updates,
+read-only navigation, exact citations, drawer focus return, raw diff integrity,
+duplicate decisions, stale recovery, and mismatched final evidence. Native
+focus trapping and composed responsive visuals still require a connected
+browser; unit tests do not prove those properties.

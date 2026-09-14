@@ -105,6 +105,19 @@ returned retrieval depth from 10 to 5 improved mean file chunk precision from
 `0.3750` to `0.4145` and reduced mean file token waste from `0.6195` to
 `0.5837`; all 33 deterministic safety scenarios still passed.
 
+## Graphite review workbench
+
+The frontend uses a Graphite workbench with Dark (default), Light, and System
+themes, saved locally without remote fonts or new UI dependencies. Seven stage
+views separate read-only navigation from the backend's current checkpoint.
+Evidence citations open exact line-numbered source; unified diffs, Docker output,
+two explicit approval strips, and export receipts preserve the existing API.
+
+See [setup](docs/setup.md) for local startup and
+[Graphite review notes](docs/ui-review.md) for the controlled demo, screenshot
+sequence, automated evidence, and outstanding browser validation. No screenshot
+or successful real UI smoke is claimed yet for Task 022B.
+
 ## Why RepoPilot?
 
 Many coding assistants can generate code from a prompt, but repository-level software engineering requires more than generation.

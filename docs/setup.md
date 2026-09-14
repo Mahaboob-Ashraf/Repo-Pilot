@@ -60,6 +60,17 @@ From `backend/`:
 uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
+If this Windows installation has Docker Desktop outside PATH, expose its
+existing CLI to this backend process only before starting the same server:
+
+```powershell
+$env:PATH = "C:\Users\Admin\AppData\Local\Programs\DockerDesktop\resources\bin;" + $env:PATH
+uv run --locked uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
+
+This does not install Docker, change the system PATH, start its daemon, or pull
+an image. The configured image and Linux daemon must already be available.
+
 Then check the backend:
 
 ```powershell
@@ -440,6 +451,16 @@ npm ci
 The committed `package-lock.json` is the reproducible dependency source.
 
 ## Run the frontend
+
+On Windows PowerShell where `npm.ps1` is blocked, use `npm.cmd` for the same
+scripts: `npm.cmd test`, `npm.cmd run build`, and
+`npm.cmd run dev -- --host 127.0.0.1 --port 5173`. No execution-policy change
+is required. The build runs `tsc --noEmit` before Vite.
+
+The Graphite UI defaults to Dark and offers Light/System from the topbar.
+Theme preference is stored locally. The single controlled demo inputs,
+checkpoint screenshot sequence, and pending browser checks are documented in
+[`ui-review.md`](ui-review.md).
 
 Start the backend first, then run this from `frontend/` in a second terminal:
 

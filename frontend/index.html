@@ -5,13 +5,24 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="RepoPilot M0 local inference connectivity screen"
+      content="RepoPilot — human-controlled Python repair workbench"
     />
-    <title>RepoPilot — Local inference</title>
+    <title>RepoPilot — Repair workbench</title>
+    <style>
+      html { background: #0B0D12; color-scheme: dark; }
+      html[data-theme="light"] { background: #F3F5F9; color-scheme: light; }
+    </style>
+    <script>
+      try {
+        var theme = localStorage.getItem("repopilot-theme") || "dark";
+        document.documentElement.dataset.theme = theme === "system"
+          ? (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+          : (theme === "light" ? "light" : "dark");
+      } catch (_) { document.documentElement.dataset.theme = "dark"; }
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

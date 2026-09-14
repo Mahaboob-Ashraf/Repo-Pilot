@@ -615,3 +615,19 @@ broad repair quality. This is not SWE-bench.
 ### Public-content angle
 
 None queued. The user explicitly requested no public post.
+
+## 2026-09-14 - Graphite workbench implementation
+
+Replaced the green/editorial frontend with semantic Dark/Light/System themes,
+read-only seven-stage navigation, exact source inspection, a unified-diff
+surface, Docker consoles, and explicit two-checkpoint review controls. Backend
+workflow authority and API payloads are unchanged; no dependency was added.
+
+Verified 33 frontend tests, TypeScript/Vite production build, 18 API tests,
+118 focused workflow/safety tests, and the complete 350-test backend suite.
+The local frontend/backend servers start and backend health is healthy.
+
+Browser visual review and the one controlled real UI smoke remain pending:
+the connector has no available browser. No real workflow or benchmark ran.
+This is an implementation event, not evidence of visual or real-smoke acceptance.
+See docs/ui-review.md for exact demo inputs and screenshot sequence.

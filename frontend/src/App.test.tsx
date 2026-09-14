@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -141,8 +141,8 @@ async function startWith(value: WorkflowView) {
   render(<App />);
   await user.type(screen.getByRole("textbox", { name: "Repository path" }), "C:\\work\\toy-repo");
   await user.type(screen.getByRole("textbox", { name: "Issue" }), "Fix discount arithmetic");
-  await user.click(screen.getByRole("button", { name: "Start Repair" }));
-  await screen.findByRole("heading", { name: "Human Review Workspace" });
+  await user.click(screen.getByRole("button", { name: "Analyze repository" }));
+  await screen.findByText(`Workflow status: ${value.status.replaceAll("_", " ")}`);
   return user;
 }
 
@@ -155,14 +155,32 @@ describe("RepoPilot human review workspace", () => {
   it("validates both required start fields", async () => {
     const user = userEvent.setup();
     render(<App />);
-    await user.click(screen.getByRole("button", { name: "Start Repair" }));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Analyze repository" }));
     expect(mockedCreate).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("Repository path and issue are required");
+    expect(screen.getAllByRole("alert")).toHaveLength(2);
+    expect(screen.getByText("Repository path is required.")).toBeVisible();
+    expect(screen.getByText("Issue is required.")).toBeVisible();
+    expect(screen.getByRole("textbox", { name: "Repository path" })).toHaveFocus();
+    await user.type(screen.getByRole("textbox", { name: "Repository path" }), "C:\\work\\repo");
+    expect(screen.queryByText("Repository path is required.")).not.toBeInTheDocument();
+  });
+
+  it("keeps repository validation inline when the backend rejects the path", async () => {
+    const { WorkflowApiError } = await import("./api/workflows");
+    mockedCreate.mockRejectedValueOnce(new WorkflowApiError("invalid", "invalid_repository", 400));
+    const user = userEvent.setup();
+    render(<App />);
+    await user.type(screen.getByRole("textbox", { name: "Repository path" }), "C:\\missing");
+    await user.type(screen.getByRole("textbox", { name: "Issue" }), "Fix the parser defect");
+    await user.click(screen.getByRole("button", { name: "Analyze repository" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Repository path must identify a readable local Python directory.");
+    expect(screen.queryByText("Request not completed")).not.toBeInTheDocument();
   });
 
   it("renders authoritative workflow evidence and plan state", async () => {
     await startWith(workflow());
-    expect(screen.getByRole("heading", { name: "Repository Evidence" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Repair plan" })).toBeVisible();
     expect(screen.getByText("Correct the discount arithmetic.")).toBeVisible();
     expect(screen.getAllByText("pricing.py").length).toBeGreaterThan(0);
   });
@@ -172,7 +190,7 @@ describe("RepoPilot human review workspace", () => {
     const user = await startWith(workflow());
     expect(screen.getByText(planHash)).toBeVisible();
     expect(screen.getByText("RepoPilot will be authorized to modify ONLY:")).toBeVisible();
-    await user.click(screen.getByRole("button", { name: "Approve plan" }));
+    await user.click(screen.getByRole("button", { name: "Approve plan and file scope" }));
     expect(mockedPlanDecision).toHaveBeenCalledWith(
       "thread-017",
       { decision: "approve", comment: undefined },
@@ -198,29 +216,36 @@ describe("RepoPilot human review workspace", () => {
     const user = userEvent.setup();
     await user.type(screen.getByRole("textbox", { name: "Repository path" }), "repo");
     await user.type(screen.getByRole("textbox", { name: "Issue" }), "issue");
-    await user.click(screen.getByRole("button", { name: "Start Repair" }));
+    await user.click(screen.getByRole("button", { name: "Analyze repository" }));
+    await screen.findByRole("heading", { name: "Repair complete" });
+    await user.click(screen.getByRole("button", { name: /Patch complete/ }));
     expect(await screen.findByLabelText("Canonical unified diff")).toHaveTextContent("return total * (1 - rate)");
+    await user.click(screen.getByRole("button", { name: /Retrieval complete/ }));
+    await user.click(screen.getByRole("button", { name: /pricing.py:1/ }));
     expect(screen.getByText(unsafe)).toBeInTheDocument();
     expect(container.querySelector("img")).toBeNull();
   });
 
   it.each([
     ["passed", "Passed"],
-    ["failed", "Failed"],
+    ["failed", "Test failure"],
     ["infrastructure_failed", "Infrastructure failure"],
     ["timed_out", "Timed out"],
+    ["no_tests_collected", "No tests collected"],
+    ["pytest_error", "Pytest error"],
   ])("distinguishes %s test evidence", async (status, label) => {
     const base = testedWorkflow();
-    await startWith(testedWorkflow({
+    const user = await startWith(testedWorkflow({
       status: status === "infrastructure_failed" ? "test_infrastructure_failed" : base.status,
       test: { ...base.test!, status },
     }));
-    expect(screen.getByText(label)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Tests (complete|failed|Current checkpoint)/ }));
+    expect(screen.getAllByText(label)[0]).toBeVisible();
   });
 
   it("shows critic and bounded retry history only when critic data exists", async () => {
     const base = testedWorkflow();
-    await startWith(testedWorkflow({
+    const user = await startWith(testedWorkflow({
       patch: { ...base.patch!, attempt_number: 2 },
       critic: {
         summary: "The sign fix was incomplete.",
@@ -234,14 +259,15 @@ describe("RepoPilot human review workspace", () => {
         { ...base.attempts[0], attempt_number: 2, patch_hash: "e".repeat(64) },
       ],
     }));
-    expect(screen.getByText("RepoPilot permits at most one repair retry.")).toBeVisible();
-    expect(screen.getByText(/Attempt 2/)).toBeVisible();
+    await user.click(screen.getByRole("button", { name: /Tests complete/ }));
+    expect(screen.getByText(/RepoPilot permits at most one repair retry/)).toBeVisible();
+    expect(screen.getAllByText(/Attempt 2/)[0]).toBeVisible();
   });
 
   it("submits the exact displayed final patch hash", async () => {
     mockedFinalDecision.mockResolvedValue(testedWorkflow({ status: "final_rejected" }));
     const user = await startWith(testedWorkflow());
-    await user.click(screen.getByRole("button", { name: "Approve & export patch" }));
+    await user.click(screen.getByRole("button", { name: "Approve tested patch for export" }));
     expect(mockedFinalDecision).toHaveBeenCalledWith(
       "thread-017",
       { decision: "approve", comment: undefined },
@@ -254,8 +280,8 @@ describe("RepoPilot human review workspace", () => {
       ? testedWorkflow({ status, export: { artifact_id: patchHash, filename: `${patchHash}.patch`, patch_hash: patchHash, changed_files: ["pricing.py"], test_run_id: "c".repeat(64) } })
       : workflow({ status });
     await startWith(value);
-    expect(screen.queryByRole("button", { name: "Approve plan" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Approve & export patch" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve plan and file scope" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Approve tested patch for export" })).not.toBeInTheDocument();
   });
 
   it("disables the state-changing start button while a request is pending", async () => {
@@ -265,18 +291,140 @@ describe("RepoPilot human review workspace", () => {
     render(<App />);
     await user.type(screen.getByRole("textbox", { name: "Repository path" }), "repo");
     await user.type(screen.getByRole("textbox", { name: "Issue" }), "issue");
-    await user.click(screen.getByRole("button", { name: "Start Repair" }));
-    expect(screen.getByRole("button", { name: "Running analysis…" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Analyze repository" }));
+    expect(screen.getByRole("button", { name: "Analyzing repository…" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Analyzing repository…" }));
+    expect(mockedCreate).toHaveBeenCalledTimes(1);
     resolveRequest(workflow());
-    expect(await screen.findByRole("heading", { name: "Human Review Workspace" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Plan review" })).toBeVisible();
   });
 
   it("reopens a URL thread through one read-only GET", async () => {
     window.history.replaceState(null, "", "/?thread=thread-017");
     mockedFetch.mockResolvedValue(workflow());
     render(<App />);
-    expect(await screen.findByRole("heading", { name: "Human Review Workspace" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Plan review" })).toBeVisible();
     expect(mockedFetch).toHaveBeenCalledTimes(1);
     expect(mockedCreate).not.toHaveBeenCalled();
+  });
+
+  it("persists theme choices and restores them after remount", async () => {
+    const user = userEvent.setup();
+    const view = render(<App />);
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    await user.click(screen.getByRole("button", { name: "Light" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(localStorage.getItem("repopilot-theme")).toBe("light");
+    view.unmount(); render(<App />);
+    expect(screen.getByRole("button", { name: "Light" })).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("follows system color changes only in System mode", async () => {
+    const listeners = new Set<() => void>();
+    const media = { matches: false, media: "(prefers-color-scheme: dark)", onchange: null,
+      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      addListener: vi.fn(), removeListener: vi.fn(), dispatchEvent: vi.fn() };
+    vi.spyOn(window, "matchMedia").mockReturnValue(media as unknown as MediaQueryList);
+    const user = userEvent.setup(); render(<App />);
+    await user.click(screen.getByRole("button", { name: "System" }));
+    expect(document.documentElement.dataset.theme).toBe("light");
+    act(() => { media.matches = true; listeners.forEach((listener) => listener()); });
+    expect(document.documentElement.dataset.theme).toBe("dark");
+    await user.click(screen.getByRole("button", { name: "Light" }));
+    act(() => { listeners.forEach((listener) => listener()); });
+    expect(document.documentElement.dataset.theme).toBe("light");
+  });
+
+  it("views completed stages without executing or refreshing workflow actions", async () => {
+    const user = await startWith(testedWorkflow());
+    await user.click(screen.getByRole("button", { name: /Retrieval complete/ }));
+    expect(screen.getByRole("heading", { name: "Evidence" })).toBeVisible();
+    expect(screen.getByRole("button", { name: /Retrieval complete/ })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByText(/Viewing retrieval/)).toBeVisible();
+    await user.selectOptions(screen.getByRole("combobox", { name: "Stage" }), "patch");
+    expect(screen.getByRole("heading", { name: "Patch diff" })).toBeVisible();
+    expect(mockedCreate).toHaveBeenCalledTimes(1);
+    expect(mockedPlanDecision).not.toHaveBeenCalled(); expect(mockedFinalDecision).not.toHaveBeenCalled(); expect(mockedFetch).not.toHaveBeenCalled();
+  });
+
+  it("opens exact citation source in a drawer and restores focus after closing", async () => {
+    vi.spyOn(window, "matchMedia").mockReturnValue({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList);
+    const user = await startWith(workflow());
+    await user.click(screen.getByRole("button", { name: /Retrieval complete/ }));
+    const citation = screen.getByRole("button", { name: /pricing\.py:1–2/ });
+    await user.click(citation);
+    expect(citation).toHaveAttribute("aria-pressed", "true");
+    const drawer = screen.getByRole("dialog", { name: "Source context" });
+    expect(within(drawer).getByText("chunk-pricing")).toBeVisible();
+    expect(within(drawer).getByText("return total * (1 + rate)")).toBeVisible();
+    await user.click(within(drawer).getByRole("button", { name: "Close context" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument(); expect(citation).toHaveFocus();
+    expect(mockedPlanDecision).not.toHaveBeenCalled();
+  });
+
+  it("does not fabricate source for an unavailable citation", async () => {
+    const user = await startWith(workflow({ evidence: [{ ...workflow().evidence[0], source_text: null }] }));
+    await user.click(screen.getByRole("button", { name: "pricing.py:1–2" }));
+    expect(screen.getByText("Source context is unavailable for this citation.")).toBeVisible();
+  });
+
+  it("guards duplicate plan decisions and exposes comments", async () => {
+    let resolve!: (value: WorkflowView) => void;
+    mockedPlanDecision.mockReturnValue(new Promise((done) => { resolve = done; }));
+    const user = await startWith(workflow());
+    await user.type(screen.getByLabelText(/Reviewer comment/), "Reviewed scope");
+    const button = screen.getByRole("button", { name: "Approve plan and file scope" });
+    await user.dblClick(button);
+    expect(button).toBeDisabled(); expect(mockedPlanDecision).toHaveBeenCalledTimes(1);
+    expect(mockedPlanDecision).toHaveBeenCalledWith("thread-017", { decision: "approve", comment: "Reviewed scope" }, planHash);
+    await act(async () => resolve(testedWorkflow()));
+  });
+
+  it("guards duplicate final decisions", async () => {
+    let resolve!: (value: WorkflowView) => void;
+    mockedFinalDecision.mockReturnValue(new Promise((done) => { resolve = done; }));
+    const user = await startWith(testedWorkflow());
+    const button = screen.getByRole("button", { name: "Approve tested patch for export" });
+    await user.dblClick(button);
+    expect(button).toBeDisabled(); expect(mockedFinalDecision).toHaveBeenCalledTimes(1);
+    await act(async () => resolve(testedWorkflow({ status: "final_rejected" })));
+  });
+
+  it("blocks final approval when passing evidence has a different patch identity", async () => {
+    const base = testedWorkflow();
+    const user = await startWith(testedWorkflow({ test: { ...base.test!, tested_patch_hash: "e".repeat(64) } }));
+    const button = screen.getByRole("button", { name: "Approve tested patch for export" });
+    expect(button).toBeDisabled(); await user.click(button);
+    expect(mockedFinalDecision).not.toHaveBeenCalled();
+    expect(screen.getByText("Evidence mismatch")).toBeVisible();
+  });
+
+  it("requires read-only recovery after a stale approval and never retries the POST", async () => {
+    const { WorkflowApiError } = await import("./api/workflows");
+    mockedPlanDecision.mockRejectedValue(new WorkflowApiError("private diagnostic", "stale_plan_hash", 409));
+    mockedFetch.mockResolvedValue(workflow());
+    const user = await startWith(workflow());
+    await user.click(screen.getByRole("button", { name: "Approve plan and file scope" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("displayed plan hash is stale");
+    expect(screen.queryByText("private diagnostic")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Approve plan and file scope" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Refresh state" }));
+    expect(mockedFetch).toHaveBeenCalledTimes(1); expect(mockedPlanDecision).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Approve plan and file scope" })).toBeEnabled();
+  });
+
+  it("retains the thread after an ambiguous start and recovers through GET", async () => {
+    const { WorkflowApiError } = await import("./api/workflows");
+    mockedCreate.mockRejectedValueOnce(new WorkflowApiError("network", "network_error", 0));
+    mockedFetch.mockResolvedValue(workflow());
+    const user = userEvent.setup(); render(<App />);
+    await user.type(screen.getByLabelText("Repository path"), "repo"); await user.type(screen.getByLabelText("Issue"), "issue");
+    await user.click(screen.getByRole("button", { name: "Analyze repository" }));
+    expect(window.location.search).toContain("thread=");
+    expect(screen.getByRole("button", { name: "Analyze repository" })).toBeDisabled();
+    await user.click(screen.getByRole("button", { name: "Refresh state" }));
+    expect(await screen.findByRole("heading", { name: "Plan review" })).toBeVisible();
+    expect(mockedCreate).toHaveBeenCalledTimes(1); expect(mockedFetch).toHaveBeenCalledTimes(1);
   });
 });

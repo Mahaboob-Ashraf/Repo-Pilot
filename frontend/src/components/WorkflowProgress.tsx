@@ -1,118 +1,60 @@
-import type { WorkflowStatus, WorkflowView } from "../api/workflows";
-
-type StageState = "complete" | "current" | "pending" | "failed" | "skipped";
-
-const stages = [
-  ["evidence", "Evidence"],
-  ["plan", "Plan"],
-  ["approval", "Approval #1"],
-  ["patch", "Patch"],
-  ["tests", "Tests"],
-  ["critic", "Critic / Retry"],
-  ["final", "Final Approval"],
-  ["export", "Export"],
+import type { WorkflowView } from "../api/workflows";
+export const stages = [
+  ["repository", "Repository"], ["retrieval", "Retrieval"], ["plan", "Plan review"],
+  ["patch", "Patch"], ["tests", "Tests"], ["final", "Final approval"], ["export", "Export"],
 ] as const;
-
-const terminalStatuses = new Set<WorkflowStatus>([
-  "planner_failed",
-  "patch_failed",
-  "test_infrastructure_failed",
-  "critic_failed",
-  "repair_failed",
-  "rejected",
-  "final_rejected",
-  "export_failed",
-  "completed",
-]);
-
-export function deriveStageStates(workflow: WorkflowView): Record<string, StageState> {
-  const state: Record<string, StageState> = Object.fromEntries(
-    stages.map(([key]) => [key, "pending"]),
-  );
+export type Stage = typeof stages[number][0];
+type StageState = "complete" | "current" | "pending" | "failed" | "rejected" | "skipped";
+export function activeStage(workflow: WorkflowView | null): Stage {
+  if (!workflow) return "repository";
   const status = workflow.status;
-  const hasPlan = workflow.plan !== null;
-  const hasPatch = workflow.patch !== null;
-  const hasTest = workflow.test !== null;
-  const usedRetry = workflow.critic !== null || workflow.patch?.attempt_number === 2;
-
-  state.evidence = status === "planning" ? "current" : "complete";
-  if (status === "planner_failed") {
-    state.evidence = workflow.evidence.length ? "complete" : "failed";
-    state.plan = "failed";
-  } else if (!hasPlan) {
-    state.plan = "current";
-  } else {
-    state.plan = "complete";
-  }
-
-  if (status === "awaiting_approval") state.approval = "current";
-  else if (status === "rejected") state.approval = "complete";
-  else if (workflow.approved_file_scope) state.approval = "complete";
-
-  if (status === "patch_failed") state.patch = "failed";
-  else if (hasPatch) state.patch = "complete";
-  else if (["approval_recorded", "approved_for_patch"].includes(status)) {
-    state.patch = "current";
-  }
-
-  if (status === "test_infrastructure_failed") state.tests = "failed";
-  else if (hasTest) state.tests = "complete";
-  else if (status === "patch_ready") state.tests = "current";
-
-  if (status === "critic_failed" || status === "repair_failed") {
-    state.critic = "failed";
-  } else if (usedRetry) {
-    state.critic = "complete";
-  } else if (
-    hasTest &&
-    ["awaiting_final_approval", "final_approval_recorded", "final_approved", "final_rejected", "completed", "export_failed"].includes(status)
-  ) {
-    state.critic = "skipped";
-  } else if (status === "tests_failed") {
-    state.critic = "current";
-  }
-
-  if (status === "awaiting_final_approval") state.final = "current";
-  else if (status === "final_rejected") state.final = "failed";
-  else if (["final_approval_recorded", "final_approved", "completed", "export_failed"].includes(status)) {
-    state.final = "complete";
-  }
-
-  if (status === "completed") state.export = "complete";
-  else if (status === "export_failed") state.export = "failed";
-  else if (status === "final_approved" || status === "final_approval_recorded") {
-    state.export = "current";
-  }
-
-  if (terminalStatuses.has(status)) {
-    let seenTerminal = false;
-    for (const [key] of stages) {
-      if (state[key] === "failed") seenTerminal = true;
-      if (seenTerminal && state[key] === "pending") state[key] = "skipped";
-    }
-    if (status === "rejected") {
-      for (const key of ["patch", "tests", "critic", "final", "export"]) state[key] = "skipped";
-    }
-    if (status === "final_rejected") state.export = "skipped";
+  if (["completed", "export_failed", "final_approved", "final_approval_recorded"].includes(status)) return "export";
+  if (["awaiting_final_approval", "final_rejected"].includes(status)) return "final";
+  if (["patch_ready", "tests_passed", "tests_failed", "test_infrastructure_failed", "critic_complete", "critic_failed", "repair_failed"].includes(status)) return "tests";
+  if (["approval_recorded", "approved_for_patch", "patch_failed"].includes(status)) return "patch";
+  if (status === "planning") return "retrieval";
+  return "plan";
+}
+export function deriveStageStates(workflow: WorkflowView | null): Record<Stage, StageState> {
+  const state: Record<Stage, StageState> = { repository: "current", retrieval: "pending", plan: "pending", patch: "pending", tests: "pending", final: "pending", export: "pending" };
+  if (!workflow) return state;
+  state.repository = "complete";
+  if (workflow.evidence.length || workflow.plan) state.retrieval = "complete";
+  if (workflow.approved_file_scope) state.plan = "complete";
+  if (workflow.patch) state.patch = "complete";
+  if (workflow.test) state.tests = workflow.test.status === "passed" ? "complete" : "failed";
+  if (workflow.final_review?.decision?.decision === "approve" || workflow.export) state.final = "complete";
+  const current = activeStage(workflow);
+  state[current] = workflow.status === "completed" ? "complete"
+    : ["rejected", "final_rejected"].includes(workflow.status) ? "rejected"
+    : workflow.status.endsWith("failed") || workflow.status === "validation_failed" ? "failed" : "current";
+  if (["failed", "rejected"].includes(state[current])) {
+    let after = false;
+    for (const [key] of stages) { if (after && state[key] === "pending") state[key] = "skipped"; if (key === current) after = true; }
   }
   return state;
 }
-
-export function WorkflowProgress({ workflow }: { workflow: WorkflowView }) {
-  const stageStates = deriveStageStates(workflow);
-  return (
-    <nav className="progress" aria-label="Workflow progress">
-      <ol>
-        {stages.map(([key, label], index) => (
-          <li className={`progress-step is-${stageStates[key]}`} key={key}>
-            <span className="step-index" aria-hidden="true">{index + 1}</span>
-            <span className="step-copy">
-              <strong>{label}</strong>
-              <small>{stageStates[key]}</small>
-            </span>
-          </li>
-        ))}
-      </ol>
-    </nav>
-  );
+export function canViewStage(stage: Stage, workflow: WorkflowView | null): boolean {
+  if (stage === "repository") return true;
+  if (!workflow) return false;
+  if (stage === activeStage(workflow)) return true;
+  return ({ retrieval: !!workflow.evidence.length, plan: !!workflow.plan, patch: !!workflow.patch,
+    tests: !!workflow.test || !!workflow.critic, final: !!workflow.final_review, export: !!workflow.export })[stage];
+}
+export function WorkflowProgress({ workflow, viewed, onView }: { workflow: WorkflowView | null; viewed: Stage; onView: (stage: Stage) => void; }) {
+  const states = deriveStageStates(workflow);
+  return <>
+    <nav className="progress" aria-label="Workflow stages"><ol>
+      {stages.map(([key, label], index) => <li key={key} className={`is-${states[key]}`}>
+        <button type="button" className={`stage-button ${viewed === key ? "is-viewed" : ""}`} aria-current={viewed === key ? "page" : undefined}
+          disabled={!canViewStage(key, workflow)} onClick={() => onView(key)}>
+          <span className="step-index" aria-hidden="true">{states[key] === "complete" ? "✓" : states[key] === "failed" ? "!" : states[key] === "rejected" ? "×" : String(index + 1).padStart(2, "0")}</span>
+          <span className="step-copy"><strong>{label}</strong>{(states[key] !== "pending" || workflow) && <small>{states[key] === "current" ? (workflow ? "Current checkpoint" : "Ready") : states[key]}</small>}</span>
+        </button>
+      </li>)}
+    </ol></nav>
+    <label className="mobile-stage-selector">Stage<select value={viewed} onChange={(event) => onView(event.target.value as Stage)}>
+      {stages.map(([key, label]) => <option key={key} value={key} disabled={!canViewStage(key, workflow)}>{label} · {states[key]}</option>)}
+    </select></label>
+  </>;
 }
