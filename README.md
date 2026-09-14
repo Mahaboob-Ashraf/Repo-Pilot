@@ -37,7 +37,7 @@ Given a Python repository and an issue, RepoPilot:
 
 ---
 
-## Graphite Review Workbench
+## Repopilot Review Workbench
 
 <p align="center">
   <img src="docs/screenshots/01-new-repair-dark.png" alt="RepoPilot new repair screen" width="100%" />
