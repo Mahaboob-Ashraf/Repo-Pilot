@@ -1,0 +1,99 @@
+{
+  "generated_at_utc": "2026-09-14T06:29:12.103927+00:00",
+  "model": "gemini-3.1-flash-lite",
+  "patcher_record": {
+    "case_id": "exact-replacement-rounding",
+    "exact_replacement_contract_valid": true,
+    "failure_type": null,
+    "latency_ms": 4268.932900000436,
+    "parse_succeeded": true,
+    "prompt_bytes": 4928,
+    "response_sha256": "18cb2d508557cc384a576db1478a9532bb6bb886967eee4ca43d1e97ce6aa59f",
+    "token_usage": {
+      "input_tokens": 1338,
+      "output_tokens": 153,
+      "total_tokens": 1491
+    }
+  },
+  "planner_records": [
+    {
+      "case_id": "structured-simple-discount",
+      "citation_ids_valid": true,
+      "failure_type": null,
+      "grounded_plan": true,
+      "latency_ms": 2822.4411999999575,
+      "parse_succeeded": true,
+      "prompt_bytes": 4300,
+      "response_sha256": "0db485503800497cca09f5cbd99acc7079f687e15df2b2b6e1c6ab3fdc481680",
+      "token_usage": {
+        "input_tokens": 1114,
+        "output_tokens": 240,
+        "total_tokens": 1354
+      }
+    },
+    {
+      "case_id": "similar-evidence-identifiers",
+      "citation_ids_valid": true,
+      "failure_type": null,
+      "grounded_plan": true,
+      "latency_ms": 3261.0894000008557,
+      "parse_succeeded": true,
+      "prompt_bytes": 6289,
+      "response_sha256": "308aa96ee9ab3e51b1a611b979ef79d1056775396598c8dbe4fce3d9e30fcd89",
+      "token_usage": {
+        "input_tokens": 1664,
+        "output_tokens": 241,
+        "total_tokens": 1905
+      }
+    },
+    {
+      "case_id": "medium-context-limit",
+      "citation_ids_valid": true,
+      "failure_type": null,
+      "grounded_plan": true,
+      "latency_ms": 3138.708599999518,
+      "parse_succeeded": true,
+      "prompt_bytes": 15299,
+      "response_sha256": "506e248555dd5743131135c85634b9684add18ad62567a55fce364428050411f",
+      "token_usage": {
+        "input_tokens": 3453,
+        "output_tokens": 297,
+        "total_tokens": 3750
+      }
+    }
+  ],
+  "provider": "gemini",
+  "schema_version": "repopilot.gemini-m10-calibration.v1",
+  "suite_fingerprint": "c5d37755c4ebf6610a1e5bc2fb0f6da8a5cc84c7e161e19aa24f02e146eb8b49",
+  "suite_id": "m10-development-v1",
+  "summary": {
+    "frozen_gemma_m10": {
+      "patcher": {
+        "case_count": 1,
+        "exact_replacement_contract_rate": 1.0,
+        "mean_latency_ms": 18229.74450000038,
+        "parse_success_rate": 1.0
+      },
+      "planner": {
+        "case_count": 3,
+        "citation_validity_rate": 1.0,
+        "grounded_plan_rate": 1.0,
+        "mean_latency_ms": 38370.002633334174,
+        "parse_success_rate": 1.0
+      }
+    },
+    "patcher": {
+      "case_count": 1,
+      "exact_replacement_contract_rate": 1.0,
+      "mean_latency_ms": 4268.932900000436,
+      "parse_success_rate": 1.0
+    },
+    "planner": {
+      "case_count": 3,
+      "citation_validity_rate": 1.0,
+      "grounded_plan_rate": 1.0,
+      "mean_latency_ms": 3074.0797333334435,
+      "parse_success_rate": 1.0
+    }
+  }
+}

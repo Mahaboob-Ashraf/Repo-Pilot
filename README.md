@@ -45,6 +45,8 @@ versioned evaluation evidence:
 * idempotent export of the exact canonical diff after final approval only;
 * local Ollama model integration through a provider boundary, with optional
   native JSON-schema output followed by unchanged deterministic validation;
+* optional hosted Gemini generation behind the same boundary while retrieval
+  and the zero-cost default remain local;
 * a typed FastAPI workflow API with read-only refresh and exact-hash decisions;
 * a focused React review workspace for evidence, plans, diffs, tests, retry history, final approval, and export;
 * automated tests for repository discovery, parsing, chunking, retrieval, workflow safety, API behavior, and the review UI.
@@ -76,6 +78,19 @@ Docker, and two cases safely stopped on a method-freshness bug fixed after
 measurement. Four cases used lexical fallback after transient Ollama HTTP 400
 embedding responses. No critical safety failure occurred. See
 `evaluation/results/m10/final-report.md`.
+
+An optional controlled provider experiment held the frozen six M9-v2 defects,
+retrieval, prompts, validators, approvals, Docker policy, and retry limit
+constant while changing generation to hosted `gemini-3.1-flash-lite`. It
+repaired 6/6 on attempt one, with 6/6 grounded plans, 6 valid patches, and 6
+Docker passes; critic/retry use and provider failures were zero. The frozen
+CPU-only local Gemma M9-v3 source of truth remains 1/6. Retrieval was invariant
+at Hit@1/Hit@5/MRR `0.8333/1.0000/0.9167` with full gold file/symbol ContextPack
+coverage. These six controlled defects across three repositories are not a
+production accuracy estimate or general model ranking. Gemini is
+network-dependent and sends bounded generation context to a hosted API; the
+default Ollama path keeps generation local. See
+`evaluation/results/provider-comparison/gemini-3.1-flash-lite-v1/provider-comparison.md`.
 
 The current frozen M8 run measured BM25 and real `embeddinggemma:latest`
 dense/hybrid retrieval on 10 synthetic cases. BM25 and dense each measured file

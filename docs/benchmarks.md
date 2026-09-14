@@ -559,3 +559,64 @@ Two M9-v3 cases safely stopped on a real indented-method freshness bug fixed
 after measurement; the run was not repeated. M9-v2 remains the 0/6 baseline,
 and M9-v3 remains 1/6 measured evidence rather than a replacement. Final
 artifacts are under `evaluation/results/m10/`, `m8-v2/`, and `m9-v3/`.
+
+## Task 021B Gemini 3.1 Flash-Lite controlled comparison
+
+The independent variable was generation provider/model only. The exact hosted
+candidate was `gemini-3.1-flash-lite`; the frozen comparison source was the
+CPU-only local Gemma M9-v3 result. Tree-sitter parsing, BM25, local
+EmbeddingGemma/Chroma, RRF, one-hop expansion, ContextPack budget, prompts,
+schemas, validators, approvals, restricted Docker policy, selectors, and the
+two-attempt ceiling were unchanged.
+
+The 2026-09-14 preflight passed exact model access and all three generation
+checks. Plain, small-schema, and `RepairPlan` latencies were 807.4620,
+1,004.9310, and 2,940.6318 ms; input/output/total tokens were 10/1/11,
+10/6/16, and 34/152/186.
+
+The full existing M10 development calibration ran from scratch. Planner parse,
+exact-citation, and grounding success were each 3/3, with 3,074.0797 ms mean
+latency and 6,231 input / 778 output / 7,009 total tokens. The patcher parsed
+and met the exact-replacement contract 1/1 at 4,268.9329 ms with 1,338 input /
+153 output / 1,491 total tokens. The M10 suite contains no separate critic
+fixture; the existing critic native-schema and grounding behavior is covered by
+focused tests instead of inventing another calibration case.
+
+The untouched `m9-external-controlled-v2` suite then ran each case exactly once.
+All six repaired on attempt one: 6/6 plans parsed, used exact supplied citation
+IDs, and grounded; all six reached patching, produced valid one-file patches,
+passed their restricted Docker selector, received final approval, and exported.
+Three patches exactly matched the gold replacement and all six passed the
+behavioral tests. Critic calls, retries, retry recoveries, provider/API failures,
+and critical safety failures were all zero.
+
+| Metric | Gemma local, CPU-only | Gemini hosted API, network-dependent |
+|---|---:|---:|
+| Repair success | 1/6 | 6/6 |
+| Attempt-1 success | 1/6 | 6/6 |
+| Grounded plans | 3/6 | 6/6 |
+| Planner parse failures | 0 | 0 |
+| Grounding failures | 3 | 0 |
+| Exact citation validity | 3/6 | 6/6 |
+| Cases reaching patcher | 3 | 6 |
+| Valid patches | 1 | 6 |
+| Docker passes | 1 | 6 |
+| Critic calls / retry recoveries | 0 / 0 | 0 / 0 |
+| Provider/API failures | 0 | 0 |
+| Retrieval H@1 / H@5 / MRR | 0.8333 / 1.0000 / 0.9167 | 0.8333 / 1.0000 / 0.9167 |
+| ContextPack gold file / symbol coverage | 1.0000 / 1.0000 | 1.0000 / 1.0000 |
+| Median planner / patcher / total latency | 85.169 / 104.993 / 110.912 s | 2.288 / 2.443 / 20.928 s |
+| Generation tokens | not retained | 70,404 input / 3,012 output / 73,416 total |
+
+Retrieval modes were also invariant: two hybrid cases and four explicit
+lexical-only fallbacks after local `EmbeddingResponseError`. The latter is
+retrieval degradation, not a Gemini provider failure. Docker preflight and all
+six repair tests used image
+`sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`.
+
+The result is limited to six controlled defects across three public Python
+repositories. It is not SWE-bench, a production accuracy estimate, a broad
+leaderboard, or a hardware-equivalent latency comparison. Local Gemma keeps
+generation content on the user's machine and has a zero-cost default path;
+Gemini depends on network/service availability and sends bounded issue, source,
+plan, patch, and test context to the hosted API as each stage requires.

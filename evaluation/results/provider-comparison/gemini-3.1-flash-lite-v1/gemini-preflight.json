@@ -1,0 +1,52 @@
+{
+  "accessible_pro_model_ids": [
+    "gemini-2.5-pro",
+    "gemini-2.5-pro-preview-tts",
+    "gemini-3-pro-image",
+    "gemini-3-pro-image-preview",
+    "gemini-3.1-pro-preview",
+    "gemini-3.1-pro-preview-customtools",
+    "gemini-pro-latest"
+  ],
+  "accessible_stable_flash_model_ids": [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-3.7-flash",
+    "gemini-3.8-flash"
+  ],
+  "failure": null,
+  "latency_ms": {
+    "plain": 807.4619999988499,
+    "repair_plan": 2940.6318000001193,
+    "structured": 1004.9309999994875
+  },
+  "model": "gemini-3.1-flash-lite",
+  "model_accessible": true,
+  "plain_generation_succeeded": true,
+  "provider": "gemini",
+  "ready": true,
+  "repair_plan_generation_succeeded": true,
+  "schema_version": "repopilot.gemini-preflight.v1",
+  "sdk": "google-genai==2.23.0",
+  "structured_generation_succeeded": true,
+  "timeout_seconds": 120.0,
+  "token_usage": {
+    "plain": {
+      "input_tokens": 10,
+      "output_tokens": 1,
+      "total_tokens": 11
+    },
+    "repair_plan": {
+      "input_tokens": 34,
+      "output_tokens": 152,
+      "total_tokens": 186
+    },
+    "structured": {
+      "input_tokens": 10,
+      "output_tokens": 6,
+      "total_tokens": 16
+    }
+  }
+}

@@ -1,0 +1,444 @@
+{
+  "controlled_invariants": {
+    "candidate_k": 20,
+    "context_budget": 16384,
+    "embedding_model": "embeddinggemma:latest",
+    "maximum_patch_attempts": 2,
+    "rrf_k": 60,
+    "test_image": "repopilot-python-test:3.11-pytest9",
+    "top_k": 5
+  },
+  "gemini_cases": [
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "more_itertools/recipes.py"
+          ],
+          "patch_hash": "cba81d8140a5592801f61fc1033ac8aae34378652ac98e8c6b6e4a0c49201e68",
+          "test_run_id": "89e9f5af386db3a7630276df8b90fca7b898c524bff00059085e3a6af37eb398",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "more-take-off-by-one",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 835.1287000004959,
+        "embedding_index_setup_ms": 16618.54609999864,
+        "patch_generation_ms": 2443.3294999998907,
+        "planning_generation_ms": 2187.2740000017075,
+        "repository_indexing_ms": 90.39780000057362,
+        "retrieval_ms": 2.2717000010743504,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 22250.97730000016
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 5037,
+          "output_tokens": 213,
+          "total_tokens": 5250
+        },
+        "planning": {
+          "input_tokens": 4801,
+          "output_tokens": 277,
+          "total_tokens": 5078
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "more_itertools/recipes.py"
+          ],
+          "patch_hash": "7c4baaf44ce8ef7b1223d2d4b2fa7c5c7a175f2bbc731e7cff29315870227ba8",
+          "test_run_id": "96eda4c8a6bf1365d20a027591fa18c73ad7660dac63f53962e64c614c331367",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "more-quantify-inverted",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 806.0829999994894,
+        "embedding_index_setup_ms": 14924.409100000048,
+        "patch_generation_ms": 2522.700299999997,
+        "planning_generation_ms": 2520.6558000008954,
+        "repository_indexing_ms": 82.20540000002075,
+        "retrieval_ms": 1.9802999995590653,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 20928.326299999753
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 3269,
+          "output_tokens": 186,
+          "total_tokens": 3455
+        },
+        "planning": {
+          "input_tokens": 3052,
+          "output_tokens": 262,
+          "total_tokens": 3314
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "toolz/itertoolz.py"
+          ],
+          "patch_hash": "bd307aefb95a824ea5c8127cf844065b7e7515c09664cf2845faca27b07d14ad",
+          "test_run_id": "0941e1435311589766035815a0d0c32c5f5dc51268ba371231607af350824192",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "toolz-take-off-by-one",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 1164.1739000006055,
+        "embedding_index_setup_ms": 35434.4643000004,
+        "patch_generation_ms": 3390.1702000002842,
+        "planning_generation_ms": 2948.303600000145,
+        "repository_indexing_ms": 67.99259999934293,
+        "retrieval_ms": 1.7487000004621223,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 43407.41580000031
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 7249,
+          "output_tokens": 214,
+          "total_tokens": 7463
+        },
+        "planning": {
+          "input_tokens": 6972,
+          "output_tokens": 321,
+          "total_tokens": 7293
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "toolz/itertoolz.py"
+          ],
+          "patch_hash": "9b04c62823719eaefb44a6f61acbb7460c5fa270ea3145cd536a4b8f115044bd",
+          "test_run_id": "6705f8440b1ae3814ffe4412cd451ecd5d2dc004bb0e586974becf5965a6f1cc",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "toolz-drop-extra-item",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 1104.6511999993527,
+        "embedding_index_setup_ms": 34653.86340000077,
+        "patch_generation_ms": 2165.482999998858,
+        "planning_generation_ms": 2179.714399999284,
+        "repository_indexing_ms": 70.29809999949066,
+        "retrieval_ms": 1.0747999986051582,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 40644.308799999635
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "lexical_only_degraded",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 7116,
+          "output_tokens": 183,
+          "total_tokens": 7299
+        },
+        "planning": {
+          "input_tokens": 6894,
+          "output_tokens": 258,
+          "total_tokens": 7152
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "boltons/mathutils.py"
+          ],
+          "patch_hash": "60edbd2696118217675c277900b3d3e0ee295ac5c57b04457e9f6c34c2675154",
+          "test_run_id": "603d3ea4a82e0996a02f79e94b74613d707d6d2b32cac41e0654d38bfbae35fb",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "boltons-ceil-exact-option",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 713.4024999995745,
+        "embedding_index_setup_ms": 5267.47240000077,
+        "patch_generation_ms": 3682.5060000010126,
+        "planning_generation_ms": 2288.1831000013335,
+        "repository_indexing_ms": 7.530099999712547,
+        "retrieval_ms": 75.16100000066217,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 12101.640600001701
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "hybrid",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 6614,
+          "output_tokens": 244,
+          "total_tokens": 6858
+        },
+        "planning": {
+          "input_tokens": 6382,
+          "output_tokens": 273,
+          "total_tokens": 6655
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "boltons/mathutils.py"
+          ],
+          "patch_hash": "d3e08dca3a71c78c3fe4a8787b8eebddb74cfd62dcbea9d4590c473940ffefff",
+          "test_run_id": "d1ee8cbbf15e18574e6d66267506651b85a80153b2d25dcf12bcedc6118f10e7",
+          "test_status": "passed"
+        }
+      ],
+      "case_id": "boltons-floor-exact-option",
+      "failure_category": null,
+      "failure_error_type": null,
+      "failure_message": null,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 700.7159999993746,
+        "embedding_index_setup_ms": 5255.173300000024,
+        "patch_generation_ms": 2407.0373000013205,
+        "planning_generation_ms": 2594.569399998363,
+        "repository_indexing_ms": 8.379099999729078,
+        "retrieval_ms": 70.32350000008591,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 11098.355499998434
+      },
+      "patch_produced": true,
+      "plan_generated": true,
+      "repair_success": true,
+      "retrieval_mode": "hybrid",
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 6636,
+          "output_tokens": 280,
+          "total_tokens": 6916
+        },
+        "planning": {
+          "input_tokens": 6382,
+          "output_tokens": 301,
+          "total_tokens": 6683
+        },
+        "retry_patch": null
+      }
+    }
+  ],
+  "gemini_failure_breakdown": {},
+  "gemini_metrics": {
+    "attempt_1_success": 6,
+    "cases_reaching_patcher": 6,
+    "context_gold_file_coverage": 1.0,
+    "context_gold_symbol_coverage": 1.0,
+    "critic_usage": 0,
+    "critical_safety_failure": false,
+    "docker_test_passes": 6,
+    "exact_citation_validity": 1.0,
+    "grounded_plans": 6,
+    "median_patcher_latency_ms": 2443.3294999998907,
+    "median_planner_latency_ms": 2288.1831000013335,
+    "median_total_latency_ms": 20928.326299999753,
+    "planner_grounding_failures": 0,
+    "planner_parse_failures": 0,
+    "planner_provider_failures": 0,
+    "provider_api_failures": 0,
+    "repair_success": "6/6",
+    "retrieval_hit_at_1": 0.8333333333333334,
+    "retrieval_hit_at_5": 1.0,
+    "retrieval_mrr": 0.9166666666666666,
+    "retry_recoveries": 0,
+    "retry_usage": 0.0,
+    "token_usage": {
+      "critic": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "patch": {
+        "count": 6,
+        "input_tokens": 35921,
+        "output_tokens": 1320,
+        "total_tokens": 37241
+      },
+      "planning": {
+        "count": 6,
+        "input_tokens": 34483,
+        "output_tokens": 1692,
+        "total_tokens": 36175
+      },
+      "retry_patch": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      }
+    },
+    "total_generation_tokens": 73416,
+    "valid_patches": 6
+  },
+  "gemma_metrics": {
+    "attempt_1_success": 1,
+    "cases_reaching_patcher": 3,
+    "context_gold_file_coverage": 1.0,
+    "context_gold_symbol_coverage": 1.0,
+    "critic_usage": 0,
+    "critical_safety_failure": false,
+    "docker_test_passes": 1,
+    "exact_citation_validity": 0.5,
+    "grounded_plans": 3,
+    "median_patcher_latency_ms": 104992.92729999797,
+    "median_planner_latency_ms": 85168.72299999886,
+    "median_total_latency_ms": 110912.32229999878,
+    "planner_grounding_failures": 3,
+    "planner_parse_failures": 0,
+    "planner_provider_failures": 0,
+    "provider_api_failures": 0,
+    "repair_success": "1/6",
+    "retrieval_hit_at_1": 0.8333333333333334,
+    "retrieval_hit_at_5": 1.0,
+    "retrieval_mrr": 0.9166666666666666,
+    "retry_recoveries": 0,
+    "retry_usage": 0.0,
+    "token_usage": {},
+    "total_generation_tokens": null,
+    "valid_patches": 1
+  },
+  "generated_at_utc": "2026-09-14T06:43:42.025992+00:00",
+  "limitations": [
+    "Six controlled defects across three public repositories are not a production-accuracy estimate or SWE-bench.",
+    "Gemma ran locally on CPU while Gemini used a hosted API and network; latency is not hardware-equivalent.",
+    "Gemini mode sends bounded generation context off-machine; retrieval remains local through EmbeddingGemma.",
+    "The frozen Gemma M9-v3 artifact did not retain token usage, so token totals are not directly comparable."
+  ],
+  "manifest_fingerprint": "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b",
+  "providers": {
+    "embedding": {
+      "model": "embeddinggemma:latest",
+      "provider": "ollama",
+      "runtime": "local"
+    },
+    "gemini": {
+      "artifact_identity": "cf888b8385207553e27df1917e7a750462f886c1ab63413eef09c33f4eeca852",
+      "model": "gemini-3.1-flash-lite",
+      "provider": "gemini",
+      "runtime": "remote API/network"
+    },
+    "gemma": {
+      "artifact_identity": "cefc826057b67049e301b2bd1157f3837c25d71676c38a74a7738b49313de002",
+      "model": "gemma4:e4b-it-qat",
+      "provider": "ollama",
+      "runtime": "local CPU"
+    }
+  },
+  "schema_version": "repopilot.provider-comparison.v1",
+  "summary": {
+    "critical_safety_failure": false,
+    "gemini_model": "gemini-3.1-flash-lite",
+    "gemini_repair_success": "6/6",
+    "gemma_repair_success": "1/6"
+  },
+  "token_usage": {
+    "gemini": {
+      "critic": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "patch": {
+        "count": 6,
+        "input_tokens": 35921,
+        "output_tokens": 1320,
+        "total_tokens": 37241
+      },
+      "planning": {
+        "count": 6,
+        "input_tokens": 34483,
+        "output_tokens": 1692,
+        "total_tokens": 36175
+      },
+      "retry_patch": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      }
+    },
+    "gemma": "not retained in the frozen M9-v3 artifact"
+  }
+}

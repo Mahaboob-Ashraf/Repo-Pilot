@@ -28,8 +28,12 @@ backend remains authoritative; the UI is not an IDE or workflow engine.
   functional smokes; automated tests do not require it
 - Docker with a running Linux-container daemon and the configured test image
   already present locally only for real M5 execution; automated tests use fakes
+- A Gemini API key only when explicitly selecting the optional hosted Gemini
+  generation provider
 
-The default path is local and requires no API key or paid service.
+The default path is local and requires no API key or paid service. Ollama mode
+uses local generation. Gemini mode sends bounded generation context to Google's
+Gemini API.
 
 ## Backend install
 
@@ -45,6 +49,8 @@ uv sync --locked
 The M3+ direct pins are `langchain==1.4.0`, `langgraph==1.2.11`, and
 `langgraph-checkpoint-sqlite==3.1.1`. LangSmith is not a direct RepoPilot
 runtime requirement; it may appear only as a transitive LangChain dependency.
+The optional hosted generation adapter uses the direct pins
+`google-genai==2.23.0` and `python-dotenv==1.2.3`.
 
 ## Run the backend
 
@@ -68,12 +74,16 @@ not invoke `ollama run` as a subprocess.
 
 | Environment variable | Verified default | Purpose |
 |---|---|---|
+| `REPOPILOT_GENERATION_PROVIDER` | `ollama` | Server-side generation provider: `ollama` or `gemini` |
 | `REPOPILOT_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama HTTP server |
 | `REPOPILOT_OLLAMA_MODEL` | `gemma4:e4b-it-qat` | Exact locally installed model tag |
 | `REPOPILOT_OLLAMA_TIMEOUT_SECONDS` | `120` | Per-request HTTP timeout |
 | `REPOPILOT_OLLAMA_EMBEDDING_BASE_URL` | `http://127.0.0.1:11434` | Separate embedding HTTP server |
 | `REPOPILOT_OLLAMA_EMBEDDING_MODEL` | `embeddinggemma` | Local embedding model identity |
 | `REPOPILOT_OLLAMA_EMBEDDING_TIMEOUT_SECONDS` | `60` | Per-embedding-request timeout |
+| `REPOPILOT_GEMINI_API_KEY` | no default | Required secret only when provider is `gemini` |
+| `REPOPILOT_GEMINI_MODEL` | `gemini-3.1-flash-lite` | Exact hosted generation model; no fallback |
+| `REPOPILOT_GEMINI_TIMEOUT_SECONDS` | `120` | Per-request Gemini timeout |
 | `REPOPILOT_DATA_DIR` | `%LOCALAPPDATA%\RepoPilot` on Windows | Durable workflow data outside reviewed repositories |
 
 Example override for the current PowerShell session:
@@ -81,6 +91,40 @@ Example override for the current PowerShell session:
 ```powershell
 $env:REPOPILOT_OLLAMA_TIMEOUT_SECONDS = "180"
 ```
+
+RepoPilot loads the repository-root `.env` only through the settings layer and
+never overrides variables already set by the process. Keep the API key only in
+the ignored `.env`; `.env.example` contains blank/default-safe placeholders.
+The key is never sent to the frontend or written to checkpoints/evaluation
+artifacts.
+
+When Gemini is selected, generation requests may contain bounded issue text,
+ContextPack repository source, the approved plan, and patch/test evidence used
+by later stages. Retrieval and embeddings remain local through Ollama and
+EmbeddingGemma. Do not describe Gemini mode as local or private.
+
+## Optional Gemini provider preflight and controlled evaluation
+
+Run from `backend/`. These commands use the ignored root `.env` for the key;
+they never print it. Keep the same exact model for preflight, development
+calibration, and all six benchmark cases:
+
+```powershell
+$env:REPOPILOT_GENERATION_PROVIDER = "gemini"
+$env:REPOPILOT_GEMINI_MODEL = "gemini-3.1-flash-lite"
+uv run --locked --offline python -m app.evaluation.provider_comparison preflight
+uv run --locked --offline python -m app.evaluation.provider_comparison calibration
+uv run --locked --offline python -m app.evaluation.m9 real --manifest ../evaluation/fixtures/m9/manifest-v2.json --output-dir ../evaluation/results/m9-gemini-3.1-flash-lite-v1 --docker-executable "C:\Users\Admin\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe"
+uv run --locked --offline python -m app.evaluation.provider_comparison compare --gemini-results ../evaluation/results/m9-gemini-3.1-flash-lite-v1/m9-results.json
+```
+
+The preflight verifies exact model access, one tiny plain response, and one tiny
+native JSON-schema response. If the configured model is unavailable it reports
+safe suitable model names and stops; it never falls back. The calibration uses
+only the separate frozen M10 development cases. The M9 command uses each frozen
+case exactly once through the production workflow, including normal critic-
+guided attempt two only when eligible. Never point this experiment at the
+frozen `m9-v2` or `m9-v3` result directories.
 
 ## Test
 
@@ -185,6 +229,10 @@ does not pull or build it automatically. The runner locally inspects the image,
 records its resolved ID, and executes that ID with `--pull never`. General
 dependency installation is not implemented; the image must already contain a
 Python/pytest environment suitable for the repository.
+
+`DockerTestRunner` accepts an explicit `docker_executable` when the CLI is not
+on PATH. The M9 CLI exposes the same narrow setting as `--docker-executable`;
+all Docker subprocesses then use that exact argv element without a shell.
 
 The fixed in-container command is:
 
@@ -755,3 +803,43 @@ overwritten. It used Docker 29.7.2, image
 `sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`,
 the locked model digests, a 600-second generation timeout, and Gemma with
 `size_vram=0`. Use a new result version for any later experiment.
+
+## Task 021B Gemini 3.1 Flash-Lite measurement
+
+The exact Docker Desktop executable was used because `docker` was absent from
+PATH. Docker client/server 29.7.2 was reachable and the local
+`repopilot-python-test:3.11-pytest9` image matched
+`sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7`.
+Ollama 0.34.0 exposed `embeddinggemma:latest` at digest
+`85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1`;
+`/api/ps` reported zero VRAM bytes.
+
+The exact `gemini-3.1-flash-lite` preflight passed model access, plain output,
+small native-schema output, and `RepairPlan` schema output. The unchanged M10
+development calibration then passed all three planner parse/citation/grounding
+checks and its one patcher parse/exact-replacement check. The suite has no
+separate critic fixture; critic schema and grounding behavior remains covered
+by focused automated tests.
+
+The untouched `m9-external-controlled-v2` experiment ran each of six cases
+once. It repaired 6/6 on attempt one, with 6 grounded plans, 6 valid patches,
+6 restricted-Docker passes, zero critic calls, zero retry recoveries, zero
+provider/API failures, and no critical safety failure. Retrieval stayed at
+Hit@1/Hit@5/MRR 0.8333/1.0000/0.9167 with full gold file and symbol ContextPack
+coverage. Four larger cases followed the existing explicit lexical fallback
+after local embedding response failures; both boltons cases used hybrid
+retrieval.
+
+These are six controlled defects across three public repositories, not
+SWE-bench, production accuracy, or a general model ranking. Gemini generation
+is hosted and network-dependent: bounded issue text, source context, approved
+plan/patch evidence, and test output can leave the machine. The default
+Ollama/Gemma path and EmbeddingGemma retrieval remain local and zero-cost apart
+from user hardware and electricity.
+
+Final verification on the completed worktree passed 17 Gemini/provider tests,
+14 planner tests, 36 patcher/workspace/workflow tests, 34
+critic/retry/export tests, 12 M8 harness tests (including all 33 deterministic
+safety scenarios), 32 M9 harness tests, and all 350 backend tests. Frontend
+Vitest passed 18/18; the `tsc --noEmit` check and Vite 7.3.6 production build
+also passed.

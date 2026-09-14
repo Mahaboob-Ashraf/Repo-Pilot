@@ -15,6 +15,7 @@ from app.exporting import FinalReviewDecision
 from app.models.inference import HealthResponse, InferenceRequest, InferenceResponse
 from app.providers.base import (
     InferenceProvider,
+    InferenceProviderError,
     InferenceResponseError,
     InferenceUnavailableError,
 )
@@ -48,6 +49,11 @@ async def inference(
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail=str(exc),
+        ) from exc
+    except InferenceProviderError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Inference provider failed",
         ) from exc
 
     return InferenceResponse(model=provider.model, response=generated_text)

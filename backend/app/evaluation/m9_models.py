@@ -197,6 +197,19 @@ class StageLatencies(FrozenModel):
     total_workflow_ms: float | None = Field(default=None, ge=0)
 
 
+class TokenUsage(FrozenModel):
+    input_tokens: int | None = Field(default=None, ge=0)
+    output_tokens: int | None = Field(default=None, ge=0)
+    total_tokens: int | None = Field(default=None, ge=0)
+
+
+class StageTokenUsage(FrozenModel):
+    planning: TokenUsage | None = None
+    patch: TokenUsage | None = None
+    critic: TokenUsage | None = None
+    retry_patch: TokenUsage | None = None
+
+
 class ExecutionObservation(FrozenModel):
     case_id: str
     terminal_status: str
@@ -235,6 +248,7 @@ class ExecutionObservation(FrozenModel):
     export_only_after_final_approval: bool = True
     candidate_diff: str | None = None
     latencies: StageLatencies = StageLatencies()
+    token_usage: StageTokenUsage = StageTokenUsage()
 
 
 class AttemptClassification(StrEnum):
@@ -398,6 +412,7 @@ def score_case(case: M9Case, observation: ExecutionObservation) -> dict[str, Any
             ),
         },
         "latency_ms": observation.latencies.model_dump(mode="json"),
+        "token_usage": observation.token_usage.model_dump(mode="json"),
     }
 
 
@@ -529,6 +544,7 @@ def aggregate_scores(cases: list[dict[str, Any]]) -> dict[str, Any]:
         },
         "critical_safety_failure": any(item["safety"]["critical_failure"] for item in cases),
         "latency_ms": aggregate_latencies(cases),
+        "token_usage": aggregate_token_usage(cases),
     }
 
 
@@ -552,6 +568,28 @@ def aggregate_latencies(cases: list[dict[str, Any]]) -> dict[str, Any]:
             "p95": _nearest(values, 0.95) if len(values) >= 5 else None,
         }
     return result
+
+
+def aggregate_token_usage(cases: list[dict[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for stage in StageTokenUsage.model_fields:
+        values = [
+            item["token_usage"][stage]
+            for item in cases
+            if item.get("token_usage", {}).get(stage) is not None
+        ]
+        result[stage] = {
+            "count": len(values),
+            "input_tokens": _sum_optional(values, "input_tokens"),
+            "output_tokens": _sum_optional(values, "output_tokens"),
+            "total_tokens": _sum_optional(values, "total_tokens"),
+        }
+    return result
+
+
+def _sum_optional(values: list[dict[str, Any]], key: str) -> int | None:
+    counts = [item[key] for item in values if item.get(key) is not None]
+    return sum(counts) if counts else None
 
 
 def _nearest(values: list[float], quantile: float) -> float | None:
@@ -580,7 +618,8 @@ def assert_artifact_has_no_absolute_paths(artifact: dict[str, Any]) -> None:
 __all__ = [
     "AttemptClassification", "AttemptRecord", "CASE_TYPE", "ExecutionObservation",
     "M9Case", "M9Manifest", "ProductionCaseInput", "StageLatencies",
-    "aggregate_scores", "assert_artifact_has_no_absolute_paths",
+    "StageTokenUsage", "TokenUsage",
+    "aggregate_scores", "aggregate_token_usage", "assert_artifact_has_no_absolute_paths",
     "benchmark_final_decision", "benchmark_plan_decision", "classify_attempt",
     "load_m9_manifest", "repair_succeeded", "score_case",
 ]

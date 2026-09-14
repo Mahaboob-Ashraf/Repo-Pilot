@@ -4,7 +4,7 @@ from functools import lru_cache
 
 from app.config import Settings
 from app.providers.base import InferenceProvider
-from app.providers.ollama import OllamaProvider
+from app.providers.factory import build_generation_provider
 from app.workflow.application import LocalWorkflowApplication, WorkflowApplication
 
 
@@ -14,7 +14,7 @@ def get_settings() -> Settings:
 
 
 def get_inference_provider() -> InferenceProvider:
-    return OllamaProvider(get_settings())
+    return build_generation_provider(get_settings())
 
 
 @lru_cache

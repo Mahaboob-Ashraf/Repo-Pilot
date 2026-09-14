@@ -9,6 +9,7 @@ import httpx
 
 from app.config import Settings
 from app.providers.base import InferenceResponseError, InferenceUnavailableError
+from app.providers.base import GenerationUsage
 
 
 class OllamaProvider:
@@ -22,10 +23,19 @@ class OllamaProvider:
         self._model = settings.ollama_model
         self._timeout = settings.ollama_timeout_seconds
         self._transport = transport
+        self._last_usage: GenerationUsage | None = None
 
     @property
     def model(self) -> str:
         return self._model
+
+    @property
+    def provider_name(self) -> str:
+        return "ollama"
+
+    @property
+    def last_usage(self) -> GenerationUsage | None:
+        return self._last_usage
 
     async def generate(self, prompt: str) -> str:
         return await self._generate(prompt, response_schema=None)
@@ -45,6 +55,7 @@ class OllamaProvider:
         *,
         response_schema: Mapping[str, Any] | None,
     ) -> str:
+        self._last_usage = None
         request_body: dict[str, Any] = {
             "model": self._model,
             "prompt": prompt,
@@ -77,6 +88,21 @@ class OllamaProvider:
         if not isinstance(generated_text, str):
             raise InferenceResponseError(
                 "Ollama response did not contain generated text"
+            )
+
+        prompt_tokens = payload.get("prompt_eval_count")
+        output_tokens = payload.get("eval_count")
+        if isinstance(prompt_tokens, int) or isinstance(output_tokens, int):
+            safe_prompt = prompt_tokens if isinstance(prompt_tokens, int) else None
+            safe_output = output_tokens if isinstance(output_tokens, int) else None
+            self._last_usage = GenerationUsage(
+                input_tokens=safe_prompt,
+                output_tokens=safe_output,
+                total_tokens=(
+                    safe_prompt + safe_output
+                    if safe_prompt is not None and safe_output is not None
+                    else None
+                ),
             )
 
         # Ollama may return a separate `thinking` field. It is intentionally ignored.

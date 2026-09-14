@@ -64,6 +64,7 @@ class DockerTestRunner:
         self,
         *,
         image_reference: str = DEFAULT_TEST_IMAGE,
+        docker_executable: str = "docker",
         resource_policy: TestResourcePolicy | None = None,
         executor: CommandExecutor | None = None,
     ) -> None:
@@ -72,7 +73,10 @@ class DockerTestRunner:
             or not _IMAGE_REFERENCE.fullmatch(image_reference)
         ):
             raise TestConfigurationError("Docker test image reference is invalid")
+        if not isinstance(docker_executable, str) or not docker_executable.strip():
+            raise TestConfigurationError("Docker executable is invalid")
         self._image_reference = image_reference
+        self._docker_executable = docker_executable
         self._policy = resource_policy or TestResourcePolicy()
         self._executor = executor or SubprocessCommandExecutor()
 
@@ -168,7 +172,7 @@ class DockerTestRunner:
             f"size={self._policy.tmpfs_size_bytes}"
         )
         argv = (
-            "docker",
+            self._docker_executable,
             "run",
             "--rm",
             "--pull",
@@ -206,7 +210,12 @@ class DockerTestRunner:
         return argv
 
     async def _require_daemon(self) -> None:
-        command = ("docker", "version", "--format", "{{.Server.Version}}")
+        command = (
+            self._docker_executable,
+            "version",
+            "--format",
+            "{{.Server.Version}}",
+        )
         try:
             result = await asyncio.to_thread(
                 self._executor.run,
@@ -220,7 +229,7 @@ class DockerTestRunner:
 
     async def _resolve_local_image(self) -> str:
         command = (
-            "docker",
+            self._docker_executable,
             "image",
             "inspect",
             "--format",
@@ -247,7 +256,12 @@ class DockerTestRunner:
         return image_id
 
     async def _force_remove(self, test_run_id: str) -> bytes:
-        command = ("docker", "rm", "--force", _container_name(test_run_id))
+        command = (
+            self._docker_executable,
+            "rm",
+            "--force",
+            _container_name(test_run_id),
+        )
         try:
             result = await asyncio.to_thread(
                 self._executor.run,

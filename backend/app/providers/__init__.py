@@ -10,6 +10,8 @@ from app.providers.embeddings import (
     EmbeddingVector,
 )
 from app.providers.ollama_embeddings import OllamaEmbeddingProvider
+from app.providers.factory import build_generation_provider
+from app.providers.gemini import GeminiProvider
 
 __all__ = [
     "EmbeddingBatch",
@@ -19,5 +21,7 @@ __all__ = [
     "EmbeddingResponseError",
     "EmbeddingUnavailableError",
     "EmbeddingVector",
+    "GeminiProvider",
     "OllamaEmbeddingProvider",
+    "build_generation_provider",
 ]

@@ -758,3 +758,28 @@ within the declared line range. This supports indented method chunks without
 assuming column zero; it does not introduce fuzzy matching. Patch failure
 records retain only allowlisted first-party validation messages. All approval,
 scope, stale-hash, two-attempt, Docker, and export boundaries are unchanged.
+
+## Optional Gemini generation provider
+
+Generation construction is centralized behind `build_generation_provider`:
+
+```text
+InferenceProvider
+    +-- OllamaProvider  -> gemma4:e4b-it-qat (default, local)
+    +-- GeminiProvider  -> gemini-3.1-flash-lite (optional, hosted)
+
+EmbeddingProvider
+    +-- OllamaEmbeddingProvider -> embeddinggemma:latest (local)
+```
+
+Planner, patcher, and critic contain no Gemini-specific branches. Both
+generation providers can supply native JSON Schema and safe token-count
+metadata; SDK objects remain inside their adapters. Pydantic parsing, exact
+evidence IDs, approved-file scope, stale hashes, exact source matching, the
+two-attempt ceiling, Docker restrictions, final approval, and export order stay
+provider-independent and authoritative.
+
+Only the settings boundary loads the ignored root `.env`. Gemini mode can send
+bounded issue text, repository source chunks, approved plan/patch evidence, and
+test output to Google's hosted API. It does not change retrieval and must not be
+described as local or private.

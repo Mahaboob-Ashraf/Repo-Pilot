@@ -1,2 +1,32 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+
 # Explicitly materialized external M9 repositories and their nested Git metadata.
 evaluation/cache/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Local workflow/runtime artifacts
+*.sqlite
+*.sqlite3
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

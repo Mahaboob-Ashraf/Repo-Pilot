@@ -127,6 +127,17 @@ def test_pytest_executable_cannot_be_redefined() -> None:
     )
 
 
+def test_explicit_docker_executable_is_used_for_every_command(tmp_path) -> None:
+    executable = r"C:\Program Files\Docker\docker.exe"
+    executor = _executor_for_run()
+    runner = DockerTestRunner(docker_executable=executable, executor=executor)
+
+    result = asyncio.run(runner.run(_spec(tmp_path)))
+
+    assert result.status is Status.PASSED
+    assert all(call[0][0] == executable for call in executor.calls)
+
+
 def test_subprocess_boundary_forces_shell_false(monkeypatch) -> None:
     observed = {}
 

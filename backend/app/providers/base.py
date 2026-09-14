@@ -1,6 +1,7 @@
 """Provider-neutral local inference contracts and errors."""
 
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
 
 
@@ -17,6 +18,10 @@ class InferenceResponseError(InferenceProviderError):
 
 
 class InferenceProvider(Protocol):
+    @property
+    def provider_name(self) -> str:
+        """Return a safe provider identifier."""
+
     @property
     def model(self) -> str:
         """Return the configured model identifier."""
@@ -35,6 +40,22 @@ class StructuredInferenceProvider(Protocol):
         response_schema: Mapping[str, Any],
     ) -> str:
         """Generate response text constrained by the supplied JSON schema."""
+
+
+@dataclass(frozen=True, slots=True)
+class GenerationUsage:
+    """Safe token counts exposed by providers when response metadata supplies them."""
+
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+
+
+@runtime_checkable
+class UsageReportingInferenceProvider(Protocol):
+    @property
+    def last_usage(self) -> GenerationUsage | None:
+        """Return token counts for the most recently completed request, if available."""
 
 
 async def generate_with_optional_schema(

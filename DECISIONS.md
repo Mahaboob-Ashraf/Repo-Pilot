@@ -734,3 +734,41 @@ and 33/33 safety scenarios while reducing file-token waste. One-shot M9-v3
 repaired 1/6 with zero parse failures and no critical safety failure. The two
 false stale failures discovered in that run were fixed afterward and were not
 retroactively rescored.
+
+## ADR-021 - Optional hosted generation behind the existing provider boundary
+
+**Status:** Accepted; controlled comparison completed
+
+**Decision:** Keep Ollama/Gemma as the default local generation path and add
+Gemini only as an explicit optional `InferenceProvider` implementation selected
+centrally by `REPOPILOT_GENERATION_PROVIDER=gemini`. The controlled target is
+the exact `gemini-3.1-flash-lite` model with no alias, fallback, or Pro
+substitution. Embeddings remain local through Ollama/EmbeddingGemma. Planner,
+patcher, and critic use provider-native JSON Schema when available, followed by
+the same Pydantic and deterministic RepoPilot validators.
+
+The real key is loaded only by the centralized settings layer from the ignored
+root `.env`, is excluded from representations, and must not enter checkpoints,
+API responses, evaluation artifacts, logs, or documentation. Hosted context is
+not described as local/private: issue text, bounded source chunks, approved
+plan/patch evidence, and critic test output can leave the machine when their
+stages run.
+
+**Why:** A provider-controlled comparison can isolate generation behavior while
+holding retrieval, prompts, schemas, scope, Docker policy, approval authority,
+retry limits, and export rules constant. Central construction avoids provider
+branches in workflow stages and preserves the zero-cost default path.
+
+**Tradeoffs:** Gemini adds network, service/quota, privacy, and variable token/
+API-cost considerations. Its latency is not hardware-comparable to CPU-local
+Gemma. A provider or quota failure blocks the experiment and is not scored as a
+repair-quality failure.
+
+**Testing/benchmark impact:** Offline fakes cover model/config identity, missing
+key safety, secret redaction, plain/native-schema mappings, planner/patcher/
+critic integration, deterministic rejection, centralized selection, and
+embedding independence. The exact-model preflight and unchanged M10 planner/
+patcher calibration passed. The one-shot frozen six-case comparison repaired
+6/6 with Gemini versus the frozen 1/6 CPU-local Gemma M9-v3 baseline, with no
+provider failure or critical safety failure. This small controlled result is
+not generalized beyond its six defects and three repositories.

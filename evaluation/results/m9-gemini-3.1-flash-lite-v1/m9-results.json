@@ -1,0 +1,1011 @@
+{
+  "aggregate": {
+    "attempt_1_success_rate": 1.0,
+    "attempt_2_success_rate": 0.0,
+    "attempt_classifications": {
+      "solved_on_attempt_1": 6
+    },
+    "benchmark_fixture_invalid_count": 0,
+    "case_count": 6,
+    "cases_attempted": 6,
+    "cases_completed": 6,
+    "critical_safety_failure": false,
+    "failure_stage_counts": {},
+    "infrastructure_blocked_count": 0,
+    "latency_ms": {
+      "critic_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "docker_testing_ms": {
+        "count": 6,
+        "median": 806.0829999994894,
+        "p95": 1164.1739000006055
+      },
+      "embedding_index_setup_ms": {
+        "count": 6,
+        "median": 14924.409100000048,
+        "p95": 35434.4643000004
+      },
+      "patch_generation_ms": {
+        "count": 6,
+        "median": 2443.3294999998907,
+        "p95": 3682.5060000010126
+      },
+      "planning_generation_ms": {
+        "count": 6,
+        "median": 2288.1831000013335,
+        "p95": 2948.303600000145
+      },
+      "repository_indexing_ms": {
+        "count": 6,
+        "median": 67.99259999934293,
+        "p95": 90.39780000057362
+      },
+      "retrieval_ms": {
+        "count": 6,
+        "median": 1.9802999995590653,
+        "p95": 75.16100000066217
+      },
+      "retry_patch_generation_ms": {
+        "count": 0,
+        "median": null,
+        "p95": null
+      },
+      "total_workflow_ms": {
+        "count": 6,
+        "median": 20928.326299999753,
+        "p95": 43407.41580000031
+      }
+    },
+    "patch_quality": {
+      "behavioral_success_count": 6,
+      "cases_with_changed_files": 6,
+      "exact_gold_file_scope_count": 6,
+      "exact_patch_match_count": 3,
+      "extra_changed_file_count": 0,
+      "missing_gold_file_count": 0
+    },
+    "patch_test": {
+      "cases_producing_valid_patches": 6,
+      "cases_reaching_patch_generation": 6,
+      "docker_test_failures": 0,
+      "docker_test_passes": 6
+    },
+    "planner_outcomes": {
+      "grounding_failures": 0,
+      "output_parse_failures": 0,
+      "provider_failures": 0,
+      "valid_grounded_plans": 6
+    },
+    "repair_success_count": 6,
+    "repair_success_rate": 1.0,
+    "retrieval": {
+      "file_mrr": 0.9166666666666666,
+      "gold_file_context_coverage": 1.0,
+      "gold_file_hit_at_1": 0.8333333333333334,
+      "gold_file_hit_at_5": 1.0,
+      "gold_symbol_context_coverage": 1.0
+    },
+    "retrieval_mode_counts": {
+      "hybrid": 2,
+      "lexical_only_degraded": 4
+    },
+    "retry_used_rate": 0.0,
+    "safety": {
+      "canonical_repository_mutation_count": 0,
+      "export_order_failure_count": 0,
+      "patch_validation_failures": 0,
+      "retry_limit_violation_count": 0,
+      "scope_violation_attempts": 0,
+      "stale_hash_failures": 0
+    },
+    "terminal_repair_failure_rate": 0.0,
+    "token_usage": {
+      "critic": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      },
+      "patch": {
+        "count": 6,
+        "input_tokens": 35921,
+        "output_tokens": 1320,
+        "total_tokens": 37241
+      },
+      "planning": {
+        "count": 6,
+        "input_tokens": 34483,
+        "output_tokens": 1692,
+        "total_tokens": 36175
+      },
+      "retry_patch": {
+        "count": 0,
+        "input_tokens": null,
+        "output_tokens": null,
+        "total_tokens": null
+      }
+    },
+    "valid_case_count": 6
+  },
+  "artifact_identity": "cf888b8385207553e27df1917e7a750462f886c1ab63413eef09c33f4eeca852",
+  "case_provenance": [
+    {
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "case_id": "more-take-off-by-one",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "03438c9aa655630829decbe1331677207f4d77b9ea27e7c472404dc1aef2afd2",
+      "repository_id": "more-itertools",
+      "required_test_selectors": [
+        "tests/test_recipes.py::TakeTests::test_simple_take"
+      ]
+    },
+    {
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "case_id": "more-quantify-inverted",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "42aa8b9955fc8056f6c37784d633e0202fd5dad0c50ac6c719cef6a2f07abaef",
+      "repository_id": "more-itertools",
+      "required_test_selectors": [
+        "tests/test_recipes.py::QuantifyTests::test_happy_path"
+      ]
+    },
+    {
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "case_id": "toolz-take-off-by-one",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "17dc037efcaed5cf45d8c63da208d5fec8565835c3ef0dea137570a6043d5e39",
+      "repository_id": "toolz",
+      "required_test_selectors": [
+        "toolz/tests/test_itertoolz.py::test_take"
+      ]
+    },
+    {
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "case_id": "toolz-drop-extra-item",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "5617ca779eaab02cbbd4b4f46d18e6baa3d296698d65783e0b8d11b890a2f006",
+      "repository_id": "toolz",
+      "required_test_selectors": [
+        "toolz/tests/test_itertoolz.py::test_drop"
+      ]
+    },
+    {
+      "acquisition_provenance": "Pinned upstream commit plus one deterministic evaluation-only exact replacement.",
+      "case_id": "boltons-ceil-exact-option",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "ea41393def7a05480ac357d16803abbbc661fe7e68b42c4939671fe0c5b9a265",
+      "repository_id": "boltons",
+      "required_test_selectors": [
+        "tests/test_mathutils.py::test_ceil_basic"
+      ]
+    },
+    {
+      "acquisition_provenance": "M9 v2 benchmark-data repair: the pinned v1 source and controlled mutation are unchanged; the non-discriminating selector is replaced under a new case identity.",
+      "case_id": "boltons-floor-exact-option",
+      "case_type": "external-repository controlled-defect case",
+      "evaluation_mode": "targeted",
+      "fixture_fingerprint": "c1d17a8368d5db8878f302ed70cb665e9f6fa8d84f0898908f60694195d6590a",
+      "repository_id": "boltons",
+      "required_test_selectors": [
+        "tests/test_mathutils.py::test_floor_basic"
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "more_itertools/recipes.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "more_itertools/recipes.py"
+          ],
+          "patch_hash": "cba81d8140a5592801f61fc1033ac8aae34378652ac98e8c6b6e4a0c49201e68",
+          "test_run_id": "89e9f5af386db3a7630276df8b90fca7b898c524bff00059085e3a6af37eb398",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "more-take-off-by-one",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 835.1287000004959,
+        "embedding_index_setup_ms": 16618.54609999864,
+        "patch_generation_ms": 2443.3294999998907,
+        "planning_generation_ms": 2187.2740000017075,
+        "repository_indexing_ms": 90.39780000057362,
+        "retrieval_ms": 2.2717000010743504,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 22250.97730000016
+      },
+      "patch_hash": "cba81d8140a5592801f61fc1033ac8aae34378652ac98e8c6b6e4a0c49201e68",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "more_itertools/recipes.py"
+        ],
+        "exact_patch_match": false,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "more_itertools/recipes.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "more_itertools/recipes.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "more-itertools",
+      "retrieval": {
+        "context_status": "complete",
+        "degradation_reason": "Dense setup failed safely (EmbeddingResponseError); production lexical fallback used.",
+        "degraded": true,
+        "file_reciprocal_rank": 1.0,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": true,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "lexical_only_degraded"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 5037,
+          "output_tokens": 213,
+          "total_tokens": 5250
+        },
+        "planning": {
+          "input_tokens": 4801,
+          "output_tokens": 277,
+          "total_tokens": 5078
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "more_itertools/recipes.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "more_itertools/recipes.py"
+          ],
+          "patch_hash": "7c4baaf44ce8ef7b1223d2d4b2fa7c5c7a175f2bbc731e7cff29315870227ba8",
+          "test_run_id": "96eda4c8a6bf1365d20a027591fa18c73ad7660dac63f53962e64c614c331367",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "more-quantify-inverted",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 806.0829999994894,
+        "embedding_index_setup_ms": 14924.409100000048,
+        "patch_generation_ms": 2522.700299999997,
+        "planning_generation_ms": 2520.6558000008954,
+        "repository_indexing_ms": 82.20540000002075,
+        "retrieval_ms": 1.9802999995590653,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 20928.326299999753
+      },
+      "patch_hash": "7c4baaf44ce8ef7b1223d2d4b2fa7c5c7a175f2bbc731e7cff29315870227ba8",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "more_itertools/recipes.py"
+        ],
+        "exact_patch_match": false,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "more_itertools/recipes.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "more_itertools/recipes.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "more-itertools",
+      "retrieval": {
+        "context_status": "complete",
+        "degradation_reason": "Dense setup failed safely (EmbeddingResponseError); production lexical fallback used.",
+        "degraded": true,
+        "file_reciprocal_rank": 0.5,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": false,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "lexical_only_degraded"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 3269,
+          "output_tokens": 186,
+          "total_tokens": 3455
+        },
+        "planning": {
+          "input_tokens": 3052,
+          "output_tokens": 262,
+          "total_tokens": 3314
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "toolz/itertoolz.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "toolz/itertoolz.py"
+          ],
+          "patch_hash": "bd307aefb95a824ea5c8127cf844065b7e7515c09664cf2845faca27b07d14ad",
+          "test_run_id": "0941e1435311589766035815a0d0c32c5f5dc51268ba371231607af350824192",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "toolz-take-off-by-one",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 1164.1739000006055,
+        "embedding_index_setup_ms": 35434.4643000004,
+        "patch_generation_ms": 3390.1702000002842,
+        "planning_generation_ms": 2948.303600000145,
+        "repository_indexing_ms": 67.99259999934293,
+        "retrieval_ms": 1.7487000004621223,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 43407.41580000031
+      },
+      "patch_hash": "bd307aefb95a824ea5c8127cf844065b7e7515c09664cf2845faca27b07d14ad",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "toolz/itertoolz.py"
+        ],
+        "exact_patch_match": false,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "toolz/itertoolz.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "toolz/itertoolz.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "toolz",
+      "retrieval": {
+        "context_status": "partial_budget",
+        "degradation_reason": "Dense setup failed safely (EmbeddingResponseError); production lexical fallback used.",
+        "degraded": true,
+        "file_reciprocal_rank": 1.0,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": true,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "lexical_only_degraded"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 7249,
+          "output_tokens": 214,
+          "total_tokens": 7463
+        },
+        "planning": {
+          "input_tokens": 6972,
+          "output_tokens": 321,
+          "total_tokens": 7293
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "toolz/itertoolz.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "toolz/itertoolz.py"
+          ],
+          "patch_hash": "9b04c62823719eaefb44a6f61acbb7460c5fa270ea3145cd536a4b8f115044bd",
+          "test_run_id": "6705f8440b1ae3814ffe4412cd451ecd5d2dc004bb0e586974becf5965a6f1cc",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "toolz-drop-extra-item",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 1104.6511999993527,
+        "embedding_index_setup_ms": 34653.86340000077,
+        "patch_generation_ms": 2165.482999998858,
+        "planning_generation_ms": 2179.714399999284,
+        "repository_indexing_ms": 70.29809999949066,
+        "retrieval_ms": 1.0747999986051582,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 40644.308799999635
+      },
+      "patch_hash": "9b04c62823719eaefb44a6f61acbb7460c5fa270ea3145cd536a4b8f115044bd",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "toolz/itertoolz.py"
+        ],
+        "exact_patch_match": true,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "toolz/itertoolz.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "toolz/itertoolz.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "toolz",
+      "retrieval": {
+        "context_status": "partial_budget",
+        "degradation_reason": "Dense setup failed safely (EmbeddingResponseError); production lexical fallback used.",
+        "degraded": true,
+        "file_reciprocal_rank": 1.0,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": true,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "lexical_only_degraded"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 7116,
+          "output_tokens": 183,
+          "total_tokens": 7299
+        },
+        "planning": {
+          "input_tokens": 6894,
+          "output_tokens": 258,
+          "total_tokens": 7152
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "boltons/mathutils.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "boltons/mathutils.py"
+          ],
+          "patch_hash": "60edbd2696118217675c277900b3d3e0ee295ac5c57b04457e9f6c34c2675154",
+          "test_run_id": "603d3ea4a82e0996a02f79e94b74613d707d6d2b32cac41e0654d38bfbae35fb",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "boltons-ceil-exact-option",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 713.4024999995745,
+        "embedding_index_setup_ms": 5267.47240000077,
+        "patch_generation_ms": 3682.5060000010126,
+        "planning_generation_ms": 2288.1831000013335,
+        "repository_indexing_ms": 7.530099999712547,
+        "retrieval_ms": 75.16100000066217,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 12101.640600001701
+      },
+      "patch_hash": "60edbd2696118217675c277900b3d3e0ee295ac5c57b04457e9f6c34c2675154",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "boltons/mathutils.py"
+        ],
+        "exact_patch_match": true,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "boltons/mathutils.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "boltons/mathutils.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "boltons",
+      "retrieval": {
+        "context_status": "partial_budget",
+        "degradation_reason": null,
+        "degraded": false,
+        "file_reciprocal_rank": 1.0,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": true,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "hybrid"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 6614,
+          "output_tokens": 244,
+          "total_tokens": 6858
+        },
+        "planning": {
+          "input_tokens": 6382,
+          "output_tokens": 273,
+          "total_tokens": 6655
+        },
+        "retry_patch": null
+      }
+    },
+    {
+      "approval_1_completed": true,
+      "approved_file_scope": [
+        "boltons/mathutils.py"
+      ],
+      "attempt_classification": "solved_on_attempt_1",
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "changed_files": [
+            "boltons/mathutils.py"
+          ],
+          "patch_hash": "d3e08dca3a71c78c3fe4a8787b8eebddb74cfd62dcbea9d4590c473940ffefff",
+          "test_run_id": "d1ee8cbbf15e18574e6d66267506651b85a80153b2d25dcf12bcedc6118f10e7",
+          "test_status": "passed"
+        }
+      ],
+      "blocked_reason": null,
+      "case_id": "boltons-floor-exact-option",
+      "case_type": "external-repository controlled-defect case",
+      "critic_declined_retry": false,
+      "export_completed": true,
+      "failure_error_type": null,
+      "failure_message": null,
+      "failure_stage": null,
+      "final_approval_completed": true,
+      "latency_ms": {
+        "critic_generation_ms": null,
+        "docker_testing_ms": 700.7159999993746,
+        "embedding_index_setup_ms": 5255.173300000024,
+        "patch_generation_ms": 2407.0373000013205,
+        "planning_generation_ms": 2594.569399998363,
+        "repository_indexing_ms": 8.379099999729078,
+        "retrieval_ms": 70.32350000008591,
+        "retry_patch_generation_ms": null,
+        "total_workflow_ms": 11098.355499998434
+      },
+      "patch_hash": "d3e08dca3a71c78c3fe4a8787b8eebddb74cfd62dcbea9d4590c473940ffefff",
+      "patch_produced": true,
+      "patch_quality": {
+        "behavioral_success": true,
+        "changed_files": [
+          "boltons/mathutils.py"
+        ],
+        "exact_patch_match": true,
+        "extra_changed_files": [],
+        "gold_changed_files": [
+          "boltons/mathutils.py"
+        ],
+        "missing_gold_files": []
+      },
+      "plan_generated": true,
+      "plan_proposed_files": [
+        "boltons/mathutils.py"
+      ],
+      "provider_error_classification": null,
+      "provider_error_message": null,
+      "provider_error_type": null,
+      "repair_success": true,
+      "repository_id": "boltons",
+      "retrieval": {
+        "context_status": "partial_budget",
+        "degradation_reason": null,
+        "degraded": false,
+        "file_reciprocal_rank": 1.0,
+        "gold_file_context_coverage": true,
+        "gold_file_hit_at_1": true,
+        "gold_file_hit_at_5": true,
+        "gold_symbol_coverage": true,
+        "measured": true,
+        "mode": "hybrid"
+      },
+      "safety": {
+        "canonical_repository_mutated": false,
+        "critical_failure": false,
+        "export_only_after_final_approval": true,
+        "patch_validation_failures": 0,
+        "scope_violation_attempts": 0,
+        "stale_hash_failures": 0
+      },
+      "terminal_status": "completed",
+      "tests_passed": true,
+      "token_usage": {
+        "critic": null,
+        "patch": {
+          "input_tokens": 6636,
+          "output_tokens": 280,
+          "total_tokens": 6916
+        },
+        "planning": {
+          "input_tokens": 6382,
+          "output_tokens": 301,
+          "total_tokens": 6683
+        },
+        "retry_patch": null
+      }
+    }
+  ],
+  "configuration": {
+    "candidate_k": 20,
+    "context_budget": 16384,
+    "embedding_model": "embeddinggemma:latest",
+    "generation_model": "gemini-3.1-flash-lite",
+    "generation_provider": "gemini",
+    "maximum_patch_attempts": 2,
+    "rrf_k": 60,
+    "test_image": "repopilot-python-test:3.11-pytest9",
+    "top_k": 5
+  },
+  "environment": {
+    "generation_runtime": "remote Gemini API/network",
+    "logical_cpu_count": 12,
+    "memory_bytes": null,
+    "memory_note": "Host physical memory was not measured; Docker enforced the configured per-test memory limit.",
+    "platform": "Windows-11-10.0.26200-SP0",
+    "processor": "AMD64 Family 25 Model 33 Stepping 2, AuthenticAMD",
+    "python_version": "3.12.13"
+  },
+  "evaluation_mode": "real",
+  "evaluation_name": "M9 frozen external repository and system evaluation",
+  "evaluation_scope": "controlled_external_system_evaluation",
+  "fixture_validation": [
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "more-take-off-by-one",
+      "controlled_defect_present": true,
+      "duration_ms": 1000,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "more-itertools",
+      "selector": [
+        "tests/test_recipes.py::TakeTests::test_simple_take"
+      ],
+      "test_status": "failed",
+      "valid": true
+    },
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "more-quantify-inverted",
+      "controlled_defect_present": true,
+      "duration_ms": 797,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "more-itertools",
+      "selector": [
+        "tests/test_recipes.py::QuantifyTests::test_happy_path"
+      ],
+      "test_status": "failed",
+      "valid": true
+    },
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "toolz-take-off-by-one",
+      "controlled_defect_present": true,
+      "duration_ms": 1031,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "toolz",
+      "selector": [
+        "toolz/tests/test_itertoolz.py::test_take"
+      ],
+      "test_status": "failed",
+      "valid": true
+    },
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "toolz-drop-extra-item",
+      "controlled_defect_present": true,
+      "duration_ms": 1093,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "toolz",
+      "selector": [
+        "toolz/tests/test_itertoolz.py::test_drop"
+      ],
+      "test_status": "failed",
+      "valid": true
+    },
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "boltons-ceil-exact-option",
+      "controlled_defect_present": true,
+      "duration_ms": 703,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "boltons",
+      "selector": [
+        "tests/test_mathutils.py::test_ceil_basic"
+      ],
+      "test_status": "failed",
+      "valid": true
+    },
+    {
+      "canonical_fixture_unchanged": true,
+      "case_id": "boltons-floor-exact-option",
+      "controlled_defect_present": true,
+      "duration_ms": 734,
+      "exit_code": 1,
+      "expected_failure_observed": true,
+      "failure_classification": "pytest_assertion_failure",
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "manifest_fingerprint_valid": true,
+      "repository_id": "boltons",
+      "selector": [
+        "tests/test_mathutils.py::test_floor_basic"
+      ],
+      "test_status": "failed",
+      "valid": true
+    }
+  ],
+  "generated_at_utc": "2026-09-14T06:32:19.157218+00:00",
+  "limitations": [
+    "Six controlled-defect cases across three external repositories are a small controlled sample.",
+    "Controlled mutations are not historical real-world bugs.",
+    "This is not SWE-bench or production-scale evidence.",
+    "Gold labels were used only for post-hoc scoring, never workflow decisions.",
+    "Gemini generation uses a hosted API and network latency; retrieval remains local."
+  ],
+  "manifest_fingerprint": "e08a819fbdc6dd3b8bd164a1b27fee63f495f55d0d350117a2b60556fe2e973b",
+  "models": [
+    {
+      "digest": "85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1",
+      "name": "embeddinggemma:latest"
+    },
+    {
+      "digest": null,
+      "name": "gemini-3.1-flash-lite",
+      "provider": "gemini"
+    }
+  ],
+  "preflight": {
+    "docker": {
+      "cli_available": true,
+      "daemon_reachable": true,
+      "image_available": true,
+      "image_id": "sha256:72b98eae96d168dcdd898cdad6b3c198de5e2b8a0092ee1b80ea8ad1e3d972c7",
+      "image_reference": "repopilot-python-test:3.11-pytest9",
+      "reason": null,
+      "server_version": "29.7.2"
+    },
+    "generation": {
+      "model": "gemini-3.1-flash-lite",
+      "model_accessible": true,
+      "plain_generation_succeeded": true,
+      "provider": "gemini",
+      "ready": true,
+      "reason": null,
+      "structured_generation_succeeded": true
+    },
+    "ollama": {
+      "models": [
+        {
+          "digest": "85462619ee721b466c5927d109d4cb765861907d5417b9109caebc4e614679f1",
+          "name": "embeddinggemma:latest"
+        }
+      ],
+      "reachable": true,
+      "reason": null,
+      "required_models_available": true
+    },
+    "ready": true
+  },
+  "repopilot_commit": "638ef3ac2586b2ab8fcab194e4f43ed6f7661e83",
+  "repositories": [
+    {
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary.",
+      "commit_sha": "9ed3dbb0ae527230cd156d91d0af305478558fba",
+      "fixture_paths": [
+        "LICENSE",
+        "more_itertools",
+        "tests/test_recipes.py"
+      ],
+      "license_identifier": "MIT",
+      "name": "more-itertools",
+      "repository_id": "more-itertools",
+      "source_fingerprint": "66b72900cf4d06885282dc0adf820e16f8f87c3d71b2311fdd78400f4a660d94",
+      "upstream_url": "https://github.com/more-itertools/more-itertools.git"
+    },
+    {
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary.",
+      "commit_sha": "568c2b8393973cd172a466546c9d95779c452438",
+      "fixture_paths": [
+        "LICENSE.txt",
+        "toolz"
+      ],
+      "license_identifier": "BSD-3-Clause",
+      "name": "toolz",
+      "repository_id": "toolz",
+      "source_fingerprint": "40407038e4ed3ffd982e0428c30b041d0f818df14307c91c594536477aa20f8a",
+      "upstream_url": "https://github.com/pytoolz/toolz.git"
+    },
+    {
+      "acquisition_provenance": "GitHub upstream Git commit, materialized by the M9 git-only acquisition boundary.",
+      "commit_sha": "961dcff3f42e73b245aef65e377fe82763b257bb",
+      "fixture_paths": [
+        "LICENSE",
+        "boltons/__init__.py",
+        "boltons/mathutils.py",
+        "tests/test_mathutils.py"
+      ],
+      "license_identifier": "BSD-3-Clause",
+      "name": "boltons",
+      "repository_id": "boltons",
+      "source_fingerprint": "7cd4c8d9476a58b02ee0b4cdbdb3c08b802640235f97d4048f438014fe7dc9a5",
+      "upstream_url": "https://github.com/mahmoud/boltons.git"
+    }
+  ],
+  "schema_version": "repopilot.m9.v1"
+}

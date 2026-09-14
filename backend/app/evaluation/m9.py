@@ -31,6 +31,8 @@ from app.evaluation.m9_models import (
     M9Manifest,
     ProductionCaseInput,
     StageLatencies,
+    StageTokenUsage,
+    TokenUsage,
     aggregate_scores,
     assert_artifact_has_no_absolute_paths,
     benchmark_final_decision,
@@ -49,7 +51,9 @@ from app.patching import (
 from app.planning import StructuredPlanner
 from app.providers import OllamaEmbeddingProvider
 from app.providers.embeddings import EmbeddingProviderError
-from app.providers.ollama import OllamaProvider
+from app.providers.base import UsageReportingInferenceProvider
+from app.providers.factory import build_generation_provider
+from app.providers.gemini import GeminiProvider
 from app.retrieval import (
     DEFAULT_CANDIDATE_K,
     DEFAULT_RRF_K,
@@ -113,6 +117,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--cache-dir", type=Path, default=DEFAULT_CACHE)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
+    parser.add_argument(
+        "--docker-executable",
+        default="docker",
+        help="Exact Docker CLI executable used for preflight and sandbox tests.",
+    )
     parser.add_argument(
         "--case-id",
         help="Select one frozen case for a bounded diagnostic mode.",
@@ -190,7 +199,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(record, indent=2, sort_keys=True))
             return 0
         if args.mode == "verify-fixture-tests":
-            docker = _docker_preflight()
+            docker = _docker_preflight(args.docker_executable)
             if not docker.get("daemon_reachable") or not docker.get("image_available"):
                 raise ValueError(docker.get("reason") or "Docker fixture-test preflight failed")
             selected_cases = (
@@ -203,6 +212,7 @@ def main(argv: list[str] | None = None) -> int:
                     manifest,
                     fixture_root=args.cache_dir / "m9" / "cases",
                     cases=selected_cases,
+                    docker_executable=args.docker_executable,
                 )
             )
             args.output_dir.mkdir(parents=True, exist_ok=True)
@@ -216,7 +226,13 @@ def main(argv: list[str] | None = None) -> int:
         if args.mode == "dry-run":
             artifact = run_fake_evaluation(manifest)
         else:
-            artifact = asyncio.run(run_real_evaluation(manifest, fixture_root=args.cache_dir / "m9" / "cases"))
+            artifact = asyncio.run(
+                run_real_evaluation(
+                    manifest,
+                    fixture_root=args.cache_dir / "m9" / "cases",
+                    docker_executable=args.docker_executable,
+                )
+            )
         write_artifacts(artifact, output_dir=args.output_dir)
         return 1 if artifact["aggregate"]["critical_safety_failure"] else 0
     except (OSError, ValueError, json.JSONDecodeError, subprocess.SubprocessError) as exc:
@@ -347,20 +363,37 @@ def selected_fixture_fingerprint(root: Path, selected_paths: tuple[str, ...]) ->
         return fixture_fingerprint(selection)
 
 
-async def preflight() -> dict[str, Any]:
-    docker = _docker_preflight()
-    ollama = await _ollama_preflight()
+async def preflight(
+    settings: Settings | None = None,
+    *,
+    docker_executable: str = "docker",
+) -> dict[str, Any]:
+    settings = settings or Settings.from_environment()
+    docker = _docker_preflight(docker_executable)
+    ollama = await _ollama_preflight(
+        require_generation=settings.generation_provider == "ollama"
+    )
+    generation = await _generation_preflight(settings, ollama=ollama)
     ready = bool(
         docker.get("daemon_reachable")
         and docker.get("image_available")
         and ollama.get("reachable")
         and ollama.get("required_models_available")
+        and generation.get("ready")
     )
-    return {"ready": ready, "docker": docker, "ollama": ollama}
+    return {
+        "ready": ready,
+        "docker": docker,
+        "ollama": ollama,
+        "generation": generation,
+    }
 
 
-def _docker_preflight() -> dict[str, Any]:
-    executable = shutil.which("docker")
+def _docker_preflight(docker_executable: str = "docker") -> dict[str, Any]:
+    requested = Path(docker_executable)
+    executable = (
+        str(requested.resolve()) if requested.is_absolute() else shutil.which(docker_executable)
+    )
     if executable is None:
         return {
             "cli_available": False, "daemon_reachable": False,
@@ -381,7 +414,7 @@ def _docker_preflight() -> dict[str, Any]:
     }
 
 
-async def _ollama_preflight() -> dict[str, Any]:
+async def _ollama_preflight(*, require_generation: bool = True) -> dict[str, Any]:
     settings = OllamaEmbeddingSettings.from_environment()
     try:
         async with httpx.AsyncClient(base_url=settings.ollama_base_url, timeout=10.0) as client:
@@ -391,15 +424,86 @@ async def _ollama_preflight() -> dict[str, Any]:
     except (httpx.HTTPError, ValueError) as exc:
         return {"reachable": False, "required_models_available": False, "reason": f"Ollama unavailable ({type(exc).__name__}).", "models": []}
     models = []
+    required = (
+        {GENERATION_MODEL, EMBEDDING_MODEL}
+        if require_generation
+        else {EMBEDDING_MODEL}
+    )
     for item in payload.get("models", []) if isinstance(payload, dict) else []:
-        if isinstance(item, dict) and item.get("name") in {GENERATION_MODEL, EMBEDDING_MODEL}:
+        if isinstance(item, dict) and item.get("name") in required:
             models.append({"name": item.get("name"), "digest": item.get("digest")})
     names = {item["name"] for item in models}
     return {
         "reachable": True,
-        "required_models_available": {GENERATION_MODEL, EMBEDDING_MODEL}.issubset(names),
+        "required_models_available": required.issubset(names),
         "models": sorted(models, key=lambda item: str(item["name"])),
-        "reason": None if {GENERATION_MODEL, EMBEDDING_MODEL}.issubset(names) else "One or more locked local models are unavailable; no pull attempted.",
+        "reason": None if required.issubset(names) else "One or more locked local models are unavailable; no pull attempted.",
+    }
+
+
+async def _generation_preflight(
+    settings: Settings,
+    *,
+    ollama: dict[str, Any],
+) -> dict[str, Any]:
+    if settings.generation_provider == "ollama":
+        return {
+            "ready": bool(ollama.get("required_models_available")),
+            "provider": "ollama",
+            "model": settings.ollama_model,
+            "model_accessible": bool(ollama.get("required_models_available")),
+            "plain_generation_succeeded": None,
+            "structured_generation_succeeded": None,
+            "reason": ollama.get("reason"),
+        }
+
+    provider = build_generation_provider(settings)
+    if not isinstance(provider, GeminiProvider):
+        return {
+            "ready": False,
+            "provider": settings.generation_provider,
+            "model": provider.model,
+            "reason": "Configured generation provider cannot run Gemini preflight.",
+        }
+    try:
+        await provider.check_model_access()
+        plain = await provider.generate("Return exactly the text OK and nothing else.")
+        schema = {
+            "type": "object",
+            "properties": {"status": {"type": "string", "enum": ["ok"]}},
+            "required": ["status"],
+            "additionalProperties": False,
+        }
+        structured_text = await provider.generate_structured(
+            "Return a JSON object whose status is ok.", schema
+        )
+        structured = json.loads(structured_text)
+        if plain.strip().casefold() != "ok" or structured != {"status": "ok"}:
+            raise ValueError("Gemini preflight response did not match its bounded contract")
+    except Exception as exc:
+        candidates: tuple[str, ...] = ()
+        try:
+            candidates = await provider.list_suitable_models()
+        except Exception:
+            pass
+        return {
+            "ready": False,
+            "provider": "gemini",
+            "model": provider.model,
+            "model_accessible": False,
+            "plain_generation_succeeded": False,
+            "structured_generation_succeeded": False,
+            "suitable_model_candidates": list(candidates),
+            "reason": f"Gemini preflight failed safely ({type(exc).__name__}).",
+        }
+    return {
+        "ready": True,
+        "provider": "gemini",
+        "model": provider.model,
+        "model_accessible": True,
+        "plain_generation_succeeded": True,
+        "structured_generation_succeeded": True,
+        "reason": None,
     }
 
 
@@ -408,10 +512,11 @@ async def verify_fixture_tests(
     *,
     fixture_root: Path,
     cases: tuple[M9Case, ...] | None = None,
+    docker_executable: str = "docker",
 ) -> list[dict[str, Any]]:
     """Prove each frozen defect fails its configured selector in the M5 sandbox."""
 
-    runner = DockerTestRunner()
+    runner = DockerTestRunner(docker_executable=docker_executable)
     records: list[dict[str, Any]] = []
     selected_cases = manifest.cases if cases is None else cases
     if any(case not in manifest.cases for case in selected_cases):
@@ -489,9 +594,41 @@ class _TimerBook:
         return sum(values) if values else None
 
 
+class _UsageBook:
+    def __init__(self) -> None:
+        self.values: dict[str, TokenUsage] = {}
+
+    def capture(self, name: str, provider: Any) -> None:
+        if not isinstance(provider, UsageReportingInferenceProvider):
+            return
+        usage = provider.last_usage
+        if usage is None:
+            return
+        self.values[name] = TokenUsage(
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            total_tokens=usage.total_tokens,
+        )
+
+    def snapshot(self) -> StageTokenUsage:
+        return StageTokenUsage(
+            planning=self.values.get("planning"),
+            patch=self.values.get("patch"),
+            critic=self.values.get("critic"),
+            retry_patch=self.values.get("retry_patch"),
+        )
+
+
 class _TimedPlanner:
-    def __init__(self, service: StructuredPlanner, timers: _TimerBook) -> None:
+    def __init__(
+        self,
+        service: StructuredPlanner,
+        timers: _TimerBook,
+        provider: Any | None = None,
+        usage: _UsageBook | None = None,
+    ) -> None:
         self.service, self.timers = service, timers
+        self.provider, self.usage = provider, usage
 
     async def create_plan_with_hash(self, *args, **kwargs):
         started = perf_counter()
@@ -499,18 +636,30 @@ class _TimedPlanner:
             return await self.service.create_plan_with_hash(*args, **kwargs)
         finally:
             self.timers.add("planning", started)
+            if self.provider is not None and self.usage is not None:
+                self.usage.capture("planning", self.provider)
 
 
 class _TimedPatchService:
-    def __init__(self, service: ApprovedPatchService, timers: _TimerBook) -> None:
+    def __init__(
+        self,
+        service: ApprovedPatchService,
+        timers: _TimerBook,
+        provider: Any | None = None,
+        usage: _UsageBook | None = None,
+    ) -> None:
         self.service, self.timers = service, timers
+        self.provider, self.usage = provider, usage
 
     async def prepare_patch(self, *args, **kwargs):
         started = perf_counter()
         try:
             return await self.service.prepare_patch(*args, **kwargs)
         finally:
-            self.timers.add("retry_patch" if kwargs.get("attempt_number") == 2 else "patch", started)
+            name = "retry_patch" if kwargs.get("attempt_number") == 2 else "patch"
+            self.timers.add(name, started)
+            if self.provider is not None and self.usage is not None:
+                self.usage.capture(name, self.provider)
 
 
 class _TimedTestService:
@@ -526,8 +675,15 @@ class _TimedTestService:
 
 
 class _TimedCriticService:
-    def __init__(self, service: CriticService, timers: _TimerBook) -> None:
+    def __init__(
+        self,
+        service: CriticService,
+        timers: _TimerBook,
+        provider: Any | None = None,
+        usage: _UsageBook | None = None,
+    ) -> None:
         self.service, self.timers = service, timers
+        self.provider, self.usage = provider, usage
 
     async def assess_failure(self, *args, **kwargs):
         started = perf_counter()
@@ -535,6 +691,8 @@ class _TimedCriticService:
             return await self.service.assess_failure(*args, **kwargs)
         finally:
             self.timers.add("critic", started)
+            if self.provider is not None and self.usage is not None:
+                self.usage.capture("critic", self.provider)
 
 
 class _UnavailableVectorRetriever:
@@ -546,13 +704,17 @@ class _UnavailableVectorRetriever:
 class _CapturingGenerationProvider:
     """Diagnostic-only observer around the unchanged production provider."""
 
-    def __init__(self, provider: OllamaProvider) -> None:
+    def __init__(self, provider: Any) -> None:
         self._provider = provider
         self.last_output: str | None = None
 
     @property
     def model(self) -> str:
         return self._provider.model
+
+    @property
+    def provider_name(self) -> str:
+        return self._provider.provider_name
 
     async def generate(self, prompt: str) -> str:
         output = await self._provider.generate(prompt)
@@ -640,7 +802,7 @@ async def execute_planner_diagnostic(
         )
 
         settings = Settings.from_environment()
-        capture = _CapturingGenerationProvider(OllamaProvider(settings))
+        capture = _CapturingGenerationProvider(build_generation_provider(settings))
         timers = _TimerBook()
         service = PlanReviewService(
             _TimedPlanner(StructuredPlanner(capture), timers),
@@ -660,8 +822,13 @@ async def execute_planner_diagnostic(
             "schema_version": "repopilot.m9.planner-diagnostic.v1",
             "case_id": case_input.case_id,
             "generation_attempts": 1,
-            "generation_model": settings.ollama_model,
-            "generation_timeout_seconds": settings.ollama_timeout_seconds,
+            "generation_provider": settings.generation_provider,
+            "generation_model": capture.model,
+            "generation_timeout_seconds": (
+                settings.gemini_timeout_seconds
+                if settings.generation_provider == "gemini"
+                else settings.ollama_timeout_seconds
+            ),
             "retrieval": {
                 "mode": response.mode.value,
                 "degraded": response.degraded,
@@ -786,11 +953,17 @@ async def execute_partial_retrieval(
     )
 
 
-async def execute_production_case(case_input: ProductionCaseInput) -> ExecutionObservation:
+async def execute_production_case(
+    case_input: ProductionCaseInput,
+    *,
+    generation_settings: Settings | None = None,
+    docker_executable: str = "docker",
+) -> ExecutionObservation:
     """Run M1-M6 production components. No oracle data is accepted here."""
 
     total_started = perf_counter()
     timers = _TimerBook()
+    usage = _UsageBook()
     canonical_before = fixture_fingerprint(case_input.repository_root)
     indexing_started = perf_counter()
     chunking = build_repository_chunks(case_input.repository_root)
@@ -823,21 +996,24 @@ async def execute_production_case(case_input: ProductionCaseInput) -> ExecutionO
     ranked_symbols = tuple(item.chunk.qualified_symbol for item in response.results)
     context_files = tuple(item.path for item in pack.included_chunks)
     context_symbols = tuple(item.qualified_symbol for item in pack.included_chunks)
-    generation = OllamaProvider(Settings.from_environment())
+    generation = build_generation_provider(
+        generation_settings or Settings.from_environment()
+    )
 
     with tempfile.TemporaryDirectory(prefix="repopilot-m9-") as temporary:
         data = Path(temporary).resolve()
         workspaces = WorkspaceManager(canonical_repository=case_input.repository_root, workspace_root=data / "workspaces")
-        patch = _TimedPatchService(ApprovedPatchService(patcher=StructuredPatcher(generation), workspace_manager=workspaces), timers)
+        patch = _TimedPatchService(ApprovedPatchService(patcher=StructuredPatcher(generation), workspace_manager=workspaces), timers, generation, usage)
         tests = _TimedTestService(ApprovedPatchTestService(
             workspace_manager=workspaces,
             snapshot_manager=DisposableTestSnapshotManager(workspace_manager=workspaces, snapshot_root=data / "snapshots"),
-            runner=DockerTestRunner(), result_store=TestResultStore(data / "test-results"),
+            runner=DockerTestRunner(docker_executable=docker_executable),
+            result_store=TestResultStore(data / "test-results"),
         ), timers)
-        critic = _TimedCriticService(CriticService(StructuredCritic(generation), CriticAssessmentStore(data / "critics")), timers)
+        critic = _TimedCriticService(CriticService(StructuredCritic(generation), CriticAssessmentStore(data / "critics")), timers, generation, usage)
         exporter = PatchExporter(export_root=data / "exports", workspace_manager=workspaces)
         service = PlanReviewService(
-            _TimedPlanner(StructuredPlanner(generation), timers), InMemorySaver(),
+            _TimedPlanner(StructuredPlanner(generation), timers, generation, usage), InMemorySaver(),
             patch, tests,
             TestRunRequest(mode=TestMode.TARGETED, selectors=case_input.test_selectors),
             critic, exporter,
@@ -928,6 +1104,7 @@ async def execute_production_case(case_input: ProductionCaseInput) -> ExecutionO
             critic_generation_ms=timers.total("critic"), retry_patch_generation_ms=timers.total("retry_patch"),
             total_workflow_ms=(perf_counter() - total_started) * 1000.0,
         ),
+        token_usage=usage.snapshot(),
     )
 
 
@@ -952,15 +1129,29 @@ def _failure_stage(
     return mapping.get(status)
 
 
-async def run_real_evaluation(manifest: M9Manifest, *, fixture_root: Path) -> dict[str, Any]:
+async def run_real_evaluation(
+    manifest: M9Manifest,
+    *,
+    fixture_root: Path,
+    docker_executable: str = "docker",
+) -> dict[str, Any]:
     fixture_records = materialize_manifest(manifest, cache_root=fixture_root.parents[1], allow_network=False, create=False)
     if not all(item["valid"] for item in fixture_records):
         raise ValueError("M9 fixtures are absent or do not match the frozen manifest")
-    checks = await preflight()
+    generation_settings = Settings.from_environment()
+    checks = await preflight(
+        generation_settings,
+        docker_executable=docker_executable,
+    )
     observations: list[ExecutionObservation] = []
     fixture_validation: list[dict[str, Any]] = []
     if not checks["ready"]:
-        reason = checks["docker"].get("reason") or checks["ollama"].get("reason") or "M9 prerequisites unavailable"
+        reason = (
+            checks["docker"].get("reason")
+            or checks["ollama"].get("reason")
+            or checks["generation"].get("reason")
+            or "M9 prerequisites unavailable"
+        )
         observations = [
             ExecutionObservation(case_id=case.case_id, terminal_status="infrastructure_blocked", failure_stage="infrastructure", blocked_reason=reason)
             for case in manifest.cases
@@ -993,7 +1184,13 @@ async def run_real_evaluation(manifest: M9Manifest, *, fixture_root: Path) -> di
                 continue
             production_input = ProductionCaseInput.from_case(case, fixture_root=fixture_root)
             try:
-                observations.append(await execute_production_case(production_input))
+                observations.append(
+                    await execute_production_case(
+                        production_input,
+                        generation_settings=generation_settings,
+                        docker_executable=docker_executable,
+                    )
+                )
             except Exception as exc:
                 observations.append(ExecutionObservation(
                     case_id=case.case_id, terminal_status="infrastructure_blocked",
@@ -1005,6 +1202,7 @@ async def run_real_evaluation(manifest: M9Manifest, *, fixture_root: Path) -> di
         evaluation_mode="real",
         preflight_record=checks,
         fixture_validation=fixture_validation,
+        generation_settings=generation_settings,
     )
 
 
@@ -1043,7 +1241,19 @@ def build_artifact(
     evaluation_mode: str,
     preflight_record: dict[str, Any],
     fixture_validation: list[dict[str, Any]] | None = None,
+    generation_settings: Settings | None = None,
 ) -> dict[str, Any]:
+    settings = generation_settings or Settings()
+    generation_model = (
+        settings.gemini_model
+        if settings.generation_provider == "gemini"
+        else settings.ollama_model
+    )
+    generation_models = list(preflight_record.get("ollama", {}).get("models", []))
+    if settings.generation_provider == "gemini":
+        generation_models.append(
+            {"name": settings.gemini_model, "digest": None, "provider": "gemini"}
+        )
     by_id = {item.case_id: item for item in observations}
     if set(by_id) != {item.case_id for item in manifest.cases}:
         raise ValueError("each frozen case must have exactly one observation")
@@ -1055,7 +1265,7 @@ def build_artifact(
         "evaluation_mode": evaluation_mode,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "manifest_fingerprint": manifest.fingerprint,
-        "artifact_identity": sha256(json.dumps({"schema": SCHEMA_VERSION, "manifest": manifest.fingerprint, "mode": evaluation_mode, "git": _git_commit(), "generation_model": GENERATION_MODEL, "embedding_model": EMBEDDING_MODEL, "image": TEST_IMAGE}, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
+        "artifact_identity": sha256(json.dumps({"schema": SCHEMA_VERSION, "manifest": manifest.fingerprint, "mode": evaluation_mode, "git": _git_commit(), "generation_provider": settings.generation_provider, "generation_model": generation_model, "embedding_model": EMBEDDING_MODEL, "image": TEST_IMAGE}, sort_keys=True, separators=(",", ":")).encode()).hexdigest(),
         "repopilot_commit": _git_commit(),
         "environment": {
             "python_version": platform.python_version(),
@@ -1064,17 +1274,21 @@ def build_artifact(
             "logical_cpu_count": os.cpu_count(),
             "memory_bytes": None,
             "memory_note": "Host physical memory was not measured; Docker enforced the configured per-test memory limit.",
-            "generation_runtime": "local CPU",
+            "generation_runtime": (
+                "remote Gemini API/network"
+                if settings.generation_provider == "gemini"
+                else "local CPU"
+            ),
         },
-        "models": preflight_record.get("ollama", {}).get("models", []),
-        "configuration": {"generation_model": GENERATION_MODEL, "embedding_model": EMBEDDING_MODEL, "test_image": TEST_IMAGE, "rrf_k": DEFAULT_RRF_K, "candidate_k": DEFAULT_CANDIDATE_K, "top_k": TOP_K, "context_budget": CONTEXT_BUDGET, "maximum_patch_attempts": 2},
+        "models": generation_models,
+        "configuration": {"generation_provider": settings.generation_provider, "generation_model": generation_model, "embedding_model": EMBEDDING_MODEL, "test_image": TEST_IMAGE, "rrf_k": DEFAULT_RRF_K, "candidate_k": DEFAULT_CANDIDATE_K, "top_k": TOP_K, "context_budget": CONTEXT_BUDGET, "maximum_patch_attempts": 2},
         "preflight": preflight_record,
         "fixture_validation": fixture_validation or [],
         "repositories": [item.model_dump(mode="json") for item in manifest.repositories],
         "case_provenance": [{"case_id": item.case_id, "repository_id": item.repository_id, "case_type": item.case_type, "fixture_fingerprint": item.fixture_fingerprint, "evaluation_mode": item.evaluation_mode, "required_test_selectors": list(item.required_test_selectors), "acquisition_provenance": item.acquisition_provenance} for item in manifest.cases],
         "cases": cases,
         "aggregate": aggregate_scores(cases),
-        "limitations": ["Six controlled-defect cases across three external repositories are a small controlled sample.", "Controlled mutations are not historical real-world bugs.", "This is not SWE-bench or production-scale evidence.", "Gold labels were used only for post-hoc scoring, never workflow decisions.", "Slow CPU-local generation is not classified as repair failure."],
+        "limitations": ["Six controlled-defect cases across three external repositories are a small controlled sample.", "Controlled mutations are not historical real-world bugs.", "This is not SWE-bench or production-scale evidence.", "Gold labels were used only for post-hoc scoring, never workflow decisions.", ("Gemini generation uses a hosted API and network latency; retrieval remains local." if settings.generation_provider == "gemini" else "Slow CPU-local generation is not classified as repair failure.")],
     }
     assert_artifact_has_no_absolute_paths(artifact)
     return artifact
@@ -1129,7 +1343,13 @@ def render_report(
             f"`{confirmation['failure_message']}`. No patch or retry ran. A clean full M9 "
             "rerun is scientifically justified but was not performed in Task 019C.", "",
         ])
-    if artifact.get("manifest_fingerprint") == M9_V2_MANIFEST_FINGERPRINT:
+    generation_provider = artifact.get("configuration", {}).get(
+        "generation_provider", "ollama"
+    )
+    if (
+        artifact.get("manifest_fingerprint") == M9_V2_MANIFEST_FINGERPRINT
+        and generation_provider == "ollama"
+    ):
         lines.extend([
             "## Final M9 v2 measurement", "",
             "M9 v1 remains historical and is not repair-quality evidence: its five "
@@ -1145,10 +1365,19 @@ def render_report(
             "Each frozen case ran exactly once, with no benchmark-level retry or manual "
             "repair.", "",
         ])
+    elif artifact.get("manifest_fingerprint") == M9_V2_MANIFEST_FINGERPRINT:
+        lines.extend([
+            "## Controlled provider experiment", "",
+            "This run uses the unchanged frozen M9-v2 fixtures and production "
+            "workflow with Gemini selected only for planner, patcher, and critic "
+            "generation. Retrieval remains local through EmbeddingGemma. Each case "
+            "runs once; there is no benchmark-level regeneration or manual repair.", "",
+        ])
     lines.extend([
         "## 1. Setup", "",
         f"- Repositories/cases: `{len(artifact['repositories'])}` / `{len(artifact['cases'])}`",
         "- Case type: external-repository controlled-defect cases (no historical cases)",
+        f"- Generation provider: `{generation_provider}`",
         f"- Generation / embedding: `{artifact['configuration']['generation_model']}` / `{artifact['configuration']['embedding_model']}`",
         f"- Docker image: `{artifact['configuration']['test_image']}`",
         f"- Docker image ID: `{artifact.get('preflight', {}).get('docker', {}).get('image_id') or 'not available'}`",
@@ -1165,7 +1394,8 @@ def render_report(
         "", "Locked model identities:", "",
     ])
     for model in artifact.get("models", []):
-        lines.append(f"- `{model['name']}`: `{model['digest']}`")
+        identity = model.get("digest") or "hosted model name (no local digest)"
+        lines.append(f"- `{model['name']}`: `{identity}`")
     lines.extend([
         "",
         "## 2. End-to-end results", "",
@@ -1230,7 +1460,7 @@ def render_report(
             )
     lines.extend([
         "", "## 6. Safety", "",
-        f"Critical authority/scope/workspace violation observed: `{str(aggregate['critical_safety_failure']).lower()}`. Scope attempts `{aggregate.get('safety', {}).get('scope_violation_attempts', 0)}`, stale/hash failures `{aggregate.get('safety', {}).get('stale_hash_failures', 0)}`, patch-validation failures `{aggregate.get('safety', {}).get('patch_validation_failures', 0)}`, canonical mutations `{aggregate.get('safety', {}).get('canonical_repository_mutation_count', 0)}`, retry-limit violations `{aggregate.get('safety', {}).get('retry_limit_violation_count', 0)}`, export-order failures `{aggregate.get('safety', {}).get('export_order_failure_count', 0)}`. The five planner failures did not reach approval, patch, Docker repair-test, or export; the one grounded plan reached approval #1 and patch generation, then failed deterministic patch validation before testing. The pre-repair Docker fixture tests did exercise the M5 sandbox. Safety is fail-loud and is never averaged.",
+        f"Critical authority/scope/workspace violation observed: `{str(aggregate['critical_safety_failure']).lower()}`. Scope attempts `{aggregate.get('safety', {}).get('scope_violation_attempts', 0)}`, stale/hash failures `{aggregate.get('safety', {}).get('stale_hash_failures', 0)}`, patch-validation failures `{aggregate.get('safety', {}).get('patch_validation_failures', 0)}`, canonical mutations `{aggregate.get('safety', {}).get('canonical_repository_mutation_count', 0)}`, retry-limit violations `{aggregate.get('safety', {}).get('retry_limit_violation_count', 0)}`, export-order failures `{aggregate.get('safety', {}).get('export_order_failure_count', 0)}`. Validator rejections are safe failures rather than authority violations. The pre-repair Docker fixture tests exercise the same M5 sandbox. Safety is fail-loud and is never averaged.",
         "", "## 7. Latency", "",
         "Per-case indexing, embedding setup, retrieval, planner, patcher, Docker, critic, retry patcher, and total wall-clock timings follow in milliseconds; p95 is reported only at n>=5.",
     ])

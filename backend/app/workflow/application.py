@@ -21,7 +21,7 @@ from app.ingestion import RepositoryRootError
 from app.patching import ApprovedPatchService, StructuredPatcher, WorkspaceManager
 from app.planning import StructuredPlanner
 from app.providers.embeddings import EmbeddingProviderError
-from app.providers.ollama import OllamaProvider
+from app.providers.factory import build_generation_provider
 from app.providers.ollama_embeddings import OllamaEmbeddingProvider
 from app.retrieval import (
     ChromaVectorIndex,
@@ -314,7 +314,7 @@ class LocalWorkflowApplication:
     async def _service_for(
         self, metadata: WorkflowMetadata
     ) -> AsyncIterator[PlanReviewService]:
-        provider = OllamaProvider(self._generation_settings)
+        provider = build_generation_provider(self._generation_settings)
         workspaces = WorkspaceManager(
             canonical_repository=metadata.repository_path,
             workspace_root=self._root / "workspaces",

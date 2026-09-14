@@ -154,6 +154,45 @@ final approval, export a patch, or create a PR.
 
 None queued. The user explicitly requested no public post.
 
+## 2026-09-14 - Controlled generation-provider comparison completed
+
+### What we were trying to do
+
+Measure whether generation-provider behavior changes RepoPilot's bounded repair
+outcomes while keeping the frozen repositories, retrieval, prompts, schemas,
+validators, approvals, Docker restrictions, and retry ceiling fixed.
+
+### Final solution
+
+An optional official Gemini adapter now sits behind the existing generation
+provider boundary; Ollama stays the local default and EmbeddingGemma retrieval
+stays local. The M9 harness records provider identity, safe stage token usage,
+and accepts an explicit Docker executable so the verified Docker Desktop CLI
+can be used even when it is absent from PATH.
+
+### How it was verified
+
+Exact `gemini-3.1-flash-lite` preflight and the complete existing M10 planner/
+patcher calibration passed. The untouched six-case M9-v2 suite then ran once
+per case and repaired 6/6 on attempt one, with 6 grounded plans, 6 valid
+patches, 6 restricted-Docker passes, zero critic/retry use, zero provider/API
+failures, and no critical safety failure. The complete backend suite passed
+350 tests; frontend tests, TypeScript, and the production build passed.
+
+### Metrics / evidence
+
+The frozen CPU-only Gemma M9-v3 baseline remains 1/6. Retrieval was invariant
+at Hit@1/Hit@5/MRR 0.8333/1.0000/0.9167 and full gold file/symbol ContextPack
+coverage. Median Gemini planner/patcher/total latency was
+2.288/2.443/20.928 seconds; generation used 73,416 total tokens.
+
+### Remaining limitations
+
+This is only six controlled defects across three repositories, not SWE-bench,
+production accuracy, or a general model ranking. Gemini generation is hosted,
+network-dependent, and sends bounded generation context off-machine; Gemma is
+local and CPU-only. Latency is not hardware-equivalent.
+
 ## 2026-09-14 - M10 improved measured structure without weakening authority
 
 ### What we were trying to do
